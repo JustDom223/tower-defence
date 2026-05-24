@@ -9,7 +9,7 @@ Two pieces: render three enemy types as the user's new sprites, and fix the regr
 | Ticket | What | Status |
 |---|---|---|
 | X1 | Fix: mouse no longer reacts with the game | ✅ Done |
-| S1 | Enemy sprites — dog/monster/spider-man | ⬜ Not started |
+| S1 | Enemy sprites — dog/monster/spider-man | ✅ Done |
 
 > Do **X1 first** — the game isn't playable until input works again.
 
@@ -33,18 +33,18 @@ Clicking/hovering no longer places or selects towers. The static source currentl
 
 ## Ticket S1 — Enemy sprites (dog → runner, monster → tank, spider-man → boss)
 
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
 Enemies currently draw as Pixi `Graphics` circles in `src/render/EnemyRenderer.js` (per-type `color`/`radius` from `src/data/enemies.js`). Swap three types to textured sprites; leave the rest as circles for now.
 
 Sprite files live in `src/sprites/`: `Toby's Dog.png`, `Toby's Monster.png`, `Toby's Spiderman.png`.
 
-- [ ] **Rename the files to import-safe names** first — spaces and apostrophes in `Toby's Dog.png` cause headaches with Vite asset URLs. Suggest `dog.png`, `monster.png`, `spiderman.png` in `src/sprites/`. (If you keep the original names, you must import them as URL assets and encode them carefully — renaming is simpler.)
-- [ ] Add a per-type sprite map in `enemies.js` or the renderer: `runner → dog.png`, `tank → monster.png`, `boss → spiderman.png`. Keep it data-driven (a `sprite` field on the enemy type is cleanest and matches the project's data-driven rule — see `CONTENT_GUIDE.md`).
-- [ ] In `EnemyRenderer.js`, load the textures at init (`Assets.load(...)`, imported via Vite `new URL('../sprites/dog.png', import.meta.url)` or a static import). For enemy types that have a sprite, draw a `Sprite` instead of a circle; types without a `sprite` keep the existing circle path.
-- [ ] **Size** each sprite to the type's footprint: scale so its width ≈ `radius * 2` (runner r10 → ~20px, tank r16 → ~32px, boss r28 → ~56px). Anchor at center (0.5, 0.5) and position at the enemy's world position.
-- [ ] **Preserve the existing overlays**: the white hit-flash, the cyan slow ring, and the HP bar must still render and sit correctly around the sprite (use the same `radius`-based offsets).
-- [ ] Pool/perf: don't create a new Sprite per frame — reuse sprites the same way the circle graphics are managed (one display object per active enemy, released with the enemy).
+- [x] **Rename the files to import-safe names** first — spaces and apostrophes in `Toby's Dog.png` cause headaches with Vite asset URLs. Suggest `dog.png`, `monster.png`, `spiderman.png` in `src/sprites/`. (If you keep the original names, you must import them as URL assets and encode them carefully — renaming is simpler.)
+- [x] Add a per-type sprite map in `enemies.js` or the renderer: `runner → dog.png`, `tank → monster.png`, `boss → spiderman.png`. Keep it data-driven (a `sprite` field on the enemy type is cleanest and matches the project's data-driven rule — see `CONTENT_GUIDE.md`).
+- [x] In `EnemyRenderer.js`, load the textures at init (`Assets.load(...)`, imported via Vite `new URL('../sprites/dog.png', import.meta.url)` or a static import). For enemy types that have a sprite, draw a `Sprite` instead of a circle; types without a `sprite` keep the existing circle path.
+- [x] **Size** each sprite to the type's footprint: scale so its width ≈ `radius * 2` (runner r10 → ~20px, tank r16 → ~32px, boss r28 → ~56px). Anchor at center (0.5, 0.5) and position at the enemy's world position.
+- [x] **Preserve the existing overlays**: the white hit-flash, the cyan slow ring, and the HP bar must still render and sit correctly around the sprite (use the same `radius`-based offsets).
+- [x] Pool/perf: don't create a new Sprite per frame — reuse sprites the same way the circle graphics are managed (one display object per active enemy, released with the enemy).
 
 **Acceptance:** runners appear as the dog, tanks as the monster, the boss as spider-man, all correctly sized; sprinter/splitter/armoured still render as before; hit-flash, slow ring, and HP bars still work; no per-frame allocation churn.
 
