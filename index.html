@@ -15,11 +15,6 @@
       #game-container { position: relative; user-select: none; }
       canvas { display: block; }
 
-      /* ── Hide HUD/shop until game starts ───────────────────── */
-      #hud, #tower-shop { display: none; }
-      body.game-active #hud { display: flex; }
-      body.game-active #tower-shop { display: flex; }
-
       /* ── HUD bar (top) ──────────────────────────────────────── */
       #hud {
         position: absolute; top: 0; left: 0; right: 0;
@@ -60,6 +55,11 @@
       .tower-btn.tower-unaffordable {
         opacity: 0.5; border-color: #4b5563 !important; color: #6b7280 !important;
       }
+
+      /* ── Hide HUD/shop until game starts ───────────────────── */
+      #hud, #tower-shop { display: none; }
+      body.game-active #hud { display: flex; }
+      body.game-active #tower-shop { display: flex; }
 
       /* ── R3 — Wave preview bar (bottom of HUD) ─────────────── */
       #hud-preview {
