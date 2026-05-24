@@ -103,9 +103,12 @@ The 10-map campaign (`SPEC_campaign-maps.md`) raises the ceiling to **~30 stars*
 
 The original R1–R6 plan is essentially delivered (only the R4/R6 open items remain). New work is captured in its own tracked docs; build in this order:
 
-1. **`SPEC_pause-audio-bomb.md`** ⬜ — pause menu, mute fix, bomb targeting. Quick wins that improve the game you can play today. *(Also closes R4's mute-click item.)*
-2. **R4 / R6 leftovers** 🚧 — volume control, upgrade delta preview, locked-tower tooltip. Small polish.
-3. **`SPEC_campaign-maps.md`** ⬜ — the 10-map star-gated campaign. Internal order: **C0** difficulty rework → **C1** unlock system → **C2** curve + **C3** hub → **C4** author the 8 new maps.
-4. **`META_PROGRESSION.md` §11** ⬜ — global perks & the ranked star-sink (**P1 → P2 → P3 → P4**). Independent of the maps; slot in alongside or after the campaign.
+1. **`SPEC_sprites-and-input.md` → X1** 🔴 ⬜ — **mouse-input fix. Top priority: the game isn't clickable right now.** Do this before anything else.
+2. **`SPEC_subagents.md`** ⬜ — create the Haiku `verifier` subagent. One small file; enables cheap pre-merge checking for every ticket after it.
+3. **`SPEC_pause-audio-bomb.md`** ⬜ — pause menu, mute fix, bomb targeting. Quick wins. *(Also closes R4's mute-click item.)*
+4. **R4 / R6 leftovers** 🚧 — volume control, upgrade delta preview, locked-tower tooltip. Small polish.
+5. **`SPEC_sprites-and-input.md` → S1** ⬜ — enemy sprites (dog → runner, monster → tank, spider-man → boss). Cosmetic; do once input is solid.
+6. **`SPEC_campaign-maps.md`** ⬜ — the 10-map star-gated campaign. Internal order: **C0** difficulty rework → **C1** unlock system → **C2** curve + **C3** hub → **C4** author the 8 new maps.
+7. **`META_PROGRESSION.md` §11** ⬜ — global perks & the ranked star-sink (**P1 → P2 → P3 → P4**). Independent of the maps; slot in alongside or after the campaign.
 
-Items 3 and 4 are the big content/progression milestones; 1 and 2 are short and worth clearing first.
+Items 1–5 are short; 6 and 7 are the big content/progression milestones. Tackle 1 immediately (it's blocking play), then 2 so the rest gets cheap automated checking.

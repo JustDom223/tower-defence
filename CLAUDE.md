@@ -25,6 +25,10 @@ Work happens on branches and merges into `main`. Never develop directly on `main
 
 **First-time setup (if the repo isn't initialised yet):** `git init`; add a `.gitignore` containing `node_modules/`, `dist/`, `.DS_Store`; commit the current working tree on `main`; *then* open the first feature branch. Do this before any other ticket.
 
+## Verification (offload to a cheap model)
+
+Before merging a ticket, delegate the check to the **`verifier`** subagent (defined in `.claude/agents/verifier.md`, runs on Haiku). Give it the ticket id and plan doc; it reviews the diff against the acceptance criteria, checks the build and the architecture rules, and returns PASS/FAIL. This keeps verification cheap and off your main context. See `SPEC_subagents.md` for setup. Use cheap-model subagents for other narrow checks too rather than doing them inline.
+
 ## Tech stack
 
 - **PixiJS 8** (WebGL) for rendering, **vanilla JS** (ES modules) for all game logic, **Vite** for tooling.
