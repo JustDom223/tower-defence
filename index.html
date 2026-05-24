@@ -2,18 +2,32 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+    <!-- MB2 — PWA: lock to landscape when installed -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#111827" />
+    <link rel="manifest" href="manifest.json" />
     <title>Tower Defence</title>
     <style>
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body {
         background: #111827;
         display: flex; justify-content: center; align-items: center;
-        min-height: 100vh; overflow: hidden;
+        min-height: 100dvh; overflow: hidden;
         font-family: system-ui, sans-serif; color: #fff;
+        /* MB1 — prevent scroll, pull-to-refresh, and pinch-zoom during play */
+        overscroll-behavior: none;
+        touch-action: none;
       }
-      #game-container { position: relative; user-select: none; width: 1280px; height: 720px; }
+      #game-container {
+        position: relative; user-select: none; width: 1280px; height: 720px;
+        touch-action: none; /* MB1 — block all default touch gestures on the canvas */
+      }
       canvas { display: block; }
+      /* MB6 — prevent accidental double-tap zoom on all buttons */
+      button { touch-action: manipulation; }
 
       /* ── HUD bar (top) ──────────────────────────────────────── */
       #hud {
@@ -330,6 +344,218 @@
         from { transform: scale(1);    opacity: 1; }
         to   { transform: scale(1.06); opacity: .7; }
       }
+
+      /* ── MB2 — Portrait lockout ─────────────────────────────── */
+      #rotate-screen {
+        display: none; position: fixed; inset: 0; z-index: 9999;
+        background: #111827; flex-direction: column;
+        align-items: center; justify-content: center; text-align: center;
+        pointer-events: all;
+      }
+      #rotate-screen .rotate-icon { font-size: 56px; animation: rotateHint 2s ease-in-out infinite; }
+      #rotate-screen .rotate-title { font-size: 18px; font-weight: 700; margin-top: 16px; }
+      #rotate-screen .rotate-sub { font-size: 13px; color: #94a3b8; margin-top: 6px; }
+      @keyframes rotateHint {
+        0%,100% { transform: rotate(0deg); }
+        50%      { transform: rotate(-90deg); }
+      }
+      @media (orientation: portrait) {
+        #rotate-screen { display: flex; }
+      }
+
+      /* ── MB5 — Mobile UI compensation ───────────────────────────
+         --ui-scale is set by the scaleGame() script (= 1/cssScale).
+         Every calc(X * var(--ui-scale)) property appears as X pixels
+         on the physical screen regardless of device scale.
+         Only active under body.mobile-scaled (phones, not small desktops). */
+      body.mobile-scaled #hud {
+        font-size:  calc(13px * var(--ui-scale));
+        padding:    calc(5px * var(--ui-scale)) calc(10px * var(--ui-scale));
+        gap:        calc(10px * var(--ui-scale));
+      }
+      body.mobile-scaled .stat { gap: calc(3px * var(--ui-scale)); }
+      body.mobile-scaled #hud-preview {
+        font-size: calc(11px * var(--ui-scale));
+        max-width:  calc(120px * var(--ui-scale));
+      }
+      body.mobile-scaled #hud-start,
+      body.mobile-scaled #hud-ff,
+      body.mobile-scaled #hud-mute,
+      body.mobile-scaled #hud-pause {
+        font-size:  calc(13px * var(--ui-scale));
+        padding:    calc(10px * var(--ui-scale)) calc(14px * var(--ui-scale));
+        min-height: calc(44px * var(--ui-scale));
+        border-radius: calc(6px * var(--ui-scale));
+      }
+
+      body.mobile-scaled #tower-shop {
+        padding: calc(6px * var(--ui-scale)) calc(10px * var(--ui-scale));
+        gap:     calc(6px * var(--ui-scale));
+      }
+      body.mobile-scaled .tower-btn {
+        font-size:  calc(13px * var(--ui-scale));
+        padding:    calc(8px * var(--ui-scale)) calc(12px * var(--ui-scale));
+        min-height: calc(48px * var(--ui-scale));
+        border-radius: calc(7px * var(--ui-scale));
+      }
+
+      body.mobile-scaled #tower-panel {
+        right:     calc(8px * var(--ui-scale));
+        top:       calc(50px * var(--ui-scale));
+        min-width: calc(260px * var(--ui-scale));
+        padding:   calc(10px * var(--ui-scale)) calc(12px * var(--ui-scale));
+        border-radius: calc(9px * var(--ui-scale));
+      }
+      body.mobile-scaled #tower-name   { font-size: calc(13px * var(--ui-scale)); }
+      body.mobile-scaled #tower-stats  { font-size: calc(11px * var(--ui-scale)); gap: calc(8px * var(--ui-scale)); }
+      body.mobile-scaled #upgrade-paths { gap: calc(5px * var(--ui-scale)); }
+      body.mobile-scaled .path-label   { font-size: calc(10px * var(--ui-scale)); }
+      body.mobile-scaled .upg-btn      {
+        font-size: calc(11px * var(--ui-scale));
+        padding:   calc(6px * var(--ui-scale)) calc(7px * var(--ui-scale));
+        min-height: calc(32px * var(--ui-scale));
+      }
+      body.mobile-scaled .upg-delta    { font-size: calc(9px  * var(--ui-scale)); }
+      body.mobile-scaled .target-row   { gap: calc(4px * var(--ui-scale)); margin-bottom: calc(6px * var(--ui-scale)); }
+      body.mobile-scaled .target-btn   {
+        font-size: calc(11px * var(--ui-scale));
+        padding:   calc(6px * var(--ui-scale)) calc(8px * var(--ui-scale));
+        min-height: calc(36px * var(--ui-scale));
+      }
+      body.mobile-scaled #sell-btn     {
+        font-size: calc(12px * var(--ui-scale));
+        padding:   calc(8px * var(--ui-scale));
+        min-height: calc(36px * var(--ui-scale));
+      }
+
+      /* Overlays — panels appear correctly sized on screen */
+      body.mobile-scaled #map-panel {
+        padding:   calc(20px * var(--ui-scale)) calc(24px * var(--ui-scale));
+        min-width: calc(310px * var(--ui-scale));
+        max-height: calc(370px * var(--ui-scale));
+        overflow-y: auto;
+        border-radius: calc(14px * var(--ui-scale));
+      }
+      body.mobile-scaled #map-panel h2 { font-size: calc(18px * var(--ui-scale)); margin-bottom: calc(4px * var(--ui-scale)); }
+      body.mobile-scaled #map-stars-info { font-size: calc(12px * var(--ui-scale)); margin-bottom: calc(8px * var(--ui-scale)); }
+      body.mobile-scaled #diff-selector { gap: calc(6px * var(--ui-scale)); margin-bottom: calc(10px * var(--ui-scale)); }
+      body.mobile-scaled .diff-btn {
+        font-size: calc(12px * var(--ui-scale));
+        padding: calc(7px * var(--ui-scale)) calc(4px * var(--ui-scale));
+        min-height: calc(40px * var(--ui-scale));
+      }
+      body.mobile-scaled #map-list { max-height: calc(170px * var(--ui-scale)); }
+      body.mobile-scaled .map-btn {
+        font-size: calc(13px * var(--ui-scale));
+        padding: calc(9px * var(--ui-scale)) calc(12px * var(--ui-scale));
+        min-height: calc(44px * var(--ui-scale));
+        margin-bottom: calc(5px * var(--ui-scale));
+      }
+      body.mobile-scaled .map-stars { font-size: calc(11px * var(--ui-scale)); }
+      body.mobile-scaled #map-continue {
+        font-size: calc(12px * var(--ui-scale));
+        padding: calc(9px * var(--ui-scale)) calc(12px * var(--ui-scale));
+        min-height: calc(44px * var(--ui-scale));
+        margin-top: calc(4px * var(--ui-scale));
+      }
+      body.mobile-scaled #map-upgrades {
+        font-size: calc(12px * var(--ui-scale));
+        padding: calc(7px * var(--ui-scale)) calc(14px * var(--ui-scale));
+        min-height: calc(40px * var(--ui-scale));
+        margin-top: calc(10px * var(--ui-scale));
+      }
+
+      body.mobile-scaled #tree-panel {
+        padding:   calc(20px * var(--ui-scale)) calc(24px * var(--ui-scale));
+        min-width: calc(330px * var(--ui-scale));
+        max-height: calc(370px * var(--ui-scale));
+        overflow-y: auto;
+        border-radius: calc(14px * var(--ui-scale));
+      }
+      body.mobile-scaled #tree-header { margin-bottom: calc(12px * var(--ui-scale)); }
+      body.mobile-scaled #tree-header h2 { font-size: calc(16px * var(--ui-scale)); }
+      body.mobile-scaled #tree-stars-count { font-size: calc(13px * var(--ui-scale)); }
+      body.mobile-scaled #tree-list {
+        gap:        calc(6px * var(--ui-scale));
+        max-height: calc(200px * var(--ui-scale));
+        margin-bottom: calc(12px * var(--ui-scale));
+      }
+      body.mobile-scaled .tree-node {
+        padding: calc(7px * var(--ui-scale)) calc(10px * var(--ui-scale));
+        gap:     calc(7px * var(--ui-scale));
+        border-radius: calc(7px * var(--ui-scale));
+      }
+      body.mobile-scaled .tree-node-label { font-size: calc(12px * var(--ui-scale)); }
+      body.mobile-scaled .tree-node-sub   { font-size: calc(10px * var(--ui-scale)); }
+      body.mobile-scaled .tree-node-cost  { font-size: calc(12px * var(--ui-scale)); }
+      body.mobile-scaled .tree-buy-btn {
+        font-size:  calc(11px * var(--ui-scale));
+        padding:    calc(6px * var(--ui-scale)) calc(10px * var(--ui-scale));
+        min-height: calc(36px * var(--ui-scale));
+      }
+      body.mobile-scaled #tree-footer { gap: calc(7px * var(--ui-scale)); }
+      body.mobile-scaled #tree-respec,
+      body.mobile-scaled #tree-close {
+        font-size: calc(12px * var(--ui-scale));
+        padding: calc(9px * var(--ui-scale));
+        min-height: calc(40px * var(--ui-scale));
+      }
+
+      body.mobile-scaled #pause-panel {
+        padding:    calc(24px * var(--ui-scale)) calc(32px * var(--ui-scale));
+        min-width:  calc(260px * var(--ui-scale));
+        border-radius: calc(14px * var(--ui-scale));
+      }
+      body.mobile-scaled #pause-panel h2 { font-size: calc(18px * var(--ui-scale)); margin-bottom: calc(14px * var(--ui-scale)); }
+      body.mobile-scaled .pause-settings { gap: calc(8px * var(--ui-scale)); margin-bottom: calc(14px * var(--ui-scale)); }
+      body.mobile-scaled .pause-settings label { font-size: calc(12px * var(--ui-scale)); gap: calc(8px * var(--ui-scale)); }
+      body.mobile-scaled .pause-actions { gap: calc(7px * var(--ui-scale)); }
+      body.mobile-scaled #pause-resume {
+        font-size: calc(14px * var(--ui-scale));
+        padding:   calc(10px * var(--ui-scale)) calc(24px * var(--ui-scale));
+        min-height: calc(48px * var(--ui-scale));
+      }
+      body.mobile-scaled #pause-main-menu {
+        font-size: calc(12px * var(--ui-scale));
+        padding:   calc(9px * var(--ui-scale)) calc(24px * var(--ui-scale));
+        min-height: calc(40px * var(--ui-scale));
+      }
+
+      body.mobile-scaled #end-panel {
+        padding:    calc(24px * var(--ui-scale)) calc(32px * var(--ui-scale));
+        border-radius: calc(14px * var(--ui-scale));
+      }
+      body.mobile-scaled #end-title  { font-size: calc(24px * var(--ui-scale)); }
+      body.mobile-scaled #end-msg    { font-size: calc(13px * var(--ui-scale)); }
+      body.mobile-scaled #end-stars-row { font-size: calc(22px * var(--ui-scale)); }
+      body.mobile-scaled #end-stars-msg { font-size: calc(11px * var(--ui-scale)); }
+      body.mobile-scaled #end-score-line { font-size: calc(14px * var(--ui-scale)); margin-bottom: calc(16px * var(--ui-scale)); }
+      body.mobile-scaled #end-restart {
+        font-size:  calc(14px * var(--ui-scale));
+        padding:    calc(10px * var(--ui-scale)) calc(24px * var(--ui-scale));
+        min-height: calc(48px * var(--ui-scale));
+      }
+
+      body.mobile-scaled #boss-warning .boss-text { font-size: calc(42px * var(--ui-scale)); }
+      body.mobile-scaled #interest-toast {
+        font-size:    calc(13px * var(--ui-scale));
+        padding:      calc(6px * var(--ui-scale)) calc(18px * var(--ui-scale));
+        bottom:       calc(60px * var(--ui-scale));
+        border-radius: calc(20px * var(--ui-scale));
+      }
+
+      /* ── MB6 — Remove sticky hover states on touch devices ────── */
+      @media (hover: none) {
+        .tower-btn:hover         { border-color: #374151 !important; }
+        .map-btn:hover:not([disabled]) { border-color: #374151 !important; color: #e5e7eb !important; }
+        .diff-btn:hover          { border-color: #374151 !important; color: #9ca3af !important; }
+        .upg-btn.next:hover      { background: #1c1917 !important; }
+        .tree-buy-btn:hover:not([disabled]) { background: #1e3a2f !important; }
+        #map-upgrades:hover      { border-color: #4b5563 !important; color: #9ca3af !important; }
+        #map-continue:hover      { border-color: #3b82f6 !important; }
+        #end-restart:hover       { background: #22c55e !important; }
+        #pause-resume:hover      { background: #22c55e !important; }
+      }
     </style>
   </head>
   <body>
@@ -439,6 +665,40 @@
       </div>
 
     </div>
+
+    <!-- MB2 — Portrait lockout overlay (outside game-container so it's not CSS-scaled) -->
+    <div id="rotate-screen">
+      <div class="rotate-icon">🔄</div>
+      <div class="rotate-title">Rotate your device</div>
+      <div class="rotate-sub">Tower Defence is played in landscape mode</div>
+    </div>
+
+    <!-- MB3 — Scale engine: shrinks game-container to fit any screen, sets --ui-scale for compensation -->
+    <script>
+      (function () {
+        var container = document.getElementById('game-container');
+        var VIRTUAL_W = 1280, VIRTUAL_H = 720;
+        function scaleGame() {
+          // Scale DOWN only — don't upscale on large desktop monitors (canvas stays crisp)
+          var scale = Math.min(1,
+            window.innerWidth  / VIRTUAL_W,
+            window.innerHeight / VIRTUAL_H
+          );
+          container.style.transform       = scale < 1 ? 'scale(' + scale + ')' : '';
+          container.style.transformOrigin = 'center center';
+          // --ui-scale drives calc() compensation in body.mobile-scaled CSS
+          document.documentElement.style.setProperty('--ui-scale', (1 / scale).toFixed(6));
+          // mobile-scaled: only on phone-sized viewports (short dimension < 500px) at reduced scale
+          var isMobileSize = Math.min(window.innerWidth, window.innerHeight) < 500;
+          document.body.classList.toggle('mobile-scaled', scale < 0.95 && isMobileSize);
+        }
+        scaleGame();
+        window.addEventListener('resize', scaleGame);
+        // orientationchange fires before the viewport resizes; delay to get correct dimensions
+        window.addEventListener('orientationchange', function () { setTimeout(scaleGame, 120); });
+      })();
+    </script>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
