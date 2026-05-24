@@ -50,6 +50,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
       damage:    tower.damage,
       aoeRadius: tower.aoeRadius,
       towerType: tower.type,
+      ballistic: tower.aoeRadius > 0,
     }));
   }
 
@@ -72,27 +73,40 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
     const p = projectiles[i];
     p.prevX = p.x; p.prevY = p.y;
 
-    // Guard against pool recycling: the pool may return the same object for a new
-    // enemy after the original target died. ID equality proves it's still the same entity.
-    const targetLive = p.target && p.target.id === p.targetId && p.target.hp > 0;
-
-    if (targetLive) {
-      const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
-      const len = Math.sqrt(dx * dx + dy * dy) || 1;
-      p.vx = (dx / len) * p.speed;
-      p.vy = (dy / len) * p.speed;
-    }
-
     const dt = 1 / 60;
-    p.x += p.vx * dt;
-    p.y += p.vy * dt;
-
     let hit = false;
-    if (targetLive) {
-      const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
-      if (dx * dx + dy * dy < HIT_DIST_SQ) hit = true;
-    } else if (p.x < -60 || p.x > 1340 || p.y < -60 || p.y > 780) {
-      hit = true;
+
+    if (p.ballistic) {
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+      const remX = p.landX - p.x, remY = p.landY - p.y;
+      const remDist = Math.sqrt(remX * remX + remY * remY);
+      if (remDist <= p.speed * dt) {
+        p.x = p.landX;
+        p.y = p.landY;
+        hit = true;
+      }
+    } else {
+      // Guard against pool recycling: the pool may return the same object for a new
+      // enemy after the original target died. ID equality proves it's still the same entity.
+      const targetLive = p.target && p.target.id === p.targetId && p.target.hp > 0;
+
+      if (targetLive) {
+        const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
+        const len = Math.sqrt(dx * dx + dy * dy) || 1;
+        p.vx = (dx / len) * p.speed;
+        p.vy = (dy / len) * p.speed;
+      }
+
+      p.x += p.vx * dt;
+      p.y += p.vy * dt;
+
+      if (targetLive) {
+        const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
+        if (dx * dx + dy * dy < HIT_DIST_SQ) hit = true;
+      } else if (p.x < -60 || p.x > 1340 || p.y < -60 || p.y > 780) {
+        hit = true;
+      }
     }
 
     if (hit) {

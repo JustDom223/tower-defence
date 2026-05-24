@@ -18,11 +18,11 @@ Three changes to the running game, plus one optional layout fix. Each task lists
 - [x] `AudioManager.setVolume` + a volume slider in the Settings section
 - [x] HUD and pause-menu mute controls stay in sync
 
-**Ticket 3 — Bomb targeting** · Status: ⬜ Not started
+**Ticket 3 — Bomb targeting** · Status: ✅ Done
 
-- [ ] Projectile `ballistic` / `landX` / `landY` fields
-- [ ] Fire bombs at a snapshot landing point (no homing)
-- [ ] Arrival check explodes exactly at the landing point
+- [x] Projectile `ballistic` / `landX` / `landY` fields
+- [x] Fire bombs at a snapshot landing point (no homing)
+- [x] Arrival check explodes exactly at the landing point
 
 **Optional — start-screen layout bleed-through** · Status: ⬜ Not started
 
