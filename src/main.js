@@ -211,6 +211,7 @@ async function main() {
   window.__profile = profile; // dev convenience: flip unlocks in the console
 
   const { mapKey, savedData, diffKey } = await awaitMapSelect(profile);
+  document.body.classList.add('game-active');
 
   // M4 — resolve difficulty config
   const difficulty = DIFFICULTIES[diffKey] ?? DIFFICULTIES.normal;
