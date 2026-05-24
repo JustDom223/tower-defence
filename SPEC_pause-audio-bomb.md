@@ -24,9 +24,9 @@ Three changes to the running game, plus one optional layout fix. Each task lists
 - [x] Fire bombs at a snapshot landing point (no homing)
 - [x] Arrival check explodes exactly at the landing point
 
-**Optional — start-screen layout bleed-through** · Status: ⬜ Not started
+**Optional — start-screen layout bleed-through** · Status: ✅ Done
 
-- [ ] Menu overlays cover the full viewport (no HUD/shop showing behind the start screen)
+- [x] Menu overlays cover the full viewport (no HUD/shop showing behind the start screen)
 
 ---
 
