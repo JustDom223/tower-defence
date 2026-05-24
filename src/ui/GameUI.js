@@ -1,5 +1,6 @@
 import { TOWER_TYPES }             from '../data/towers.js';
 import { MAX_TIER, CROSSPATH_CAP } from '../systems/UpgradeSystem.js';
+import AudioManager                from '../audio/AudioManager.js';
 
 export class GameUI {
   #livesEl;
@@ -85,8 +86,8 @@ export class GameUI {
     // Mute toggle
     const muteBtn = document.getElementById('hud-mute');
     if (muteBtn) {
-      muteBtn.addEventListener('click', async () => {
-        const { default: AudioManager } = await import('../audio/AudioManager.js');
+      muteBtn.textContent = AudioManager.muted ? '🔇' : '🔊';
+      muteBtn.addEventListener('click', () => {
         const muted = AudioManager.toggleMute();
         muteBtn.textContent = muted ? '🔇' : '🔊';
       });

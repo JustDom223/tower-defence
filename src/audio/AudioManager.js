@@ -119,21 +119,28 @@ class _AudioManager {
   #ctx        = null;
   #masterGain = null;
   #muted      = false;
+  #volume     = 0.7;
 
   #init() {
     if (this.#ctx) return;
     this.#ctx        = new AudioContext();
     this.#masterGain = this.#ctx.createGain();
-    this.#masterGain.gain.value = 0.7;
+    this.#masterGain.gain.value = this.#muted ? 0 : this.#volume;
     this.#masterGain.connect(this.#ctx.destination);
   }
 
-  get muted() { return this.#muted; }
+  get muted()  { return this.#muted; }
+  get volume() { return this.#volume; }
 
   toggleMute() {
     this.#muted = !this.#muted;
-    if (this.#masterGain) this.#masterGain.gain.value = this.#muted ? 0 : 0.7;
+    if (this.#masterGain) this.#masterGain.gain.value = this.#muted ? 0 : this.#volume;
     return this.#muted;
+  }
+
+  setVolume(v) {
+    this.#volume = Math.max(0, Math.min(1, v));
+    if (this.#masterGain && !this.#muted) this.#masterGain.gain.value = this.#volume;
   }
 
   play(name) {
