@@ -5,6 +5,10 @@
  * Earned stars = sum of best star ratings across all missions.
  * Available stars = earned - spent (what can be spent in the unlock tree).
  * Stars are awarded once per mission (best result kept).
+ *
+ * P1 — perks: account-wide bonuses applied at run start.
+ *   One-time nodes (boolean check/apply) and ranked nodes (ranked: true, getRank/costAt/apply)
+ *   both live in UNLOCK_TREE. Ranked nodes absorb surplus stars across many ranks.
  */
 
 const KEY = 'tower-defence-profile-v1';
@@ -27,6 +31,22 @@ export function defaultProfile() {
         marksman: { A: false, B: false },
       },
     },
+    // P1 — global perks applied at run start. All zero = no effect.
+    perks: {
+      // one-time boolean flags (drive check functions below)
+      warChest1: false, warChest2: false,
+      reinforced: false, salvage: false, bulkDiscount: false,
+      // numeric effects read during run startup
+      startCash: 0,     // extra starting gold
+      startLives: 0,    // extra starting lives
+      sellBonus: 0,     // additive sell multiplier (base 0.60)
+      towerCostPct: 0,  // fractional discount on tower costs (0–1)
+      damagePct: 0,     // fractional global damage bonus (Power Core)
+      interestBonus: 0, // extra interest fraction per wave (base 0.05)
+      // ranked track counters
+      powerCoreRank: 0,
+      interestRank: 0,
+    },
   };
 }
 
@@ -41,6 +61,8 @@ export function loadProfile() {
       console.warn('[Profile] Incompatible or corrupt profile (version mismatch) — resetting to default.');
       return defaultProfile();
     }
+    // P1 — backfill perks for profiles created before this feature
+    if (!p.perks) p.perks = defaultProfile().perks;
     return p;
   } catch { return defaultProfile(); }
 }
@@ -93,52 +115,119 @@ export function isMapUnlocked(profile, mapKey, campaignOrder) {
 
 // ── Unlock tree ───────────────────────────────────────────────────────────────
 // Costs tuned so 6 stars (2 maps × 3 max) unlocks a satisfying chunk.
+// Full 10-map campaign yields ~30 stars — enough to max the ranked tracks.
+
+// Rising costs for the Compound Interest ranked track: ranks 0→1, 1→2, … 4→5
+const INTEREST_COSTS = [1, 2, 2, 3, 3];
 
 export const UNLOCK_TREE = [
+  // ── Towers & paths ───────────────────────────────────────────────────────
   {
-    id: 'dart-B', label: 'Dart — Path B (Quick)', cost: 1, requires: null,
+    id: 'dart-B', label: 'Dart — Path B (Quick)', group: 'towers', cost: 1, requires: null,
     check: p => p.unlocks.paths.dart.B,
     apply: p => { p.unlocks.paths.dart.B = true; },
   },
   {
-    id: 'bomb', label: 'Bomb tower', cost: 2, requires: null,
+    id: 'bomb', label: 'Bomb tower', group: 'towers', cost: 2, requires: null,
     check: p => p.unlocks.towers.bomb,
     apply: p => { p.unlocks.towers.bomb = true; p.unlocks.paths.bomb.A = true; },
   },
   {
-    id: 'bomb-B', label: 'Bomb — Path B (Rapid)', cost: 1, requires: 'bomb',
+    id: 'bomb-B', label: 'Bomb — Path B (Rapid)', group: 'towers', cost: 1, requires: 'bomb',
     check: p => p.unlocks.paths.bomb.B,
     apply: p => { p.unlocks.paths.bomb.B = true; },
   },
   {
-    id: 'frost', label: 'Frost tower', cost: 2, requires: null,
+    id: 'frost', label: 'Frost tower', group: 'towers', cost: 2, requires: null,
     check: p => p.unlocks.towers.frost,
-    apply: p => { p.unlocks.towers.frost = true; p.unlocks.paths.frost.A = true; },
+    apply: p => { p.unlocks.paths.frost.A = true; p.unlocks.towers.frost = true; },
   },
   {
-    id: 'frost-B', label: 'Frost — Path B (Permafrost)', cost: 1, requires: 'frost',
+    id: 'frost-B', label: 'Frost — Path B (Permafrost)', group: 'towers', cost: 1, requires: 'frost',
     check: p => p.unlocks.paths.frost.B,
     apply: p => { p.unlocks.paths.frost.B = true; },
   },
   {
-    id: 'marksman', label: 'Marksman tower', cost: 3, requires: null,
+    id: 'marksman', label: 'Marksman tower', group: 'towers', cost: 3, requires: null,
     check: p => p.unlocks.towers.marksman,
     apply: p => { p.unlocks.towers.marksman = true; p.unlocks.paths.marksman.A = true; },
   },
   {
-    id: 'marksman-B', label: 'Marksman — Path B (Watchful)', cost: 1, requires: 'marksman',
+    id: 'marksman-B', label: 'Marksman — Path B (Watchful)', group: 'towers', cost: 1, requires: 'marksman',
     check: p => p.unlocks.paths.marksman.B,
     apply: p => { p.unlocks.paths.marksman.B = true; },
   },
+
+  // ── P2 — One-time global perks ───────────────────────────────────────────
+  {
+    id: 'war-chest-1', label: 'War Chest I', group: 'perks', cost: 2, requires: null,
+    desc: '+50 starting gold each run',
+    check: p => p.perks?.warChest1 ?? false,
+    apply: p => { p.perks.warChest1 = true; p.perks.startCash += 50; },
+  },
+  {
+    id: 'war-chest-2', label: 'War Chest II', group: 'perks', cost: 3, requires: 'war-chest-1',
+    desc: '+100 more starting gold (total +150)',
+    check: p => p.perks?.warChest2 ?? false,
+    apply: p => { p.perks.warChest2 = true; p.perks.startCash += 100; },
+  },
+  {
+    id: 'reinforced', label: 'Reinforced', group: 'perks', cost: 2, requires: null,
+    desc: '+5 starting lives each run',
+    check: p => p.perks?.reinforced ?? false,
+    apply: p => { p.perks.reinforced = true; p.perks.startLives += 5; },
+  },
+  {
+    id: 'salvage', label: 'Salvage', group: 'perks', cost: 2, requires: null,
+    desc: '+15% sell value on all towers',
+    check: p => p.perks?.salvage ?? false,
+    apply: p => { p.perks.salvage = true; p.perks.sellBonus += 0.15; },
+  },
+  {
+    id: 'bulk-discount', label: 'Bulk Discount', group: 'perks', cost: 3, requires: null,
+    desc: 'All towers cost 8% less',
+    check: p => p.perks?.bulkDiscount ?? false,
+    apply: p => { p.perks.bulkDiscount = true; p.perks.towerCostPct += 0.08; },
+  },
+
+  // ── P3 — Ranked star-sink tracks ────────────────────────────────────────
+  {
+    id: 'power-core', label: 'Power Core', group: 'perks',
+    ranked: true, maxRank: 10,
+    desc: '+3% global tower damage per rank — max +30%',
+    getRank: p => p.perks?.powerCoreRank ?? 0,
+    costAt: rank => Math.ceil((rank + 1) / 2),
+    nextDesc: rank => `+3% dmg (total ${(rank + 1) * 3}%)`,
+    apply: p => {
+      p.perks.powerCoreRank++;
+      p.perks.damagePct = +(p.perks.damagePct + 0.03).toFixed(4);
+    },
+  },
+  {
+    id: 'interest-plus', label: 'Compound Interest', group: 'perks',
+    ranked: true, maxRank: 5,
+    desc: '+1% end-of-wave interest per rank — max 10% total',
+    getRank: p => p.perks?.interestRank ?? 0,
+    costAt: rank => INTEREST_COSTS[rank] ?? 99,
+    nextDesc: rank => `+1% interest (→ ${6 + rank}%/wave)`,
+    apply: p => {
+      p.perks.interestRank++;
+      p.perks.interestBonus = +(p.perks.interestBonus + 0.01).toFixed(4);
+    },
+  },
 ];
 
+// ── Tree helpers ─────────────────────────────────────────────────────────────
+
 export function isNodeOwned(p, node) {
+  if (node.ranked) return (node.getRank(p) ?? 0) >= node.maxRank;
   return node.check(p);
 }
 
 export function canUnlock(p, node) {
   if (isNodeOwned(p, node)) return false;
-  if (availableStars(p) < node.cost) return false;
+  const cost = node.ranked ? node.costAt(node.getRank(p) ?? 0) : node.cost;
+  if (availableStars(p) < cost) return false;
   if (node.requires) {
     const req = UNLOCK_TREE.find(n => n.id === node.requires);
     if (req && !isNodeOwned(p, req)) return false;
@@ -148,12 +237,13 @@ export function canUnlock(p, node) {
 
 export function applyUnlock(p, node) {
   if (!canUnlock(p, node)) return false;
+  const cost = node.ranked ? node.costAt(node.getRank(p) ?? 0) : node.cost;
   node.apply(p);
-  p.spent += node.cost;
+  p.spent += cost;
   return true;
 }
 
-/** Refunds all spent stars; resets unlocks to default. Keeps earned mission ratings. */
+/** Refunds all spent stars; resets unlocks and perks to default. Keeps earned mission ratings. */
 export function respec(p) {
   const fresh = defaultProfile();
   fresh.missions = { ...p.missions };
