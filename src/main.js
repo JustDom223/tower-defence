@@ -70,8 +70,14 @@ function showInterestToast(amount) {
 function showBossWarning() {
   const el = document.getElementById('boss-warning');
   if (!el) return;
+  el.style.display = 'flex';
+  void el.offsetWidth; // force reflow so opacity transition fires
   el.classList.add('visible');
-  setTimeout(() => el.classList.remove('visible'), 1800);
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => {
+    el.classList.remove('visible');
+    setTimeout(() => { el.style.display = 'none'; }, 350); // after fade-out
+  }, 1800);
 }
 
 // ── Unlock tree (M3) ─────────────────────────────────────────────────────────
