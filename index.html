@@ -243,6 +243,38 @@
       }
       #tree-close:hover { border-color: #6b7280; color: #e5e7eb; }
 
+      /* ── Pause screen overlay ──────────────────────────────── */
+      #pause-screen {
+        position: absolute; inset: 0;
+        background: rgba(0,0,0,.82);
+        display: none; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 20; pointer-events: all;
+      }
+      #pause-panel {
+        background: rgba(15,23,42,.97); border: 1px solid #334155;
+        border-radius: 14px; padding: 36px 48px; text-align: center; min-width: 280px;
+      }
+      #pause-panel h2 { font-size: 22px; font-weight: 800; margin-bottom: 20px; }
+      .pause-settings { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+      .pause-settings label { font-size: 13px; color: #94a3b8; display: flex; align-items: center; gap: 10px; justify-content: space-between; }
+      #pause-volume { flex: 1; accent-color: #3b82f6; }
+      #pause-mute-btn {
+        background: #374151; border: 1px solid #4b5563; color: #fff;
+        padding: 4px 10px; border-radius: 5px; cursor: pointer; font-size: 13px;
+      }
+      .pause-actions { display: flex; flex-direction: column; gap: 8px; }
+      #pause-resume {
+        background: #22c55e; border: none; color: #fff;
+        padding: 10px 28px; border-radius: 8px; cursor: pointer;
+        font-size: 15px; font-weight: 700;
+      }
+      #pause-resume:hover { background: #16a34a; }
+      #pause-main-menu {
+        background: #1f2937; border: 1px solid #374151; color: #9ca3af;
+        padding: 8px 28px; border-radius: 8px; cursor: pointer; font-size: 13px;
+      }
+      #pause-main-menu:hover { border-color: #6b7280; color: #e5e7eb; }
+
       /* ── R1 — Interest toast ────────────────────────────────── */
       #interest-toast {
         position: absolute; bottom: 58px; left: 50%; transform: translateX(-50%);
@@ -278,6 +310,21 @@
   </head>
   <body>
     <div id="game-container">
+
+      <!-- Pause screen overlay -->
+      <div id="pause-screen">
+        <div id="pause-panel">
+          <h2>Paused</h2>
+          <div class="pause-settings">
+            <label>Volume <input id="pause-volume" type="range" min="0" max="100" value="70"></label>
+            <label>Mute <button id="pause-mute-btn">🔊</button></label>
+          </div>
+          <div class="pause-actions">
+            <button id="pause-resume">Resume</button>
+            <button id="pause-main-menu">Main Menu</button>
+          </div>
+        </div>
+      </div>
 
       <!-- R1 — Interest income toast -->
       <div id="interest-toast"></div>
@@ -347,6 +394,7 @@
         <div class="stat" id="hud-diff" style="font-size:13px;opacity:.7"></div>
         <span id="hud-preview"></span>
         <button id="hud-mute">🔊</button>
+        <button id="hud-pause">⏸</button>
         <button id="hud-ff">⏩ 1×</button>
         <button id="hud-start">Start Wave</button>
       </div>

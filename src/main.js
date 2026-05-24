@@ -244,6 +244,7 @@ async function main() {
     deathParticles: [], // R3 — death burst particles
     totalWaves:  waves.length,
     gameOver:    false,
+    paused:      false,
   };
 
   const waveSpawner = new WaveSpawner(enemyPool, difficulty, waves);
@@ -406,7 +407,7 @@ async function main() {
   // --- Game loop ---
   const loop = new GameLoop({
     update(dt) {
-      if (state.gameOver) return;
+      if (state.gameOver || state.paused) return;
 
       if (state.waveActive && !state.spawnerDone) {
         state.spawnerDone = waveSpawner.update(dt, state.enemies);
@@ -511,6 +512,49 @@ async function main() {
   });
 
   loop.start();
+
+  // ── Pause menu ────────────────────────────────────────────────────────────
+  const pauseScreen  = document.getElementById('pause-screen');
+  const hudMuteBtn   = document.getElementById('hud-mute');
+  const pauseMuteBtn = document.getElementById('pause-mute-btn');
+  const volumeSlider = document.getElementById('pause-volume');
+
+  function syncMuteIcons() {
+    const icon = AudioManager.muted ? '🔇' : '🔊';
+    if (hudMuteBtn)   hudMuteBtn.textContent   = icon;
+    if (pauseMuteBtn) pauseMuteBtn.textContent = icon;
+  }
+
+  function openPause() {
+    state.paused = true;
+    volumeSlider.value = Math.round(AudioManager.volume * 100);
+    syncMuteIcons();
+    pauseScreen.style.display = 'flex';
+  }
+
+  function closePause() {
+    state.paused = false;
+    pauseScreen.style.display = 'none';
+  }
+
+  document.getElementById('hud-pause').addEventListener('click', openPause);
+  document.getElementById('pause-resume').addEventListener('click', closePause);
+
+  pauseMuteBtn.addEventListener('click', () => {
+    AudioManager.toggleMute();
+    syncMuteIcons();
+  });
+
+  volumeSlider.addEventListener('input', () => {
+    AudioManager.setVolume(volumeSlider.value / 100);
+  });
+
+  document.getElementById('pause-main-menu').addEventListener('click', () => {
+    // Save at the last completed wave; if mid-wave, step back so Continue replays it
+    const saveIndex = state.waveActive ? state.waveIndex - 1 : state.waveIndex;
+    saveGame({ ...state, waveIndex: saveIndex });
+    location.reload();
+  });
 }
 
 main().catch(console.error);
