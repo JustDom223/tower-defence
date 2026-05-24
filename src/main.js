@@ -267,7 +267,7 @@ async function main() {
   towerRenderer.init(renderer);
 
   const enemyRenderer = new EnemyRenderer();
-  enemyRenderer.init(renderer);
+  await enemyRenderer.init(renderer);
 
   const projectileRenderer = new ProjectileRenderer();
   projectileRenderer.init(renderer);

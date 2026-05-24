@@ -6,7 +6,7 @@ let nextId = 0;
 function make() {
   return {
     active: false, id: 0, type: '', hp: 0, maxHp: 0, speed: 0, reward: 0,
-    radius: 10, color: 0, spawns: null, resistance: null,
+    radius: 10, color: 0, sprite: null, spawns: null, resistance: null,
     distance: 0, prevDistance: 0,
     worldX: 0, worldY: 0,
     slowFactor: 1, slowTimer: 0,
@@ -25,6 +25,7 @@ function reset(e, { type, distance = 0 }) {
   e.reward = def.reward;
   e.radius = def.radius;
   e.color = def.color;
+  e.sprite = def.sprite ?? null;
   e.spawns = def.spawns ?? null;
   e.resistance = def.resistance ?? null;
   e.distance = distance;
