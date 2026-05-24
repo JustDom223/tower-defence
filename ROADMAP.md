@@ -15,7 +15,7 @@ This roadmap covers the work to take the game from "runs" to "genuinely replayab
 | R3 — Game feel | ✅ Done | — |
 | R4 — Audio | ✅ Done | mute + volume fully wired including pause-menu sync |
 | R5 — Hub polish | ✅ Done | — |
-| R6 — Clarity | 🚧 Partial | upgrade delta preview, locked-tower tooltip |
+| R6 — Clarity | ✅ Done | — |
 
 Also live (separate ticket doc): **`SPEC_pause-audio-bomb.md`** — pause menu, mute fix, bomb targeting. ⬜ Not started.
 
@@ -83,13 +83,13 @@ Also live (separate ticket doc): **`SPEC_pause-audio-bomb.md`** — pause menu, 
 
 ## Phase R6 — Clarity
 
-**Status: 🚧 Partial**
+**Status: ✅ Done**
 
 - [x] **Tower stat panel** (`#tower-stats`, `renderStats`) showing current DMG/RNG/RATE
 - [x] **Affordability greying** of unaffordable shop buttons (`.tower-unaffordable`)
 - [x] **Locked tower** styling in shop (`.tower-locked`, click ignored)
-- [ ] **Upgrade delta preview** — hovering a buyable tier shows the resulting stat (e.g. `→ DMG 34`)
-- [ ] **Locked-tower tooltip** — hovering a locked tower button shows "Unlock in the upgrade tree"
+- [x] **Upgrade delta preview** — buyable tier buttons show the resulting stat inline (e.g. `→ DMG 34`)
+- [x] **Locked-tower tooltip** — hovering a locked tower button shows "Unlock in the Upgrade Tree" (via `title` attr)
 
 ---
 
