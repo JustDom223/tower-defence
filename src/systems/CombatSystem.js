@@ -87,9 +87,9 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
         hit = true;
       }
     } else {
-      // Guard against pool recycling: the pool may return the same object for a new
-      // enemy after the original target died. ID equality proves it's still the same entity.
-      const targetLive = p.target && p.target.id === p.targetId && p.target.hp > 0;
+      // Guard against pool recycling (ID check) and enemies removed from play while
+      // still at full HP (active check — e.g. leaking through the end of the path).
+      const targetLive = p.target && p.target.id === p.targetId && p.target.hp > 0 && p.target.active;
 
       if (targetLive) {
         const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
@@ -104,7 +104,8 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
       if (targetLive) {
         const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
         if (dx * dx + dy * dy < HIT_DIST_SQ) hit = true;
-      } else if (p.x < -60 || p.x > 1340 || p.y < -60 || p.y > 780) {
+      } else {
+        // Target is gone — expire immediately rather than flying blind.
         hit = true;
       }
     }
@@ -140,7 +141,7 @@ function onHit(p, enemies, damageEvents) {
         applyDamage(e, p.damage, p.towerType, e.worldX, e.worldY, damageEvents);
       }
     }
-  } else if (p.target && p.target.hp > 0) {
+  } else if (p.target && p.target.id === p.targetId && p.target.hp > 0) {
     applyDamage(p.target, p.damage, p.towerType,
       p.target.worldX, p.target.worldY, damageEvents);
   }
