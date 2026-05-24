@@ -2,6 +2,27 @@ import { TOWER_TYPES }             from '../data/towers.js';
 import { MAX_TIER, CROSSPATH_CAP } from '../systems/UpgradeSystem.js';
 import AudioManager                from '../audio/AudioManager.js';
 
+/**
+ * R6 — Upgrade delta preview.
+ * Given the tower's current live stats and the tier's stat deltas, returns a
+ * short "→ STAT new-value" string showing the result after buying.
+ */
+function upgradeDeltaPreview(tower, tierStats) {
+  const parts = [];
+  if (tierStats.damage     != null) parts.push(`DMG ${tower.damage + tierStats.damage}`);
+  if (tierStats.range      != null) parts.push(`RNG ${tower.range  + tierStats.range}`);
+  if (tierStats.fireRate   != null) parts.push(`RATE ${(tower.fireRate  + tierStats.fireRate).toFixed(1)}/s`);
+  if (tierStats.aoeRadius  != null) parts.push(`AoE ${tower.aoeRadius  + tierStats.aoeRadius}`);
+  if (tierStats.globalRange)        parts.push('RNG ∞');
+  if (tierStats.slowFactor   != null) {
+    const newPct = Math.round((1 - (tower.slowFactor + tierStats.slowFactor)) * 100);
+    parts.push(`SLOW -${newPct}%`);
+  }
+  if (tierStats.slowDuration != null)
+    parts.push(`DUR ${(tower.slowDuration + tierStats.slowDuration).toFixed(1)}s`);
+  return parts.length ? `→ ${parts.join('  ')}` : '';
+}
+
 export class GameUI {
   #livesEl;
   #cashEl;
@@ -236,11 +257,13 @@ export class GameUI {
             if (crossLocked) {
               html += `<button class="upg-btn locked" disabled>🔒 ${tier.name}</button>`;
             } else if (cash >= tier.cost) {
+              const delta = upgradeDeltaPreview(tower, tier.stats);
               html += `<button class="upg-btn next" data-path="${pathChar}"
-                title="${tier.desc}">${tier.name} $${tier.cost}</button>`;
+                title="${tier.desc}">${tier.name} $${tier.cost}${delta ? `<span class="upg-delta">${delta}</span>` : ''}</button>`;
             } else {
+              const delta = upgradeDeltaPreview(tower, tier.stats);
               html += `<button class="upg-btn costly" data-path="${pathChar}"
-                title="Need $${tier.cost - cash} more">${tier.name} $${tier.cost}</button>`;
+                title="Need $${tier.cost - cash} more">${tier.name} $${tier.cost}${delta ? `<span class="upg-delta">${delta}</span>` : ''}</button>`;
             }
           } else {
             html += `<button class="upg-btn locked" disabled>${tier.name}</button>`;
