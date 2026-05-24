@@ -295,7 +295,7 @@
 
       /* ── R1 — Boss wave warning overlay ─────────────────────── */
       #boss-warning {
-        position: absolute; inset: 0; display: flex;
+        position: absolute; inset: 0; display: none;
         align-items: center; justify-content: center;
         pointer-events: none; opacity: 0;
         transition: opacity .3s ease;
@@ -303,6 +303,7 @@
       }
       #boss-warning.visible { opacity: 1; }
       #boss-warning .boss-text {
+        pointer-events: none;
         font-size: 42px; font-weight: 900; letter-spacing: .06em;
         color: #ff4444; text-shadow: 0 0 24px #ff000088, 0 0 8px #ff0000cc;
         animation: bossFlash .45s ease-in-out infinite alternate;
