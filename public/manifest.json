@@ -1,0 +1,11 @@
+{
+  "name": "Tower Defence",
+  "short_name": "TD",
+  "description": "A 10-map tower defence game with meta-progression.",
+  "start_url": ".",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#111827",
+  "theme_color": "#111827",
+  "icons": []
+}

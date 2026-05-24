@@ -468,6 +468,35 @@ async function main() {
     towerRenderer.setHoverTile(null);
   });
 
+  // MB4 — Touch input: forward touch events to the existing mouse/click handlers.
+  // getBoundingClientRect() already returns the post-CSS-transform rect, so the
+  // existing coordinate math (clientX - rect.left) * (width / rect.width) works
+  // correctly regardless of the CSS scale applied by the MB3 scaleGame() function.
+  function dispatchMouse(type, touch) {
+    renderer.canvas.dispatchEvent(new MouseEvent(type, {
+      bubbles: true, cancelable: true, view: window,
+      clientX: touch.clientX, clientY: touch.clientY,
+    }));
+  }
+  renderer.canvas.addEventListener('touchstart', e => {
+    e.preventDefault();
+    dispatchMouse('mousemove', e.changedTouches[0]); // show hover tile
+  }, { passive: false });
+  renderer.canvas.addEventListener('touchmove', e => {
+    e.preventDefault();
+    dispatchMouse('mousemove', e.changedTouches[0]); // update hover tile while dragging
+  }, { passive: false });
+  renderer.canvas.addEventListener('touchend', e => {
+    e.preventDefault();
+    dispatchMouse('click', e.changedTouches[0]);     // place tower or select
+    // Clear hover tile after tap so ghost doesn't linger
+    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+  }, { passive: false });
+  renderer.canvas.addEventListener('touchcancel', e => {
+    e.preventDefault();
+    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+  }, { passive: false });
+
   renderer.canvas.addEventListener('click', (e) => {
     const rect   = renderer.canvas.getBoundingClientRect();
     const scaleX = renderer.width  / rect.width;
