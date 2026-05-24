@@ -12,11 +12,11 @@ Three changes to the running game, plus one optional layout fix. Each task lists
 - [ ] Paused overlay with Resume / Settings / Main Menu
 - [ ] Main Menu saves the run (mid-wave → `waveIndex - 1`) then reloads; Continue resumes correctly
 
-**Ticket 2 — Mute + volume** · Status: ⬜ Not started
+**Ticket 2 — Mute + volume** · Status: 🚧 In progress
 
-- [ ] Add `pointer-events: all` to `#hud-mute` (the actual fix — handler already exists)
-- [ ] `AudioManager.setVolume` + a volume slider in the Settings section
-- [ ] HUD and pause-menu mute controls stay in sync
+- [x] Add `pointer-events: all` to `#hud-mute` (the actual fix — handler already exists)
+- [x] `AudioManager.setVolume` + a volume slider in the Settings section
+- [ ] HUD and pause-menu mute controls stay in sync (requires Ticket 1 pause menu)
 
 **Ticket 3 — Bomb targeting** · Status: ⬜ Not started
 

@@ -13,7 +13,7 @@ This roadmap covers the work to take the game from "runs" to "genuinely replayab
 | R1 — Content | ✅ Done | — |
 | R2 — Difficulty tiers | ✅ Done | — |
 | R3 — Game feel | ✅ Done | — |
-| R4 — Audio | 🚧 Partial | mute button click + volume control (see `SPEC_pause-audio-bomb.md`) |
+| R4 — Audio | 🚧 Partial | mute/volume wired (see `SPEC_pause-audio-bomb.md`); pause-menu sync pending |
 | R5 — Hub polish | ✅ Done | — |
 | R6 — Clarity | 🚧 Partial | upgrade delta preview, locked-tower tooltip |
 
