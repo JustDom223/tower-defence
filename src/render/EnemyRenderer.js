@@ -1,4 +1,4 @@
-import { Graphics, Sprite, Assets, Container, Texture } from 'pixi.js';
+import { Graphics, Sprite, Assets, Container } from 'pixi.js';
 import { positionAtDistance } from '../core/Path.js';
 
 // Vite resolves these to hashed asset URLs at build time
@@ -75,8 +75,11 @@ async function loadWithTransparentBg(url, threshold = 240) {
 
   ctx.putImageData(imageData, 0, 0);
 
-  // 3. Convert to a PixiJS texture via a data URL
-  return Texture.from(canvas);
+  // 3. Snapshot pixels into a data URL then load as a PixiJS texture.
+  //    Texture.from(canvas) can read a stale canvas in PixiJS 8; the data URL
+  //    captures the pixel data at this exact moment before anything else runs.
+  const dataUrl = canvas.toDataURL('image/png');
+  return Assets.load(dataUrl);
 }
 
 export class EnemyRenderer {
