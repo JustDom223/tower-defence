@@ -9,28 +9,41 @@ import { TowerRenderer }       from './render/TowerRenderer.js';
 import { ProjectileRenderer }  from './render/ProjectileRenderer.js';
 import { DamageNumberRenderer } from './render/DamageNumberRenderer.js';
 import { ParticleRenderer }     from './render/ParticleRenderer.js';
-import { MAPS }                from './data/maps.js';
-import { TOWER_TYPES }         from './data/towers.js';
-import { WAVES as WAVES_MAP1 } from './data/waves-map1.js';
-import { WAVES as WAVES_MAP2 } from './data/waves-map2.js';
-import { enemyPool }           from './entities/Enemy.js';
-import { createTower }         from './entities/Tower.js';
-import { updateMovement }      from './systems/MovementSystem.js';
-import { WaveSpawner }         from './systems/WaveSpawner.js';
-import { updateCombat }        from './systems/CombatSystem.js';
+import { MAPS, CAMPAIGN_ORDER } from './data/maps.js';
+import { TOWER_TYPES }          from './data/towers.js';
+import { WAVES as WAVES_MAP1 }  from './data/waves-map1.js';
+import { WAVES as WAVES_MAP2 }  from './data/waves-map2.js';
+import { WAVES as WAVES_MAP3 }  from './data/waves-map3.js';
+import { WAVES as WAVES_MAP4 }  from './data/waves-map4.js';
+import { WAVES as WAVES_MAP5 }  from './data/waves-map5.js';
+import { WAVES as WAVES_MAP6 }  from './data/waves-map6.js';
+import { WAVES as WAVES_MAP7 }  from './data/waves-map7.js';
+import { WAVES as WAVES_MAP8 }  from './data/waves-map8.js';
+import { WAVES as WAVES_MAP9 }  from './data/waves-map9.js';
+import { WAVES as WAVES_MAP10 } from './data/waves-map10.js';
+import { enemyPool }            from './entities/Enemy.js';
+import { createTower }          from './entities/Tower.js';
+import { updateMovement }       from './systems/MovementSystem.js';
+import { WaveSpawner }          from './systems/WaveSpawner.js';
+import { updateCombat }         from './systems/CombatSystem.js';
 import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
-import { GameUI }              from './ui/GameUI.js';
-import AudioManager            from './audio/AudioManager.js';
+import { GameUI }               from './ui/GameUI.js';
+import AudioManager             from './audio/AudioManager.js';
 import { saveGame, loadGame, clearSave } from './core/SaveSystem.js';
-import { DIFFICULTIES }               from './data/difficulties.js';
+import { DIFFICULTIES }         from './data/difficulties.js';
 import {
   loadProfile, saveProfile, resetProfile, defaultProfile,
   availableStars, isTowerUnlocked, isPathUnlocked,
-  recordMissionResult,
+  recordMissionResult, isMapUnlocked,
   UNLOCK_TREE, isNodeOwned, canUnlock, applyUnlock, respec,
 } from './core/Profile.js';
 
-const WAVES_BY_MAP = { map1: WAVES_MAP1, map2: WAVES_MAP2 };
+const WAVES_BY_MAP = {
+  map1: WAVES_MAP1,  map2: WAVES_MAP2,  map3: WAVES_MAP3,
+  map4: WAVES_MAP4,  map5: WAVES_MAP5,  map6: WAVES_MAP6,
+  map7: WAVES_MAP7,  map8: WAVES_MAP8,  map9: WAVES_MAP9,
+  map10: WAVES_MAP10,
+};
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -135,10 +148,26 @@ function updateMapSelectUI(profile) {
   // Available stars
   document.getElementById('map-avail-stars').textContent = availableStars(profile);
 
-  // M5 — per-map star ratings
-  for (const [mapKey, stars] of Object.entries(profile.missions)) {
-    const el = document.getElementById(`stars-${mapKey}`);
-    if (el) el.textContent = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+  // C3 — regenerate the map list from CAMPAIGN_ORDER
+  const list = document.getElementById('map-list');
+  if (list) {
+    list.innerHTML = '';
+    for (const mapKey of CAMPAIGN_ORDER) {
+      const mapDef  = MAPS[mapKey];
+      if (!mapDef) continue;
+      const stars   = profile.missions[mapKey] ?? 0;
+      const locked  = !isMapUnlocked(profile, mapKey, CAMPAIGN_ORDER);
+      const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+
+      const btn = document.createElement('button');
+      btn.className   = 'map-btn' + (locked ? ' map-btn-locked' : '');
+      btn.dataset.map = mapKey;
+      btn.disabled    = locked;
+      btn.innerHTML   = locked
+        ? `<span>🔒 ${mapDef.name}</span><span class="map-stars" style="color:#4b5563;font-size:11px">Clear prev. map to unlock</span>`
+        : `<span>🗺 ${mapDef.name}</span><span class="map-stars">${starStr}</span>`;
+      list.appendChild(btn);
+    }
   }
 
   // M5 — "new unlock" badge on upgrades button
@@ -154,9 +183,9 @@ function awaitMapSelect(profile) {
 
   return new Promise(resolve => {
     let resolved     = false;
-    let selectedDiff = 'normal'; // M4 — selected difficulty
+    let selectedDiff = 'normal'; // C0 — Normal is the default (Easy removed)
 
-    // M4 — difficulty selector buttons
+    // C0 — difficulty selector buttons (Normal/Hard only)
     document.querySelectorAll('[data-diff]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.diff === selectedDiff);
       btn.onclick = () => {
@@ -179,12 +208,21 @@ function awaitMapSelect(profile) {
       continueBtn.style.display = 'block';
       continueBtn.textContent   = `↩ Continue — ${mapName} (wave ${savedData.waveIndex + 2})`;
       // Restore saved difficulty (don't let player change it mid-run)
-      continueBtn.onclick = () => pickMap(savedData.mapKey, savedData, savedData.difficulty ?? 'normal');
+      const savedDiff = savedData.difficulty;
+      // C0 — remap legacy 'easy' saves to 'normal'
+      continueBtn.onclick = () => pickMap(
+        savedData.mapKey, savedData,
+        (savedDiff && DIFFICULTIES[savedDiff]) ? savedDiff : 'normal'
+      );
     }
 
-    document.querySelectorAll('.map-btn').forEach(btn => {
-      btn.onclick = () => { clearSave(); pickMap(btn.dataset.map, null, selectedDiff); };
-    });
+    // C1/C3 — map buttons are generated dynamically; bind after updateMapSelectUI
+    function bindMapBtns() {
+      document.querySelectorAll('#map-list .map-btn:not([disabled])').forEach(btn => {
+        btn.onclick = () => { clearSave(); pickMap(btn.dataset.map, null, selectedDiff); };
+      });
+    }
+    bindMapBtns();
 
     // Unlock tree
     document.getElementById('map-upgrades').onclick = () => {
@@ -197,6 +235,7 @@ function awaitMapSelect(profile) {
       document.getElementById('unlock-tree').style.display = 'none';
       document.getElementById('map-select').style.display = 'flex';
       updateMapSelectUI(profile);
+      bindMapBtns();
     };
 
     document.getElementById('tree-respec').onclick = () => {
@@ -219,7 +258,7 @@ async function main() {
   const { mapKey, savedData, diffKey } = await awaitMapSelect(profile);
   document.body.classList.add('game-active');
 
-  // M4 — resolve difficulty config
+  // C0 — resolve difficulty config; remap legacy 'easy' to 'normal'
   const difficulty = DIFFICULTIES[diffKey] ?? DIFFICULTIES.normal;
 
   const container = document.getElementById('game-container');
@@ -254,7 +293,9 @@ async function main() {
     paused:      false,
   };
 
-  const waveSpawner = new WaveSpawner(enemyPool, difficulty, waves);
+  // C2 — pass per-map HP curve multiplier to WaveSpawner
+  const mapHpMult   = mapDef.hpMult ?? 1;
+  const waveSpawner = new WaveSpawner(enemyPool, difficulty, waves, mapHpMult);
 
   // M4 — show difficulty badge in HUD
   document.getElementById('hud-diff').textContent = `${difficulty.emoji} ${difficulty.label}`;

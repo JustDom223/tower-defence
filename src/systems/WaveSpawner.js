@@ -1,6 +1,7 @@
 export class WaveSpawner {
   #pool;
   #difficulty;
+  #mapHpMult;
   #waves;
   #wave = null;
   #groupIndex = 0;
@@ -10,11 +11,13 @@ export class WaveSpawner {
   /**
    * @param {ObjectPool} enemyPool
    * @param {{ hpMult: number, speedMult: number }} difficulty  – from DIFFICULTIES
-   * @param {Array}  waves  – per-map wave definition array
+   * @param {Array}  waves      – per-map wave definition array
+   * @param {number} mapHpMult  – C2 per-map HP curve multiplier (from maps.js)
    */
-  constructor(enemyPool, difficulty = { hpMult: 1, speedMult: 1 }, waves = []) {
+  constructor(enemyPool, difficulty = { hpMult: 1, speedMult: 1 }, waves = [], mapHpMult = 1) {
     this.#pool       = enemyPool;
     this.#difficulty = difficulty;
+    this.#mapHpMult  = mapHpMult;
     this.#waves      = waves;
   }
 
@@ -37,9 +40,10 @@ export class WaveSpawner {
 
       if (this.#spawnedInGroup < group.count) {
         const enemy = this.#pool.acquire({ type: group.type });
-        // M4 — scale HP and speed by difficulty multipliers
-        enemy.hp    = Math.ceil(enemy.hp    * this.#difficulty.hpMult);
-        enemy.maxHp = Math.ceil(enemy.maxHp * this.#difficulty.hpMult);
+        // M4/C2 — scale HP by difficulty × per-map curve; speed by difficulty only
+        const hpScale = this.#difficulty.hpMult * this.#mapHpMult;
+        enemy.hp    = Math.ceil(enemy.hp    * hpScale);
+        enemy.maxHp = Math.ceil(enemy.maxHp * hpScale);
         enemy.speed = enemy.speed * this.#difficulty.speedMult;
         enemies.push(enemy);
         this.#spawnedInGroup++;
