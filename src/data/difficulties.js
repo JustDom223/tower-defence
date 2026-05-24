@@ -1,19 +1,12 @@
 /**
- * Difficulty tiers.
+ * Difficulty tiers — Normal / Hard only (Easy removed in C0).
  * hpMult / speedMult are applied to each enemy at spawn time (in WaveSpawner).
  * starCap is the maximum stars a player can earn on this difficulty.
  * startingCash adjusts the opening economy.
+ *
+ * Hard is a steep jump by design — the only route to the 3rd star per map.
  */
 export const DIFFICULTIES = {
-  easy: {
-    key:          'easy',
-    label:        'Easy',
-    emoji:        '🟢',
-    hpMult:       0.7,
-    speedMult:    0.85,
-    starCap:      1,
-    startingCash: 200,
-  },
   normal: {
     key:          'normal',
     label:        'Normal',
@@ -27,8 +20,8 @@ export const DIFFICULTIES = {
     key:          'hard',
     label:        'Hard',
     emoji:        '🔴',
-    hpMult:       1.4,
-    speedMult:    1.15,
+    hpMult:       1.9,
+    speedMult:    1.25,
     starCap:      3,
     startingCash: 125,
   },

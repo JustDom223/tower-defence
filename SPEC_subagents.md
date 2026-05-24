@@ -2,15 +2,15 @@
 
 > **Progress tracking — keep this current.** Tick each item (`[ ]` → `[x]`) and update the **Status** line (⬜ · 🚧 · ✅) as you go.
 
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
 Goal: keep the main implementer on a strong model, but offload **verification** to a low-cost model (Haiku) so checking work doesn't burn tokens or clutter the main context. Claude Code supports this via subagent definitions in `.claude/agents/*.md` with a `model:` field, auto-invoked by their `description`.
 
 ## Ticket — set up the `verifier` subagent
 
-- [ ] Create the file **`.claude/agents/verifier.md`** with exactly the contents in the block below. *(This must be created by Claude Code / you — the planning agent can't write into the protected `.claude/` folder.)*
-- [ ] After implementing any ticket, **delegate the check to the `verifier` subagent** (it runs on Haiku) before merging to `main`.
-- [ ] Confirm it works: implement a trivial change on a branch, ask the verifier to check it against its ticket, and confirm it returns a PASS/FAIL report.
+- [x] Create the file **`.claude/agents/verifier.md`** with exactly the contents in the block below. *(This must be created by Claude Code / you — the planning agent can't write into the protected `.claude/` folder.)*
+- [x] After implementing any ticket, **delegate the check to the `verifier` subagent** (it runs on Haiku) before merging to `main`.
+- [x] Confirm it works: implement a trivial change on a branch, ask the verifier to check it against its ticket, and confirm it returns a PASS/FAIL report.
 
 ### Contents for `.claude/agents/verifier.md`
 

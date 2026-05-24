@@ -8,26 +8,26 @@ Turn the two stand-alone maps into a 10-map campaign you unlock in order: cleari
 
 | Ticket | What | Status |
 |---|---|---|
-| C0 | Difficulty rework — Normal/Hard only, Hard is a big leap | ⬜ Not started |
-| C1 | Map unlock system (≥1 star gates the next map) | ⬜ Not started |
-| C2 | Campaign difficulty curve (per-map multiplier) | ⬜ Not started |
-| C3 | Hub UI for 10 maps (locks + requirement hints) | ⬜ Not started |
-| C4 | Author the 8 new maps (layouts + wave arcs) | ⬜ Not started |
+| C0 | Difficulty rework — Normal/Hard only, Hard is a big leap | ✅ Done |
+| C1 | Map unlock system (≥1 star gates the next map) | ✅ Done |
+| C2 | Campaign difficulty curve (per-map multiplier) | ✅ Done |
+| C3 | Hub UI for 10 maps (locks + requirement hints) | ✅ Done |
+| C4 | Author the 8 new maps (layouts + wave arcs) | ✅ Done |
 
 ---
 
 ## Ticket C0 — Difficulty rework: Normal + Hard only
 
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
 Drop Easy. Two tiers, with Hard a *real* leap so players return to maps once stronger (it's the only route to the 3rd star).
 
-- [ ] `src/data/difficulties.js`: remove `easy`. Retune:
+- [x] `src/data/difficulties.js`: remove `easy`. Retune:
   - `normal`: `hpMult 1.0, speedMult 1.0, starCap 2, startingCash 150` (baseline)
   - `hard`: `hpMult 1.9, speedMult 1.25, starCap 3, startingCash 125` (a steep jump — tune to taste)
-- [ ] `index.html`: remove the 🟢 Easy button from `#diff-selector`; default selection stays 🟡 Normal.
-- [ ] `src/main.js`: default `selectedDiff = 'normal'`; ensure no `'easy'` references remain (incl. `savedData.difficulty` fallback → `'normal'`).
-- [ ] Confirm `computeStars` clamps to the difficulty's `starCap` (Normal → max 2, Hard → max 3). The 3rd star is unreachable on Normal by design.
+- [x] `index.html`: remove the 🟢 Easy button from `#diff-selector`; default selection stays 🟡 Normal.
+- [x] `src/main.js`: default `selectedDiff = 'normal'`; ensure no `'easy'` references remain (incl. `savedData.difficulty` fallback → `'normal'`).
+- [x] Confirm `computeStars` clamps to the difficulty's `starCap` (Normal → max 2, Hard → max 3). The 3rd star is unreachable on Normal by design.
 
 **Acceptance:** only Normal/Hard are selectable; Hard is clearly much harder; a flawless Normal clear gives 2 stars, and the 3rd star requires Hard.
 
@@ -35,14 +35,14 @@ Drop Easy. Two tiers, with Hard a *real* leap so players return to maps once str
 
 ## Ticket C1 — Map unlock system
 
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
 Sequential unlock keyed off the star ratings already in `Profile.js` (`profile.missions[mapKey]`).
 
-- [ ] Define the campaign order, e.g. in `src/data/maps.js` give each map an `order: 1..10`, or export a `CAMPAIGN_ORDER = ['map1', … , 'map10']` array.
-- [ ] In `Profile.js` add `isMapUnlocked(profile, mapKey)`: the first map is always unlocked; any later map is unlocked iff `(.missions[previousMapKey] ?? 0) >= 1`. Use `?? 0` so maps absent from `missions` read as 0 (no need to pre-list all 10 in `defaultProfile`).
-- [ ] Gate map selection in `main.js` (`awaitMapSelect`): clicking a locked map does nothing.
-- [ ] Continue/saved-game flow is unaffected (a saved run resumes regardless of unlock state).
+- [x] Define the campaign order, e.g. in `src/data/maps.js` give each map an `order: 1..10`, or export a `CAMPAIGN_ORDER = ['map1', … , 'map10']` array.
+- [x] In `Profile.js` add `isMapUnlocked(profile, mapKey)`: the first map is always unlocked; any later map is unlocked iff `(.missions[previousMapKey] ?? 0) >= 1`. Use `?? 0` so maps absent from `missions` read as 0 (no need to pre-list all 10 in `defaultProfile`).
+- [x] Gate map selection in `main.js` (`awaitMapSelect`): clicking a locked map does nothing.
+- [x] Continue/saved-game flow is unaffected (a saved run resumes regardless of unlock state).
 
 **Acceptance:** only map 1 is playable on a fresh profile; earning ≥1 star on it unlocks map 2; and so on through map 10.
 
@@ -50,12 +50,12 @@ Sequential unlock keyed off the star ratings already in `Profile.js` (`profile.m
 
 ## Ticket C2 — Campaign difficulty curve
 
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
 Each map is inherently harder than the last, independent of (and multiplied by) the Normal/Hard selector.
 
-- [ ] In `src/data/maps.js` add a per-map `hpMult` campaign factor (the curve below). Wave **size/composition** growth is authored into each map's wave file (C4); this `hpMult` carries the HP ramp cleanly.
-- [ ] In `WaveSpawner`, multiply enemy HP by `mapHpMult × difficulty.hpMult` at spawn (it already applies `difficulty.hpMult`; fold in the map factor). Speed stays driven by the selector only.
+- [x] In `src/data/maps.js` add a per-map `hpMult` campaign factor (the curve below). Wave **size/composition** growth is authored into each map's wave file (C4); this `hpMult` carries the HP ramp cleanly.
+- [x] In `WaveSpawner`, multiply enemy HP by `mapHpMult × difficulty.hpMult` at spawn (it already applies `difficulty.hpMult`; fold in the map factor). Speed stays driven by the selector only.
 
 Suggested curve (`hpMult` by map order — tune later):
 
@@ -72,13 +72,13 @@ So map 10 on Hard ≈ `2.50 × 1.9 ≈ 4.75×` base HP — a deliberate endgame 
 
 ## Ticket C3 — Hub UI for 10 maps
 
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
 The map list grows from 2 to 10 — generate it instead of hard-coding buttons.
 
-- [ ] Replace the two hard-coded `.map-btn`s in `index.html` with an empty `#map-list` container the JS fills from `CAMPAIGN_ORDER` + `maps.js`.
-- [ ] In `main.js` (`updateMapSelectUI`), render each map in order with: name, its star rating (★/☆ — already computed from `profile.missions`), and a locked state (lock icon + a hint like "★ on <prev map> to unlock") when `!isMapUnlocked`.
-- [ ] Keep the existing "Continue saved game", "Unlock Tree", and difficulty selector. Consider making the list scrollable (10 rows).
+- [x] Replace the two hard-coded `.map-btn`s in `index.html` with an empty `#map-list` container the JS fills from `CAMPAIGN_ORDER` + `maps.js`.
+- [x] In `main.js` (`updateMapSelectUI`), render each map in order with: name, its star rating (★/☆ — already computed from `profile.missions`), and a locked state (lock icon + a hint like "★ on <prev map> to unlock") when `!isMapUnlocked`.
+- [x] Keep the existing "Continue saved game", "Unlock Tree", and difficulty selector. Consider making the list scrollable (10 rows).
 
 **Acceptance:** the hub shows all 10 maps in order with correct lock states, requirement hints, and star ratings.
 
@@ -86,14 +86,14 @@ The map list grows from 2 to 10 — generate it instead of hard-coding buttons.
 
 ## Ticket C4 — Author the 8 new maps
 
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
 Add maps 3–10 as data only (no core changes — see `CONTENT_GUIDE.md`). Each gets a `maps.js` entry (name, `order`, `hpMult`, `waypoints`) and a `src/data/waves-mapN.js` 10-wave file ending in a boss finale. Wire all ten into `WAVES_BY_MAP` in `main.js`.
 
-- [ ] `maps.js` entries for map3–map10 (waypoints in the Designs section below)
-- [ ] `waves-map3.js` … `waves-map10.js` (arcs in the Designs section below)
-- [ ] `main.js`: extend `WAVES_BY_MAP` to all 10; remove any 2-map assumptions
-- [ ] Playtest each new map to wave 10 on Normal and Hard
+- [x] `maps.js` entries for map3–map10 (waypoints in the Designs section below)
+- [x] `waves-map3.js` … `waves-map10.js` (arcs in the Designs section below)
+- [x] `main.js`: extend `WAVES_BY_MAP` to all 10; remove any 2-map assumptions
+- [x] Playtest each new map to wave 10 on Normal and Hard
 
 **Acceptance:** all 10 maps playable end-to-end with a boss finale; campaign curve felt across the set.
 

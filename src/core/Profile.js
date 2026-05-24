@@ -15,7 +15,9 @@ export function defaultProfile() {
   return {
     version: 1,
     spent: 0,
-    missions: { map1: 0, map2: 0 },
+    // All 10 maps; absent keys default to 0 via ?? operator in isMapUnlocked
+    missions: { map1: 0, map2: 0, map3: 0, map4: 0, map5: 0,
+                map6: 0, map7: 0, map8: 0, map9: 0, map10: 0 },
     unlocks: {
       towers: { dart: true,  bomb: false, frost: false, marksman: false },
       paths:  {
@@ -72,6 +74,21 @@ export function recordMissionResult(p, mapKey, stars) {
   const prev = p.missions[mapKey] ?? 0;
   if (stars > prev) { p.missions[mapKey] = stars; return true; }
   return false;
+}
+
+/**
+ * C1 — Map unlock gate.
+ * Map 1 is always unlocked. Each subsequent map (by CAMPAIGN_ORDER) requires ≥1
+ * star on the previous map. CAMPAIGN_ORDER is passed in to avoid a circular import.
+ * @param {object}   profile
+ * @param {string}   mapKey
+ * @param {string[]} campaignOrder  — imported from data/maps.js
+ */
+export function isMapUnlocked(profile, mapKey, campaignOrder) {
+  const idx = campaignOrder.indexOf(mapKey);
+  if (idx <= 0) return true; // map1 always unlocked
+  const prevKey = campaignOrder[idx - 1];
+  return (profile.missions[prevKey] ?? 0) >= 1;
 }
 
 // ── Unlock tree ───────────────────────────────────────────────────────────────
