@@ -1,0 +1,133 @@
+import { selectTarget } from './TargetingSystem.js';
+import { projectilePool } from '../entities/Projectile.js';
+import AudioManager from '../audio/AudioManager.js';
+
+const HIT_DIST_SQ    = 12 * 12;
+const FLASH_DURATION = 0.12;
+
+const SHOT_SOUND = {
+  dart:     'dart-shot',
+  bomb:     'dart-shot',    // bomb uses the same tick; explosion plays on hit
+  frost:    'frost-pulse',
+  marksman: 'marksman-shot',
+};
+
+/**
+ * @param {Array} damageEvents  – shared array; push { x, y, amount, full, t } on each hit.
+ *   `full` = raw damage before resistance (used by DamageNumberRenderer for colour coding).
+ */
+export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
+  for (const tower of towers) {
+    if (tower.cooldown > 0) { tower.cooldown -= dt; continue; }
+
+    if (tower.isSlow) {
+      // R3 — rotate slow towers toward nearest in-range enemy
+      let nearest = null, nearestDSq = Infinity;
+      const rSq = tower.range * tower.range;
+      for (const e of enemies) {
+        const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
+        const dSq = dx * dx + dy * dy;
+        if (dSq < nearestDSq && dSq <= rSq) { nearest = e; nearestDSq = dSq; }
+      }
+      if (nearest) tower.angle = Math.atan2(nearest.worldY - tower.y, nearest.worldX - tower.x);
+      applySlow(tower, enemies);
+      AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
+      tower.cooldown = 1 / tower.fireRate;
+      continue;
+    }
+
+    const target = selectTarget(tower, enemies);
+    if (!target) continue;
+
+    // R3 — point the tower barrel toward its target
+    tower.angle = Math.atan2(target.worldY - tower.y, target.worldX - tower.x);
+
+    tower.cooldown = 1 / tower.fireRate;
+    AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
+    projectiles.push(projectilePool.acquire({
+      x: tower.x, y: tower.y, target,
+      speed:     tower.projSpeed,
+      damage:    tower.damage,
+      aoeRadius: tower.aoeRadius,
+      towerType: tower.type,
+    }));
+  }
+
+  moveAndHitProjectiles(projectiles, enemies, damageEvents);
+}
+
+function applySlow(tower, enemies) {
+  const rSq = tower.range * tower.range;
+  for (const e of enemies) {
+    const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
+    if (dx * dx + dy * dy <= rSq) {
+      e.slowFactor = Math.min(e.slowFactor, tower.slowFactor);
+      e.slowTimer  = Math.max(e.slowTimer,  tower.slowDuration);
+    }
+  }
+}
+
+function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
+  for (let i = projectiles.length - 1; i >= 0; i--) {
+    const p = projectiles[i];
+    p.prevX = p.x; p.prevY = p.y;
+
+    // Guard against pool recycling: the pool may return the same object for a new
+    // enemy after the original target died. ID equality proves it's still the same entity.
+    const targetLive = p.target && p.target.id === p.targetId && p.target.hp > 0;
+
+    if (targetLive) {
+      const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      p.vx = (dx / len) * p.speed;
+      p.vy = (dy / len) * p.speed;
+    }
+
+    const dt = 1 / 60;
+    p.x += p.vx * dt;
+    p.y += p.vy * dt;
+
+    let hit = false;
+    if (targetLive) {
+      const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
+      if (dx * dx + dy * dy < HIT_DIST_SQ) hit = true;
+    } else if (p.x < -60 || p.x > 1340 || p.y < -60 || p.y > 780) {
+      hit = true;
+    }
+
+    if (hit) {
+      onHit(p, enemies, damageEvents);
+      projectilePool.release(p);
+      projectiles.splice(i, 1);
+    }
+  }
+}
+
+/** Apply damage respecting per-enemy resistance vs the tower type that fired. */
+function applyDamage(e, rawDamage, towerType, hitX, hitY, damageEvents) {
+  const mult   = e.resistance?.[towerType] ?? 1;
+  const damage = mult < 1 ? Math.ceil(rawDamage * mult) : rawDamage;
+  e.hp = Math.max(0, e.hp - damage);
+  e.flashTimer = FLASH_DURATION;
+  if (damageEvents) {
+    damageEvents.push({ x: hitX, y: hitY - e.radius, amount: damage, full: rawDamage, t: 0 });
+  }
+}
+
+function onHit(p, enemies, damageEvents) {
+  if (p.aoeRadius > 0) {
+    // Bomb — play explosion sound on impact
+    AudioManager.play('bomb-explode');
+    const rSq = p.aoeRadius * p.aoeRadius;
+    for (const e of enemies) {
+      if (e.hp <= 0) continue;
+      const dx = e.worldX - p.x, dy = e.worldY - p.y;
+      if (dx * dx + dy * dy <= rSq) {
+        applyDamage(e, p.damage, p.towerType, e.worldX, e.worldY, damageEvents);
+      }
+    }
+  } else if (p.target && p.target.hp > 0) {
+    applyDamage(p.target, p.damage, p.towerType,
+      p.target.worldX, p.target.worldY, damageEvents);
+  }
+}

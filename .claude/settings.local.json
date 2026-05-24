@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install *)",
+      "PowerShell($node = Get-Command node -ErrorAction SilentlyContinue; if \\($node\\) { $node.Source } else { \"node not found\" }; $env:PATH -split ';' | Where-Object { $_ -match 'node|nvm' })",
+      "PowerShell(Get-ChildItem \"C:\\\\Program Files\\\\nodejs\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"$env:APPDATA\\\\npm\" -ErrorAction SilentlyContinue | Select-Object Name; Get-ChildItem \"$env:ProgramFiles\\\\nodejs\" -ErrorAction SilentlyContinue -Filter \"node.exe\" | Select-Object FullName; $env:PATH)",
+      "PowerShell($cmds = @\\('bun', 'deno', 'pnpm', 'yarn'\\); foreach \\($c in $cmds\\) { $r = Get-Command $c -ErrorAction SilentlyContinue; if \\($r\\) { \"$c found at $\\($r.Source\\)\" } else { \"$c not found\" } })",
+      "PowerShell($py = Get-Command python -ErrorAction SilentlyContinue; if \\($py\\) { $py.Source; python --version } else { $p3 = Get-Command python3 -ErrorAction SilentlyContinue; if \\($p3\\) { $p3.Source; python3 --version } else { \"Python not found\" } })",
+      "PowerShell(Get-Command winget -ErrorAction SilentlyContinue)",
+      "PowerShell(Get-Command choco -ErrorAction SilentlyContinue)",
+      "mcp__Claude_Preview__preview_start"
+    ]
+  }
+}

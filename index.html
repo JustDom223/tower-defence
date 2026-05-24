@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tower Defence</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body {
+        background: #111827;
+        display: flex; justify-content: center; align-items: center;
+        min-height: 100vh; overflow: hidden;
+        font-family: system-ui, sans-serif; color: #fff;
+      }
+      #game-container { position: relative; user-select: none; }
+      canvas { display: block; }
+
+      /* ── HUD bar (top) ──────────────────────────────────────── */
+      #hud {
+        position: absolute; top: 0; left: 0; right: 0;
+        display: flex; align-items: center; gap: 16px;
+        background: rgba(0,0,0,.72); padding: 7px 14px;
+        pointer-events: none; font-size: 15px; font-weight: 600;
+      }
+      .stat { display: flex; align-items: center; gap: 5px; }
+      #hud-start, #hud-ff {
+        pointer-events: all; border: none; color: #fff;
+        padding: 5px 12px; border-radius: 6px; cursor: pointer;
+        font-weight: 700; font-size: 13px;
+      }
+      #hud-start { margin-left: auto; background: #22c55e; }
+      #hud-start:disabled { background: #4b5563; cursor: default; }
+      #hud-ff { background: #374151; }
+      #hud-ff.active { background: #7c3aed; }
+
+      /* ── Tower shop (bottom) ────────────────────────────────── */
+      #tower-shop {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        display: flex; gap: 8px; align-items: center;
+        background: rgba(0,0,0,.72); padding: 8px 14px;
+      }
+      .tower-btn {
+        background: #1f2937; border: 2px solid #374151; color: #e5e7eb;
+        padding: 5px 11px; border-radius: 7px; cursor: pointer; font-size: 13px;
+        transition: border-color .1s, opacity .1s;
+      }
+      .tower-btn:hover  { border-color: #6b7280; }
+      .tower-btn.selected { border-color: #facc15; color: #facc15; }
+      /* M1 — locked tower in shop */
+      .tower-btn.tower-locked {
+        opacity: 0.35; cursor: not-allowed;
+        border-color: #374151 !important; color: #6b7280 !important;
+      }
+      /* R6 — unaffordable (unlocked but can't buy right now) */
+      .tower-btn.tower-unaffordable {
+        opacity: 0.5; border-color: #4b5563 !important; color: #6b7280 !important;
+      }
+
+      /* ── R3 — Wave preview bar (bottom of HUD) ─────────────── */
+      #hud-preview {
+        font-size: 12px; color: #94a3b8; margin-left: 4px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        max-width: 280px;
+      }
+
+      /* ── Tower panel (right side, shows on tower select) ───── */
+      #tower-panel {
+        position: absolute; right: 10px; top: 46px;
+        background: rgba(15,23,42,.9); border: 1px solid #334155;
+        border-radius: 9px; padding: 12px 14px; min-width: 270px; display: none;
+      }
+      #tower-name { display: block; font-size: 14px; font-weight: 700;
+                    margin-bottom: 8px; letter-spacing: .03em; }
+      .target-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+      .target-btn {
+        background: #1e293b; border: 1px solid #334155; color: #94a3b8;
+        padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+      }
+      .target-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
+      #sell-btn {
+        width: 100%; background: #dc2626; border: none; color: #fff;
+        padding: 5px; border-radius: 6px; cursor: pointer; font-size: 12px;
+        font-weight: 600;
+      }
+
+      /* ── R6 — Tower stat strip ──────────────────────────────── */
+      #tower-stats {
+        display: flex; gap: 10px; flex-wrap: wrap;
+        font-size: 11px; color: #94a3b8;
+        margin-bottom: 6px; padding: 4px 6px;
+        background: #0f172a; border-radius: 5px;
+      }
+      #tower-stats b { color: #e2e8f0; }
+
+      /* ── Upgrade paths ──────────────────────────────────────── */
+      #upgrade-paths { display: flex; gap: 6px; margin-bottom: 8px; }
+      .upgrade-col { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+      .path-label {
+        font-size: 10px; color: #94a3b8; text-align: center;
+        margin-bottom: 2px; font-weight: 700; letter-spacing: .06em;
+        text-transform: uppercase;
+      }
+      .upg-btn {
+        font-size: 10px; border-radius: 4px; padding: 4px 6px;
+        border: 1px solid transparent; line-height: 1.3; text-align: left;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        cursor: default; width: 100%;
+      }
+      .upg-btn.bought  { background: #14532d; border-color: #22c55e; color: #86efac; }
+      .upg-btn.next    { background: #1c1917; border-color: #eab308; color: #fef08a; cursor: pointer; }
+      .upg-btn.next:hover { background: #292524; }
+      .upg-btn.costly  { background: #1c1917; border-color: #7f1d1d; color: #fca5a5; cursor: pointer; }
+      .upg-btn.locked  { background: #0f172a; border-color: #1e293b; color: #334155; }
+
+      /* ── Map select overlay ─────────────────────────────────── */
+      #map-select {
+        position: absolute; inset: 0;
+        background: rgba(0,0,0,.88);
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 20;
+      }
+      #map-panel {
+        background: rgba(15,23,42,.97); border: 1px solid #334155;
+        border-radius: 14px; padding: 30px 36px; text-align: center; min-width: 300px;
+      }
+      #map-panel h2 { font-size: 20px; margin-bottom: 4px; letter-spacing: .04em; }
+      #map-stars-info {
+        font-size: 13px; color: #facc15; margin-bottom: 10px; font-weight: 700;
+      }
+      /* M4 — difficulty selector */
+      #diff-selector { display: flex; gap: 6px; margin-bottom: 12px; }
+      .diff-btn {
+        flex: 1; background: #1f2937; border: 1px solid #374151; color: #9ca3af;
+        padding: 6px 4px; border-radius: 6px; cursor: pointer; font-size: 12px;
+        transition: border-color .1s, color .1s;
+      }
+      .diff-btn:hover  { border-color: #6b7280; color: #e5e7eb; }
+      .diff-btn.active { border-color: #facc15; color: #facc15; background: #1c1917; }
+      /* M5 — map buttons with star ratings */
+      .map-btn {
+        display: flex; justify-content: space-between; align-items: center;
+        width: 100%;
+        background: #1f2937; border: 2px solid #374151; color: #e5e7eb;
+        padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px;
+        margin-bottom: 8px; transition: border-color .1s;
+      }
+      .map-btn:hover { border-color: #22c55e; color: #86efac; }
+      .map-stars { font-size: 12px; color: #facc15; letter-spacing: .05em; }
+      #map-continue {
+        display: none; width: 100%;
+        background: #1e3a5f; border: 2px solid #3b82f6; color: #93c5fd;
+        padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;
+        margin-top: 4px; font-weight: 600; text-align: left;
+      }
+      #map-continue:hover { border-color: #60a5fa; }
+      #map-upgrades {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        width: 100%; margin-top: 12px;
+        background: transparent; border: 1px solid #4b5563; color: #9ca3af;
+        padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+        transition: border-color .1s, color .1s;
+      }
+      #map-upgrades:hover { border-color: #facc15; color: #facc15; }
+      #upgrades-badge {
+        display: none; background: #facc15; color: #0f172a;
+        border-radius: 99px; font-size: 10px; font-weight: 800;
+        padding: 1px 6px; line-height: 1.4;
+      }
+
+      /* ── End screen overlay ─────────────────────────────────── */
+      #end-screen {
+        position: absolute; inset: 0;
+        background: rgba(0,0,0,.82);
+        display: none; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 20;
+      }
+      #end-panel {
+        background: rgba(15,23,42,.97); border: 1px solid #334155;
+        border-radius: 14px; padding: 36px 48px; text-align: center;
+      }
+      #end-title  { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+      #end-msg    { font-size: 14px; color: #94a3b8; margin-bottom: 10px; }
+      /* M2 — star display */
+      #end-stars-row { font-size: 26px; letter-spacing: .12em; color: #facc15;
+                        margin-bottom: 4px; min-height: 34px; }
+      #end-stars-msg { font-size: 12px; color: #94a3b8; margin-bottom: 12px; min-height: 18px; }
+      #end-score-line { font-size: 16px; margin-bottom: 20px; }
+      #end-score-line strong { color: #facc15; }
+      #end-restart {
+        background: #22c55e; border: none; color: #fff;
+        padding: 10px 28px; border-radius: 8px; cursor: pointer;
+        font-size: 15px; font-weight: 700;
+      }
+      #end-restart:hover { background: #16a34a; }
+
+      /* ── Unlock tree overlay (M3) ───────────────────────────── */
+      #unlock-tree {
+        position: absolute; inset: 0;
+        background: rgba(0,0,0,.88);
+        display: none; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 20;
+      }
+      #tree-panel {
+        background: rgba(15,23,42,.97); border: 1px solid #334155;
+        border-radius: 14px; padding: 28px 32px; min-width: 340px; max-width: 440px; width: 90%;
+      }
+      #tree-header { display: flex; justify-content: space-between; align-items: center;
+                     margin-bottom: 16px; }
+      #tree-header h2 { font-size: 18px; font-weight: 800; }
+      #tree-stars-count { font-size: 15px; color: #facc15; font-weight: 700; }
+      #tree-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; }
+      .tree-node {
+        display: flex; align-items: center; gap: 8px;
+        background: #0f172a; border: 1px solid #1e293b;
+        border-radius: 7px; padding: 9px 12px;
+      }
+      .tree-node.owned    { border-color: #22c55e; background: #052e16; }
+      .tree-node.prereq-locked { opacity: 0.45; }
+      .tree-node-icon  { font-size: 16px; min-width: 20px; text-align: center; }
+      .tree-node-info  { flex: 1; }
+      .tree-node-label { font-size: 13px; font-weight: 600; }
+      .tree-node-sub   { font-size: 11px; color: #64748b; margin-top: 1px; }
+      .tree-node-cost  { font-size: 13px; color: #facc15; font-weight: 700;
+                          white-space: nowrap; margin-right: 6px; }
+      .tree-buy-btn {
+        background: #1e3a2f; border: 1px solid #22c55e; color: #86efac;
+        padding: 4px 12px; border-radius: 5px; cursor: pointer; font-size: 12px;
+        font-weight: 600; white-space: nowrap;
+      }
+      .tree-buy-btn:hover:not([disabled]) { background: #166534; }
+      .tree-buy-btn[disabled] {
+        background: #1f2937; border-color: #374151; color: #4b5563; cursor: default;
+      }
+      #tree-footer { display: flex; gap: 8px; }
+      #tree-respec {
+        flex: 1; background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5;
+        padding: 8px; border-radius: 7px; cursor: pointer; font-size: 13px;
+      }
+      #tree-respec:hover { background: #7f1d1d; }
+      #tree-close {
+        flex: 1; background: #1f2937; border: 1px solid #374151; color: #9ca3af;
+        padding: 8px; border-radius: 7px; cursor: pointer; font-size: 13px;
+      }
+      #tree-close:hover { border-color: #6b7280; color: #e5e7eb; }
+
+      /* ── R1 — Interest toast ────────────────────────────────── */
+      #interest-toast {
+        position: absolute; bottom: 58px; left: 50%; transform: translateX(-50%);
+        background: rgba(20,83,45,.92); border: 1px solid #22c55e; color: #86efac;
+        padding: 6px 18px; border-radius: 20px; font-size: 13px; font-weight: 700;
+        pointer-events: none; opacity: 0;
+        transition: opacity .25s ease, transform .25s ease;
+        z-index: 10;
+      }
+      #interest-toast.visible {
+        opacity: 1; transform: translateX(-50%) translateY(-4px);
+      }
+
+      /* ── R1 — Boss wave warning overlay ─────────────────────── */
+      #boss-warning {
+        position: absolute; inset: 0; display: flex;
+        align-items: center; justify-content: center;
+        pointer-events: none; opacity: 0;
+        transition: opacity .3s ease;
+        z-index: 15;
+      }
+      #boss-warning.visible { opacity: 1; }
+      #boss-warning .boss-text {
+        font-size: 42px; font-weight: 900; letter-spacing: .06em;
+        color: #ff4444; text-shadow: 0 0 24px #ff000088, 0 0 8px #ff0000cc;
+        animation: bossFlash .45s ease-in-out infinite alternate;
+      }
+      @keyframes bossFlash {
+        from { transform: scale(1);    opacity: 1; }
+        to   { transform: scale(1.06); opacity: .7; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="game-container">
+
+      <!-- R1 — Interest income toast -->
+      <div id="interest-toast"></div>
+
+      <!-- R1 — Boss wave announcement overlay -->
+      <div id="boss-warning"><span class="boss-text">⚠ BOSS WAVE!</span></div>
+
+      <!-- Map selection (shown before game starts) -->
+      <div id="map-select">
+        <div id="map-panel">
+          <h2>Tower Defence</h2>
+          <div id="map-stars-info">★ <span id="map-avail-stars">0</span> stars available</div>
+          <!-- M4 — difficulty selector -->
+          <div id="diff-selector">
+            <button class="diff-btn" data-diff="easy">🟢 Easy</button>
+            <button class="diff-btn active" data-diff="normal">🟡 Normal</button>
+            <button class="diff-btn" data-diff="hard">🔴 Hard</button>
+          </div>
+          <!-- M5 — map buttons with star ratings -->
+          <button class="map-btn" data-map="map1">
+            <span>🗺 Serpentine</span>
+            <span class="map-stars" id="stars-map1">☆☆☆</span>
+          </button>
+          <button class="map-btn" data-map="map2">
+            <span>🗺 Zigzag</span>
+            <span class="map-stars" id="stars-map2">☆☆☆</span>
+          </button>
+          <button id="map-continue">↩ Continue saved game</button>
+          <button id="map-upgrades">✦ Unlock Tree <span id="upgrades-badge"></span></button>
+        </div>
+      </div>
+
+      <!-- Unlock tree overlay (M3) -->
+      <div id="unlock-tree">
+        <div id="tree-panel">
+          <div id="tree-header">
+            <h2>✦ Unlock Tree</h2>
+            <span id="tree-stars-count">0 ★</span>
+          </div>
+          <div id="tree-list"><!-- filled by JS --></div>
+          <div id="tree-footer">
+            <button id="tree-respec">↺ Respec (refund all)</button>
+            <button id="tree-close">← Back</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- End screen (victory / defeat) -->
+      <div id="end-screen">
+        <div id="end-panel">
+          <div id="end-title">Victory!</div>
+          <div id="end-msg">All waves survived.</div>
+          <div id="end-stars-row"></div>
+          <div id="end-stars-msg"></div>
+          <div id="end-score-line">Score: <strong id="end-score">0</strong></div>
+          <button id="end-restart">Play Again</button>
+        </div>
+      </div>
+
+      <!-- HUD -->
+      <div id="hud">
+        <div class="stat">❤️ <span id="hud-lives">20</span></div>
+        <div class="stat">💰 <span id="hud-cash">150</span></div>
+        <div class="stat">🌊 <span id="hud-wave">1 / 10</span></div>
+        <div class="stat">⭐ <span id="hud-score">0</span></div>
+        <div class="stat">💀 <span id="hud-kills">0</span></div>
+        <div class="stat" id="hud-diff" style="font-size:13px;opacity:.7"></div>
+        <span id="hud-preview"></span>
+        <button id="hud-mute" style="background:#374151;border:none;color:#fff;padding:5px 9px;border-radius:6px;cursor:pointer;font-size:13px;">🔊</button>
+        <button id="hud-ff">⏩ 1×</button>
+        <button id="hud-start">Start Wave</button>
+      </div>
+
+      <!-- Tower panel (shown when a placed tower is selected) -->
+      <div id="tower-panel">
+        <span id="tower-name">Tower</span>
+        <div id="tower-stats"></div>
+        <div id="upgrade-paths"></div>
+        <div class="target-row">
+          <button class="target-btn active" data-target="first">First</button>
+          <button class="target-btn"        data-target="last">Last</button>
+          <button class="target-btn"        data-target="close">Close</button>
+          <button class="target-btn"        data-target="strong">Strong</button>
+        </div>
+        <button id="sell-btn">Sell</button>
+      </div>
+
+      <!-- Tower shop -->
+      <div id="tower-shop">
+        <span style="font-size:12px;color:#9ca3af;margin-right:4px;">Place:</span>
+        <button class="tower-btn" data-tower="dart">🎯 Dart $50</button>
+        <button class="tower-btn" data-tower="bomb">💣 Bomb $100</button>
+        <button class="tower-btn" data-tower="frost">❄️ Frost $75</button>
+        <button class="tower-btn" data-tower="marksman">🔭 Marksman $125</button>
+      </div>
+
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

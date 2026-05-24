@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "tower-defence-dev",
+      "runtimeExecutable": "cmd",
+      "runtimeArgs": ["/c", "C:\\Users\\domse\\OneDrive\\Repos\\Tower Defence\\run-dev.cmd"],
+      "port": 5173
+    }
+  ]
+}
