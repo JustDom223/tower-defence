@@ -62,12 +62,11 @@ Also live (separate ticket docs):
 
 ## Phase R4 — Audio
 
-**Status: 🚧 Partial** — engine complete; control gaps tracked in `SPEC_pause-audio-bomb.md`
+**Status: ✅ Done**
 
 - [x] `AudioManager` implemented with Web Audio API (all sounds synthesised — dart, bomb, frost, marksman, death, wave-start/clear, win/lose)
-- [x] Mute toggle handler wired in `GameUI`
-- [ ] **Mute button actually clickable** — `#hud-mute` needs `pointer-events: all` (it inherits `none` from `#hud`) → ticket in `SPEC_pause-audio-bomb.md`
-- [ ] **Volume control** (slider feeding `AudioManager.setVolume`) → ticket in `SPEC_pause-audio-bomb.md`
+- [x] Mute toggle handler wired in `GameUI`; `pointer-events: all` fixed on `#hud-mute`
+- [x] Volume slider in pause menu feeding `AudioManager.setVolume`; HUD + pause-menu mute stay in sync
 
 ---
 
@@ -101,16 +100,16 @@ The 10-map campaign (`SPEC_campaign-maps.md`) raises the ceiling to **~30 stars*
 
 ---
 
-## What's next — upcoming milestones (in build order)
+## Milestones — all shipped ✅
 
-The original R1–R6 plan is essentially delivered (only the R4/R6 open items remain). New work is captured in its own tracked docs; build in this order:
+All original R1–R6 phases and subsequent ticket docs are complete:
 
-1. **`SPEC_sprites-and-input.md` → X1** 🔴 ⬜ — **mouse-input fix. Top priority: the game isn't clickable right now.** Do this before anything else.
-2. **`SPEC_subagents.md`** ⬜ — create the Haiku `verifier` subagent. One small file; enables cheap pre-merge checking for every ticket after it.
-3. **`SPEC_pause-audio-bomb.md`** ⬜ — pause menu, mute fix, bomb targeting. Quick wins. *(Also closes R4's mute-click item.)*
-4. **R4 / R6 leftovers** 🚧 — volume control, upgrade delta preview, locked-tower tooltip. Small polish.
-5. **`SPEC_sprites-and-input.md` → S1** ⬜ — enemy sprites (dog → runner, monster → tank, spider-man → boss). Cosmetic; do once input is solid.
-6. **`SPEC_campaign-maps.md`** ✅ — the 10-map star-gated campaign. *(C0–C4 all done.)*
-7. **`META_PROGRESSION.md` §11** ⬜ — global perks & the ranked star-sink (**P1 → P2 → P3 → P4**). Independent of the maps; slot in alongside or after the campaign.
+1. **`SPEC_sprites-and-input.md`** ✅ — mouse-input fix (X1) + enemy sprites (S1).
+2. **`SPEC_subagents.md`** ✅ — Haiku `verifier` subagent for cheap pre-merge checking.
+3. **`SPEC_pause-audio-bomb.md`** ✅ — pause menu, mute/volume fix, bomb fixed-point targeting.
+4. **`SPEC_campaign-maps.md`** ✅ — 10-map star-gated campaign (C0–C4).
+5. **`META_PROGRESSION.md` §11** ✅ — global perks & ranked star-sink (P1–P4).
+
+**Next opportunity:** balance pass (tune wave compositions, difficulty curve, perk values) or new content (additional tower types, enemy variants, map 11+).
 
 Items 1–5 are short; 6 and 7 are the big content/progression milestones. Tackle 1 immediately (it's blocking play), then 2 so the rest gets cheap automated checking.
