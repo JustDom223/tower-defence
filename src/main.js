@@ -102,33 +102,81 @@ function renderUnlockTree(profile) {
   const list = document.getElementById('tree-list');
   list.innerHTML = '';
 
+  let currentGroup = null;
+
   for (const node of UNLOCK_TREE) {
-    const owned     = isNodeOwned(profile, node);
-    const reqNode   = node.requires ? UNLOCK_TREE.find(n => n.id === node.requires) : null;
-    const prereqMet = !reqNode || isNodeOwned(profile, reqNode);
-    const affordable = avail >= node.cost;
-    const buyable   = !owned && prereqMet && affordable;
+    // P4 — insert a section header when the group changes
+    const group = node.group ?? 'towers';
+    if (group !== currentGroup) {
+      currentGroup = group;
+      const hdr = document.createElement('div');
+      hdr.className = 'tree-group-header';
+      hdr.textContent = group === 'perks' ? '⚡ Global Perks' : '🔓 Towers & Paths';
+      list.appendChild(hdr);
+    }
 
     const div = document.createElement('div');
-    div.className = `tree-node${owned ? ' owned' : prereqMet ? '' : ' prereq-locked'}`;
 
-    const icon  = owned ? '✓' : prereqMet ? '◆' : '🔒';
-    const sub   = reqNode && !prereqMet ? `Requires: ${reqNode.label}` : node.cost === 1 ? '1 star' : `${node.cost} stars`;
-    const right = owned
-      ? `<span class="tree-node-cost" style="color:#86efac">Owned</span>`
-      : `<span class="tree-node-cost">${node.cost} ★</span>
-         <button class="tree-buy-btn" data-id="${node.id}" ${buyable ? '' : 'disabled'}>
-           ${prereqMet ? (affordable ? 'Buy' : 'Need ★') : '🔒'}
-         </button>`;
+    if (node.ranked) {
+      // P4 — ranked node rendering
+      const rank    = node.getRank(profile) ?? 0;
+      const maxed   = rank >= node.maxRank;
+      const nextCost = maxed ? 0 : node.costAt(rank);
+      const affordable = avail >= nextCost;
+      const buyable  = !maxed && affordable;
 
-    div.innerHTML = `
-      <span class="tree-node-icon">${icon}</span>
-      <div class="tree-node-info">
-        <div class="tree-node-label">${node.label}</div>
-        <div class="tree-node-sub">${sub}</div>
-      </div>
-      ${right}
-    `;
+      div.className = `tree-node${maxed ? ' owned' : ''}`;
+      const icon    = maxed ? '★' : rank > 0 ? '◆' : '◇';
+      const subText = maxed
+        ? `Rank ${node.maxRank}/${node.maxRank} — Maxed!`
+        : `Rank ${rank}/${node.maxRank}${node.nextDesc ? ` · ${node.nextDesc(rank)}` : ''}`;
+      const right   = maxed
+        ? `<span class="tree-node-cost" style="color:#86efac">Maxed</span>`
+        : `<span class="tree-node-cost">${nextCost} ★</span>
+           <button class="tree-buy-btn" data-id="${node.id}" ${buyable ? '' : 'disabled'}>
+             ${affordable ? 'Buy' : 'Need ★'}
+           </button>`;
+
+      div.innerHTML = `
+        <span class="tree-node-icon">${icon}</span>
+        <div class="tree-node-info">
+          <div class="tree-node-label">${node.label}</div>
+          <div class="tree-node-sub">${subText}</div>
+        </div>
+        ${right}
+      `;
+    } else {
+      // Existing one-time node rendering
+      const owned      = isNodeOwned(profile, node);
+      const reqNode    = node.requires ? UNLOCK_TREE.find(n => n.id === node.requires) : null;
+      const prereqMet  = !reqNode || isNodeOwned(profile, reqNode);
+      const affordable = avail >= node.cost;
+      const buyable    = !owned && prereqMet && affordable;
+
+      div.className = `tree-node${owned ? ' owned' : prereqMet ? '' : ' prereq-locked'}`;
+
+      const icon  = owned ? '✓' : prereqMet ? '◆' : '🔒';
+      // Show desc for perk nodes, requirement info for locked tower nodes
+      const sub   = reqNode && !prereqMet
+        ? `Requires: ${reqNode.label}`
+        : (node.desc ?? (node.cost === 1 ? '1 star' : `${node.cost} stars`));
+      const right = owned
+        ? `<span class="tree-node-cost" style="color:#86efac">Owned</span>`
+        : `<span class="tree-node-cost">${node.cost} ★</span>
+           <button class="tree-buy-btn" data-id="${node.id}" ${buyable ? '' : 'disabled'}>
+             ${prereqMet ? (affordable ? 'Buy' : 'Need ★') : '🔒'}
+           </button>`;
+
+      div.innerHTML = `
+        <span class="tree-node-icon">${icon}</span>
+        <div class="tree-node-info">
+          <div class="tree-node-label">${node.label}</div>
+          <div class="tree-node-sub">${sub}</div>
+        </div>
+        ${right}
+      `;
+    }
+
     list.appendChild(div);
   }
 
@@ -273,11 +321,13 @@ async function main() {
   // R1 — per-map wave set (10 waves each)
   const waves = WAVES_BY_MAP[mapKey] ?? WAVES_MAP1;
 
+  // P1 — apply global perks at run start
+  const perks = profile.perks ?? {};
   const state = {
     mapKey,
     difficulty: difficulty.key,
-    lives:       20,
-    cash:        difficulty.startingCash,
+    lives:       20 + (perks.startLives ?? 0),
+    cash:        difficulty.startingCash + (perks.startCash ?? 0),
     score:       0,
     kills:       0,
     waveIndex:   -1,
@@ -345,6 +395,7 @@ async function main() {
   const ui = new GameUI();
   ui.init();
   ui.setProfileUnlocks(profile.unlocks); // M1 — gate shop + upgrade panel
+  ui.setPerks(profile.perks);            // P1 — pass perks so shop uses discounted costs
   ui.update(state);
   ui.setWavePreview(fmtWavePreview(waves[0])); // R3 — show wave 1 contents before start
 
@@ -368,7 +419,9 @@ async function main() {
     if (idx === -1) return;
     state.towers.splice(idx, 1);
     setBlocked(grid, tower.col, tower.row, 0);
-    state.cash += Math.floor((TOWER_TYPES[tower.type].cost + tower.upgradeSpent) * 0.6);
+    // P1 — Salvage perk adds to base 0.60 sell multiplier
+    const sellMult = 0.6 + (perks.sellBonus ?? 0);
+    state.cash += Math.floor((TOWER_TYPES[tower.type].cost + tower.upgradeSpent) * sellMult);
     towerRenderer.markDirty();
     towerRenderer.setSelectedTower(null);
   };
@@ -440,13 +493,17 @@ async function main() {
     // M1 — placement guard: profile must have this tower unlocked
     if (!isTowerUnlocked(profile, type)) return;
     const def = TOWER_TYPES[type];
-    if (state.cash < def.cost || !isFree(grid, col, row)) return;
+    // P1 — Bulk Discount perk reduces tower costs
+    const effectiveCost = Math.ceil(def.cost * (1 - (perks.towerCostPct ?? 0)));
+    if (state.cash < effectiveCost || !isFree(grid, col, row)) return;
 
     const pos   = tileToWorld(col, row);
     const tower = createTower(type, col, row, pos.x, pos.y);
+    // P1 — Power Core perk: bake global damage bonus into tower at creation
+    if ((perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
     state.towers.push(tower);
     setBlocked(grid, col, row, 2);
-    state.cash -= def.cost;
+    state.cash -= effectiveCost;
     towerRenderer.markDirty();
     ui.clearTowerTypeSelection();
     towerRenderer.setHoverTile(null);
@@ -465,7 +522,8 @@ async function main() {
         state.waveActive = false;
         AudioManager.play('wave-clear');
         // R1 — interest: earn 5% of banked cash at the end of each wave
-        const interest = Math.floor(state.cash * 0.05);
+        // P1 — Compound Interest perk adds to the base rate
+        const interest = Math.floor(state.cash * (0.05 + (perks.interestBonus ?? 0)));
         if (interest > 0) {
           state.cash += interest;
           showInterestToast(interest);

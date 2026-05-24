@@ -220,7 +220,7 @@ Extends the §6 unlock tree beyond towers/paths with **account-wide perks** that
 **Research basis:** one-time global perks mirror BTD6 Monkey Knowledge (`+damage`, starting cash, prerequisite gating). The ranked sink follows Vampire Survivors PowerUps — each rank costs more than the last, so a single track absorbs many stars over time — and Hades' Mirror of Night (permanent ranked upgrades with a full refund/respec). Sources are listed at the foot of this section.
 
 ### Profile changes
-- [ ] Add a `perks` object to `defaultProfile()` (all zero):
+- [x] Add a `perks` object to `defaultProfile()` (all zero):
   ```js
   perks: {
     startCash: 0, startLives: 0, sellBonus: 0, towerCostPct: 0,  // one-time
@@ -228,22 +228,22 @@ Extends the §6 unlock tree beyond towers/paths with **account-wide perks** that
     powerCoreRank: 0, interestRank: 0,                           // rank counters
   }
   ```
-- [ ] `respec(p)` must also reset `perks` to default (it already refunds all `spent`).
-- [ ] Extend the node model + `canUnlock`/`applyUnlock` to support **ranked** nodes: a ranked node has `ranked: true`, `maxRank`, `costAt(rank)`, `getRank(p)`, and `apply(p)` increments the rank and bumps the perk value. `canUnlock` reads the current rank's cost; one-time nodes keep the existing boolean `check`/`apply`.
+- [x] `respec(p)` must also reset `perks` to default (it already refunds all `spent`).
+- [x] Extend the node model + `canUnlock`/`applyUnlock` to support **ranked** nodes: a ranked node has `ranked: true`, `maxRank`, `costAt(rank)`, `getRank(p)`, and `apply(p)` increments the rank and bumps the perk value. `canUnlock` reads the current rank's cost; one-time nodes keep the existing boolean `check`/`apply`.
 
 ### Where perks apply in the run (read `profile.perks` at run start)
-- [ ] Starting cash: `difficulty.startingCash + perks.startCash` (`main.js` state init)
-- [ ] Starting lives: `20 + perks.startLives`
-- [ ] Tower damage: at `createTower`, base `damage × (1 + perks.damagePct)` (keep `CombatSystem` pure — bake the multiplier into the tower's stats at creation)
-- [ ] Sell value: `(cost + upgradeSpent) × (0.6 + perks.sellBonus)`
-- [ ] Tower cost: `def.cost × (1 - perks.towerCostPct)` (apply in shop affordability + placement deduction)
-- [ ] Interest: end-of-wave `floor(cash × (0.05 + perks.interestBonus))`
+- [x] Starting cash: `difficulty.startingCash + perks.startCash` (`main.js` state init)
+- [x] Starting lives: `20 + perks.startLives`
+- [x] Tower damage: at `createTower`, base `damage × (1 + perks.damagePct)` (keep `CombatSystem` pure — bake the multiplier into the tower's stats at creation)
+- [x] Sell value: `(cost + upgradeSpent) × (0.6 + perks.sellBonus)`
+- [x] Tower cost: `def.cost × (1 - perks.towerCostPct)` (apply in shop affordability + placement deduction)
+- [x] Interest: end-of-wave `floor(cash × (0.05 + perks.interestBonus))`
 
 ### Ticket P1 — Perks plumbing
-**Status: ⬜ Not started** — profile `perks`, ranked-node support, respec reset, and the run-start hooks above.
+**Status: ✅ Done** — profile `perks`, ranked-node support, respec reset, and the run-start hooks above.
 
 ### Ticket P2 — One-time global nodes
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
 | Node | Effect | Cost | Prereq |
 |---|---|---|---|
@@ -253,21 +253,21 @@ Extends the §6 unlock tree beyond towers/paths with **account-wide perks** that
 | Salvage | +15% sell value | 2 | — |
 | Bulk Discount | towers cost 8% less | 3 | — |
 
-- [ ] Add these nodes to the tree; wire their effects via the run-start hooks above.
+- [x] Add these nodes to the tree; wire their effects via the run-start hooks above.
 
 ### Ticket P3 — Ranked star-sink tracks
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
-- [ ] **Power Core** (headline sink): `+3% global tower damage` per rank, `maxRank 10`. Rising cost per rank: `1,1,2,2,3,3,4,4,5,5` (30 stars to max → +30% damage). `costAt(rank) = Math.ceil((rank + 1) / 2)`.
-- [ ] **Compound Interest** (optional second sink): `+1% interest` per rank, `maxRank 5`, cost `1,2,2,3,3`.
+- [x] **Power Core** (headline sink): `+3% global tower damage` per rank, `maxRank 10`. Rising cost per rank: `1,1,2,2,3,3,4,4,5,5` (30 stars to max → +30% damage). `costAt(rank) = Math.ceil((rank + 1) / 2)`.
+- [x] **Compound Interest** (optional second sink): `+1% interest` per rank, `maxRank 5`, cost `1,2,2,3,3`.
 - [ ] These should remain visibly buyable as long as the player has stars and ranks remaining — the "pour surplus stars in" outlet.
 
 ### Ticket P4 — Tree UI for perks & ranks
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
-- [ ] Render a **Perks** group in the unlock-tree overlay (separate from towers/paths).
-- [ ] Ranked nodes show progress and next cost, e.g. `Power Core — Rank 3/10 · next +3% dmg · ★2`, and stay buyable until maxed.
-- [ ] Respec wipes perks/ranks and refunds, same as tower/path unlocks.
+- [x] Render a **Perks** group in the unlock-tree overlay (separate from towers/paths).
+- [x] Ranked nodes show progress and next cost, e.g. `Power Core — Rank 3/10 · next +3% dmg · ★2`, and stay buyable until maxed.
+- [x] Respec wipes perks/ranks and refunds, same as tower/path unlocks.
 
 **Acceptance:** global perks measurably change a run (more cash/lives/damage); Power Core can absorb a large star surplus across many ranks; respec fully refunds and resets perks.
 

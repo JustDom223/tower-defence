@@ -45,6 +45,9 @@ export class GameUI {
   /** profile.unlocks snapshot — set via setProfileUnlocks() */
   #profileUnlocks = null;
 
+  /** profile.perks snapshot — set via setPerks() */
+  #perks = null;
+
   onStartWave       = null; // () => void
   onTargetingChange = null; // (tower, mode) => void
   onSellTower       = null; // (tower) => void
@@ -129,6 +132,15 @@ export class GameUI {
     this.#refreshShop();
   }
 
+  /**
+   * P1 — call after loading the profile to apply global perk effects in the UI.
+   * Pass profile.perks (or null to clear).
+   */
+  setPerks(perks) {
+    this.#perks = perks;
+    this.#refreshShop();
+  }
+
   clearTowerTypeSelection() {
     this.#selectedTowerType = null;
     this.#refreshShop();
@@ -147,7 +159,9 @@ export class GameUI {
     this.#renderStats(tower);
     this.#towerPanel.style.display = 'block';
     this.#refreshTargetBtns(tower.targeting);
-    const sellValue = Math.floor((def.cost + tower.upgradeSpent) * 0.6);
+    // P1 — sell value uses the Salvage perk bonus if active
+    const sellMult = 0.6 + (this.#perks?.sellBonus ?? 0);
+    const sellValue = Math.floor((def.cost + tower.upgradeSpent) * sellMult);
     this.#sellBtn.textContent = `Sell ($${sellValue})`;
   }
 
@@ -284,8 +298,11 @@ export class GameUI {
         ? true
         : (this.#profileUnlocks.towers?.[type] ?? false);
       const def      = TOWER_TYPES[type];
+      // P1 — apply Bulk Discount perk when checking affordability
+      const costMult  = 1 - (this.#perks?.towerCostPct ?? 0);
+      const effectiveCost = def ? Math.ceil(def.cost * costMult) : 0;
       // R6 — grey out towers the player can't currently afford
-      const canAfford = !def || this.#currentCash >= def.cost;
+      const canAfford = !def || this.#currentCash >= effectiveCost;
 
       btn.classList.toggle('selected',          type === this.#selectedTowerType && unlocked);
       btn.classList.toggle('tower-locked',      !unlocked);
