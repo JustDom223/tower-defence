@@ -34,6 +34,10 @@ Before merging a ticket, delegate the check to the **`verifier`** subagent (defi
 - **PixiJS 8** (WebGL) for rendering, **vanilla JS** (ES modules) for all game logic, **Vite** for tooling.
 - Run the dev server with `npm run dev` (or `run-dev.cmd`). Build with `npm run build`.
 
+> ⚠️ **Never open `index.html` directly in the browser.** The script tag uses `src="/src/main.js"` (an absolute path) and imports bare npm specifiers like `'pixi.js'`. Both require Vite to resolve — opening the file directly gives main.js a 404 and nothing runs. Always use `http://localhost:5173` via `npm run dev`.
+
+> ⚠️ **GitHub Pages requires the build step.** GitHub Pages only serves static files; it cannot run `npm install`. The `.github/workflows/deploy.yml` workflow runs `npm run build` and deploys the `dist/` folder via GitHub Actions. The Pages source must be set to **GitHub Actions** (not "Deploy from a branch") in the repo settings. The `base: '/tower-defence/'` in `vite.config.js` ensures asset paths resolve correctly on the subdomain.
+
 ## Architecture rules (do not break these)
 
 - **Logic/render separation is the load-bearing rule.** Nothing in `src/core`, `src/systems`, `src/entities`, or `src/data` may import `pixi.js`. Game state is plain data the simulation owns; renderers in `src/render` *read* that state to draw. The simulation must be able to run with no renderer attached.
