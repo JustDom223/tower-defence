@@ -1,8 +1,7 @@
 import { Renderer }           from './render/Renderer.js';
 import { GameLoop }            from './core/GameLoop.js';
 import { buildPath, positionAtDistance } from './core/Path.js';
-import { createGrid, blockPathTiles, isFree, setBlocked,
-         tileToWorld, worldToTile }     from './core/Grid.js';
+import { snapToGrid, isPositionFree } from './core/Grid.js';
 import { PathRenderer }        from './render/PathRenderer.js';
 import { EnemyRenderer }       from './render/EnemyRenderer.js';
 import { TowerRenderer }       from './render/TowerRenderer.js';
@@ -324,8 +323,6 @@ async function main() {
 
   const mapDef = MAPS[mapKey];
   const path   = buildPath(mapDef.waypoints);
-  const grid   = createGrid(renderer.width, renderer.height);
-  blockPathTiles(grid, mapDef.waypoints);
 
   // R1 — per-map wave set (10 waves each)
   const waves = WAVES_BY_MAP[mapKey] ?? WAVES_MAP1;
@@ -386,8 +383,7 @@ async function main() {
     state.score     = savedData.score;
     state.waveIndex = savedData.waveIndex;
     for (const t of savedData.towers) {
-      const pos   = tileToWorld(t.col, t.row);
-      const tower = createTower(t.type, t.col, t.row, pos.x, pos.y);
+      const tower = createTower(t.type, t.x ?? 0, t.y ?? 0);
       tower.targeting = t.targeting;
       const def = TOWER_TYPES[t.type];
       for (let i = 0; i < t.upgradesA; i++) applyTier(tower, def.upgrades.pathA.tiers[i]);
@@ -396,7 +392,6 @@ async function main() {
       tower.upgradesB = t.upgradesB;
       tower.upgradeSpent = t.upgradeSpent;
       state.towers.push(tower);
-      setBlocked(grid, t.col, t.row, 2);
     }
     towerRenderer.markDirty();
   }
@@ -428,7 +423,6 @@ async function main() {
     const idx = state.towers.indexOf(tower);
     if (idx === -1) return;
     state.towers.splice(idx, 1);
-    setBlocked(grid, tower.col, tower.row, 0);
     // P1 — Salvage perk adds to base 0.60 sell multiplier
     const sellMult = 0.6 + (perks.sellBonus ?? 0);
     state.cash += Math.floor((TOWER_TYPES[tower.type].cost + tower.upgradeSpent) * sellMult);
@@ -465,10 +459,10 @@ async function main() {
     const rect = renderer.canvas.getBoundingClientRect();
     const wx   = (e.clientX - rect.left) * (renderer.width  / rect.width);
     const wy   = (e.clientY - rect.top)  * (renderer.height / rect.height);
-    const { col, row } = worldToTile(wx, wy);
+    const { x, y } = snapToGrid(wx, wy);
     const type = ui.selectedTowerType;
-    if (type && col >= 0 && col < grid.cols && row >= 0 && row < grid.rows) {
-      towerRenderer.setHoverTile({ col, row, valid: isFree(grid, col, row), type });
+    if (type) {
+      towerRenderer.setHoverTile({ x, y, valid: isPositionFree(x, y, path.waypoints, state.towers), type });
     } else {
       towerRenderer.setHoverTile(null);
     }
@@ -509,13 +503,15 @@ async function main() {
 
   renderer.canvas.addEventListener('click', (e) => {
     const rect   = renderer.canvas.getBoundingClientRect();
-    const scaleX = renderer.width  / rect.width;
-    const scaleY = renderer.height / rect.height;
-    const wx     = (e.clientX - rect.left) * scaleX;
-    const wy     = (e.clientY - rect.top)  * scaleY;
-    const { col, row } = worldToTile(wx, wy);
+    const wx     = (e.clientX - rect.left) * (renderer.width  / rect.width);
+    const wy     = (e.clientY - rect.top)  * (renderer.height / rect.height);
+    const CLICK_RADIUS_SQ = 24 ** 2;
+    const best = state.towers.reduce((b, t) => {
+      const d = (wx - t.x) ** 2 + (wy - t.y) ** 2;
+      return (!b || d < b.d) ? { t, d } : b;
+    }, null);
+    const hit = best && best.d < CLICK_RADIUS_SQ ? best.t : null;
 
-    const hit = state.towers.find(t => t.col === col && t.row === row);
     if (hit) {
       ui.clearTowerTypeSelection();
       towerRenderer.setHoverTile(null);
@@ -534,14 +530,13 @@ async function main() {
     const def = TOWER_TYPES[type];
     // P1 — Bulk Discount perk reduces tower costs
     const effectiveCost = Math.ceil(def.cost * (1 - (perks.towerCostPct ?? 0)));
-    if (state.cash < effectiveCost || !isFree(grid, col, row)) return;
+    const { x, y } = snapToGrid(wx, wy);
+    if (state.cash < effectiveCost || !isPositionFree(x, y, path.waypoints, state.towers)) return;
 
-    const pos   = tileToWorld(col, row);
-    const tower = createTower(type, col, row, pos.x, pos.y);
+    const tower = createTower(type, x, y);
     // P1 — Power Core perk: bake global damage bonus into tower at creation
     if ((perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
     state.towers.push(tower);
-    setBlocked(grid, col, row, 2);
     state.cash -= effectiveCost;
     towerRenderer.markDirty();
     ui.clearTowerTypeSelection();

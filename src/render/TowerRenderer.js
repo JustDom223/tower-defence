@@ -1,6 +1,5 @@
 import { Graphics } from 'pixi.js';
 import { TOWER_TYPES } from '../data/towers.js';
-import { TILE_SIZE } from '../core/Grid.js';
 
 const HALF       = 16;
 const BARREL_LEN = 14;
@@ -11,7 +10,7 @@ export class TowerRenderer {
   #rangeG;
   #dirty = true;
   #selectedTower = null;
-  #hoverTile = null; // { col, row, valid, type }
+  #hoverTile = null; // { x, y, valid, type }
 
   init(renderer) {
     this.#towerG  = new Graphics();
@@ -40,16 +39,14 @@ export class TowerRenderer {
     // Placement preview
     const ht = this.#hoverTile;
     if (ht) {
-      const tx = ht.col * TILE_SIZE;
-      const ty = ht.row * TILE_SIZE;
-      this.#rangeG.rect(tx, ty, TILE_SIZE, TILE_SIZE);
+      const HALF_PREVIEW = 20;
+      this.#rangeG.rect(ht.x - HALF_PREVIEW, ht.y - HALF_PREVIEW, HALF_PREVIEW * 2, HALF_PREVIEW * 2);
       this.#rangeG.fill({ color: ht.valid ? 0x22c55e : 0xef4444, alpha: 0.35 });
 
       if (ht.valid) {
         const def = TOWER_TYPES[ht.type];
-        const cx = tx + TILE_SIZE / 2, cy = ty + TILE_SIZE / 2;
         if (!def.globalRange) {
-          this.#rangeG.circle(cx, cy, def.range);
+          this.#rangeG.circle(ht.x, ht.y, def.range);
           this.#rangeG.stroke({ color: 0xffffff, width: 1, alpha: 0.2 });
         } else {
           this.#rangeG.rect(0, 0, 1280, 720);
