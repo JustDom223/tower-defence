@@ -391,6 +391,10 @@ async function main() {
       for (let i = 0; i < t.upgradesB; i++) applyTier(tower, def.upgrades.pathB.tiers[i]);
       tower.upgradesB = t.upgradesB;
       tower.upgradeSpent = t.upgradeSpent;
+      // Mortar mode — restore on load based on upgrade tier
+      if (tower.type === 'bomb' && tower.upgradesB >= 2) {
+        tower.mortarMode = true;
+      }
       state.towers.push(tower);
     }
     towerRenderer.markDirty();
@@ -440,6 +444,10 @@ async function main() {
     applyTier(tower, result.tier);
     if (path === 'A') tower.upgradesA++;
     else              tower.upgradesB++;
+    // Mortar mode — bomb tower path B tier 2+ unlocks mortar manual targeting
+    if (tower.type === 'bomb' && path === 'B' && tower.upgradesB >= 2) {
+      tower.mortarMode = true;
+    }
     towerRenderer.markDirty();
     ui.showTowerPanel(tower, state.cash);
   };
@@ -505,6 +513,19 @@ async function main() {
     const rect   = renderer.canvas.getBoundingClientRect();
     const wx     = (e.clientX - rect.left) * (renderer.width  / rect.width);
     const wy     = (e.clientY - rect.top)  * (renderer.height / rect.height);
+
+    // Mortar targeting — intercept click to set the target coordinate
+    if (ui.mortarSetMode !== null) {
+      const mortarTower = ui.mortarSetMode;
+      ui.mortarSetMode = null;
+      mortarTower.mortarTargetX = wx;
+      mortarTower.mortarTargetY = wy;
+      // Re-render panel so the target coordinate display updates
+      ui.showTowerPanel(mortarTower, state.cash);
+      towerRenderer.setSelectedTower(mortarTower);
+      return;
+    }
+
     const CLICK_RADIUS_SQ = 24 ** 2;
     const best = state.towers.reduce((b, t) => {
       const d = (wx - t.x) ** 2 + (wy - t.y) ** 2;

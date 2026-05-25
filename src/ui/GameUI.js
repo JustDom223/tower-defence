@@ -56,6 +56,9 @@ export class GameUI {
   onUpgrade         = null; // (tower, path) => void
   onToggleFF        = null; // () => void
 
+  /** Mortar targeting — set to a tower object while waiting for the player to click a target. */
+  mortarSetMode = null;
+
   init() {
     this.#livesEl        = document.getElementById('hud-lives');
     this.#cashEl         = document.getElementById('hud-cash');
@@ -157,6 +160,7 @@ export class GameUI {
     this.#towerNameEl.textContent = `${def.name}  (${tower.upgradesA}-${tower.upgradesB})`;
     this.#renderUpgrades(tower, cash);
     this.#renderStats(tower);
+    this.#renderMortarControls(tower);
     this.#towerPanel.style.display = 'block';
     this.#refreshTargetBtns(tower.targeting);
     // P1 — sell value uses the Salvage perk bonus if active
@@ -296,6 +300,42 @@ export class GameUI {
     };
 
     this.#upgradePathsEl.innerHTML = buildCol('pathA', 'A') + buildCol('pathB', 'B');
+  }
+
+  /** Mortar controls — show "Set Target" button when the tower has mortarMode active. */
+  #renderMortarControls(tower) {
+    // Remove any existing mortar control section before re-rendering
+    const existing = this.#towerPanel.querySelector('#mortar-controls');
+    if (existing) existing.remove();
+
+    if (!tower.mortarMode) return;
+
+    const section = document.createElement('div');
+    section.id = 'mortar-controls';
+    section.style.cssText = 'padding:6px 8px;border-top:1px solid #334155;margin-top:4px';
+
+    const targetInfo = (tower.mortarTargetX !== null)
+      ? `<span style="font-size:10px;color:#94a3b8">Target: (${Math.round(tower.mortarTargetX)}, ${Math.round(tower.mortarTargetY)})</span>`
+      : `<span style="font-size:10px;color:#94a3b8">No target set</span>`;
+
+    section.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+        <button id="mortar-set-target" style="flex:1;padding:5px 8px;background:#dc2626;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;">
+          📍 Set Target
+        </button>
+        ${targetInfo}
+      </div>
+    `;
+
+    // Insert before the sell button (last child of the panel)
+    this.#towerPanel.insertBefore(section, this.#sellBtn);
+
+    section.querySelector('#mortar-set-target').addEventListener('click', () => {
+      this.mortarSetMode = tower;
+      // Visual feedback: button text changes while waiting
+      const btn = document.getElementById('mortar-set-target');
+      if (btn) { btn.textContent = '🎯 Click map…'; btn.style.background = '#f59e0b'; }
+    });
   }
 
   #refreshShop() {

@@ -58,13 +58,36 @@ export class TowerRenderer {
     // Selected tower range + AoE ring
     const sel = this.#selectedTower;
     if (sel) {
-      if (!sel.globalRange) {
+      if (!sel.globalRange && !sel.mortarMode) {
         this.#rangeG.circle(sel.x, sel.y, sel.range);
         this.#rangeG.stroke({ color: 0xffffff, width: 1, alpha: 0.3 });
       }
       if (sel.aoeRadius > 0) {
         this.#rangeG.circle(sel.x, sel.y, sel.aoeRadius);
         this.#rangeG.stroke({ color: 0xfbbf24, width: 1, alpha: 0.4 });
+      }
+    }
+
+    // Mortar target markers — red × cross + dashed line from tower to target
+    for (const t of towers) {
+      if (t.mortarTargetX === null) continue;
+      const tx = t.mortarTargetX, ty = t.mortarTargetY;
+      const S = 8; // half-size of the × cross arms
+
+      // Dashed line from tower to target
+      this.#rangeG.moveTo(t.x, t.y);
+      this.#rangeG.lineTo(tx, ty);
+      this.#rangeG.stroke({ color: 0xef4444, width: 1, alpha: 0.4 });
+
+      // Red × cross
+      this.#rangeG.moveTo(tx - S, ty - S); this.#rangeG.lineTo(tx + S, ty + S);
+      this.#rangeG.moveTo(tx + S, ty - S); this.#rangeG.lineTo(tx - S, ty + S);
+      this.#rangeG.stroke({ color: 0xef4444, width: 2.5, alpha: 0.9 });
+
+      // AoE preview circle at target site
+      if (t.aoeRadius > 0) {
+        this.#rangeG.circle(tx, ty, t.aoeRadius);
+        this.#rangeG.stroke({ color: 0xef4444, width: 1, alpha: 0.35 });
       }
     }
   }
