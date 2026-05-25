@@ -14,7 +14,6 @@
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body {
         background: #111827;
-        display: flex; justify-content: center; align-items: center;
         min-height: 100dvh; overflow: hidden;
         font-family: system-ui, sans-serif; color: #fff;
         /* MB1 — prevent scroll, pull-to-refresh, and pinch-zoom during play */
@@ -22,7 +21,9 @@
         touch-action: none;
       }
       #game-container {
-        position: relative; user-select: none; width: 1280px; height: 720px;
+        /* MB3 — fixed so it doesn't stretch the body; JS positions + scales it */
+        position: fixed; top: 0; left: 0;
+        user-select: none; width: 1280px; height: 720px;
         touch-action: none; /* MB1 — block all default touch gestures on the canvas */
       }
       canvas { display: block; }
@@ -684,8 +685,16 @@
             window.innerWidth  / VIRTUAL_W,
             window.innerHeight / VIRTUAL_H
           );
-          container.style.transform       = scale < 1 ? 'scale(' + scale + ')' : '';
-          container.style.transformOrigin = 'center center';
+          // Center the (possibly scaled) container in the viewport.
+          // position:fixed + translate+scale avoids body-height growth that
+          // would break align-items:center centering on narrow screens.
+          var scaledW = VIRTUAL_W * scale;
+          var scaledH = VIRTUAL_H * scale;
+          var offsetX = Math.max(0, (window.innerWidth  - scaledW) / 2);
+          var offsetY = Math.max(0, (window.innerHeight - scaledH) / 2);
+          container.style.transformOrigin = 'top left';
+          container.style.transform =
+            'translate(' + offsetX + 'px, ' + offsetY + 'px) scale(' + scale + ')';
           // --ui-scale drives calc() compensation in body.mobile-scaled CSS
           document.documentElement.style.setProperty('--ui-scale', (1 / scale).toFixed(6));
           // mobile-scaled: only on phone-sized viewports (short dimension < 500px) at reduced scale
