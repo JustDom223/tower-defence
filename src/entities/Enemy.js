@@ -10,6 +10,7 @@ function make() {
     distance: 0, prevDistance: 0,
     worldX: 0, worldY: 0,
     slowFactor: 1, slowTimer: 0,
+    stunTimer: 0,
     flashTimer: 0,
   };
 }
@@ -34,6 +35,7 @@ function reset(e, { type, distance = 0 }) {
   e.worldY = 0;
   e.slowFactor = 1;
   e.slowTimer = 0;
+  e.stunTimer = 0;
   e.flashTimer = 0;
 }
 

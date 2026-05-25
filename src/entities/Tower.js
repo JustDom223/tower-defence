@@ -17,6 +17,8 @@ export function createTower(type, x, y) {
     isSlow:       def.isSlow      ?? false,
     slowFactor:   def.slowFactor  ?? 0,
     slowDuration: def.slowDuration ?? 0,
+    isStun:       def.isStun      ?? false,
+    stunDuration: def.stunDuration ?? 0,
     globalRange:  def.globalRange  ?? false,
     upgradesA:    0,
     upgradesB:    0,

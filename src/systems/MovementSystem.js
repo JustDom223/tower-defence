@@ -2,6 +2,8 @@ import { positionAtDistance } from '../core/Path.js';
 
 export function updateMovement(enemies, path, dt) {
   for (const e of enemies) {
+    if (e.stunTimer > 0) { e.stunTimer -= dt; continue; }
+
     e.prevDistance = e.distance;
 
     const effectiveSpeed = e.speed * e.slowFactor;

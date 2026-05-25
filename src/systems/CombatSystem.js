@@ -20,6 +20,22 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
   for (const tower of towers) {
     if (tower.cooldown > 0) { tower.cooldown -= dt; continue; }
 
+    if (tower.isStun) {
+      // Rotate toward nearest in-range enemy (mirrors isSlow behaviour)
+      let nearest = null, nearestDSq = Infinity;
+      const rSq = tower.range * tower.range;
+      for (const e of enemies) {
+        const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
+        const dSq = dx * dx + dy * dy;
+        if (dSq < nearestDSq && dSq <= rSq) { nearest = e; nearestDSq = dSq; }
+      }
+      if (nearest) tower.angle = Math.atan2(nearest.worldY - tower.y, nearest.worldX - tower.x);
+      applyStun(tower, enemies, damageEvents);
+      AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
+      tower.cooldown = 1 / tower.fireRate;
+      continue;
+    }
+
     if (tower.isSlow) {
       // R3 — rotate slow towers toward nearest in-range enemy
       let nearest = null, nearestDSq = Infinity;
@@ -64,6 +80,19 @@ function applySlow(tower, enemies) {
     if (dx * dx + dy * dy <= rSq) {
       e.slowFactor = Math.min(e.slowFactor, tower.slowFactor);
       e.slowTimer  = Math.max(e.slowTimer,  tower.slowDuration);
+    }
+  }
+}
+
+function applyStun(tower, enemies, damageEvents) {
+  const rSq = tower.range * tower.range;
+  for (const e of enemies) {
+    const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
+    if (dx * dx + dy * dy <= rSq) {
+      e.stunTimer = Math.max(e.stunTimer, tower.stunDuration);
+      if (tower.damage > 0) {
+        applyDamage(e, tower.damage, tower.type, e.worldX, e.worldY, damageEvents);
+      }
     }
   }
 }
