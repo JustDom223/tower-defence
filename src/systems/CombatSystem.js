@@ -78,6 +78,11 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
       towerType: tower.type,
       ballistic: tower.aoeRadius > 0,
       pierce, dirX, dirY,
+      dotDamage:        tower.dotDamage,
+      dotDuration:      tower.dotDuration,
+      dotTickRate:      tower.dotTickRate,
+      dotIgnoresArmour: tower.dotIgnoresArmour,
+      dotStackCap:      tower.dotStackCap,
     }));
   }
 
@@ -192,6 +197,19 @@ function applyDamage(e, rawDamage, towerType, hitX, hitY, damageEvents) {
   }
 }
 
+function applyDot(p, target) {
+  if (p.dotDamage > 0) {
+    const existingStacks = target.dotStacks.filter(s => s.sourceType === p.towerType);
+    if (existingStacks.length < p.dotStackCap) {
+      target.dotStacks.push({
+        damage: p.dotDamage, tickRate: p.dotTickRate,
+        remaining: p.dotDuration, nextTick: 1 / p.dotTickRate,
+        ignoresArmour: p.dotIgnoresArmour, sourceType: p.towerType,
+      });
+    }
+  }
+}
+
 function onHit(p, enemies, damageEvents) {
   if (p.aoeRadius > 0) {
     // Bomb — play explosion sound on impact
@@ -202,10 +220,12 @@ function onHit(p, enemies, damageEvents) {
       const dx = e.worldX - p.x, dy = e.worldY - p.y;
       if (dx * dx + dy * dy <= rSq) {
         applyDamage(e, p.damage, p.towerType, e.worldX, e.worldY, damageEvents);
+        applyDot(p, e);
       }
     }
   } else if (p.target && p.target.id === p.targetId && p.target.hp > 0) {
     applyDamage(p.target, p.damage, p.towerType,
       p.target.worldX, p.target.worldY, damageEvents);
+    applyDot(p, p.target);
   }
 }

@@ -25,6 +25,7 @@ import { createTower }          from './entities/Tower.js';
 import { updateMovement }       from './systems/MovementSystem.js';
 import { WaveSpawner }          from './systems/WaveSpawner.js';
 import { updateCombat }         from './systems/CombatSystem.js';
+import { updateDoT }            from './systems/DoTSystem.js';
 import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
 import { GameUI }               from './ui/GameUI.js';
 import AudioManager             from './audio/AudioManager.js';
@@ -567,6 +568,7 @@ async function main() {
 
       updateMovement(state.enemies, path, dt);
       updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents);
+      updateDoT(state.enemies, dt, state.damageEvents);
 
       // R3 — advance and cull damage events
       for (let i = state.damageEvents.length - 1; i >= 0; i--) {
