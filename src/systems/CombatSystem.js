@@ -1,4 +1,4 @@
-import { selectTarget } from './TargetingSystem.js';
+import { selectTarget, selectTopNTargets } from './TargetingSystem.js';
 import { projectilePool } from '../entities/Projectile.js';
 import AudioManager from '../audio/AudioManager.js';
 
@@ -36,22 +36,32 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
       continue;
     }
 
-    const target = selectTarget(tower, enemies);
-    if (!target) continue;
+    const n = tower.multiShot > 1 ? tower.multiShot : 1;
+    let targets;
+    if (n === 1) {
+      const t = selectTarget(tower, enemies);
+      targets = t ? [t] : [];
+    } else {
+      targets = selectTopNTargets(tower, enemies, n);
+    }
 
-    // R3 — point the tower barrel toward its target
-    tower.angle = Math.atan2(target.worldY - tower.y, target.worldX - tower.x);
+    if (targets.length === 0) continue;
+
+    // R3 — point the tower barrel toward the primary (highest-priority) target
+    tower.angle = Math.atan2(targets[0].worldY - tower.y, targets[0].worldX - tower.x);
 
     tower.cooldown = 1 / tower.fireRate;
     AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
-    projectiles.push(projectilePool.acquire({
-      x: tower.x, y: tower.y, target,
-      speed:     tower.projSpeed,
-      damage:    tower.damage,
-      aoeRadius: tower.aoeRadius,
-      towerType: tower.type,
-      ballistic: tower.aoeRadius > 0,
-    }));
+    for (const target of targets) {
+      projectiles.push(projectilePool.acquire({
+        x: tower.x, y: tower.y, target,
+        speed:     tower.projSpeed,
+        damage:    tower.damage,
+        aoeRadius: tower.aoeRadius,
+        towerType: tower.type,
+        ballistic: tower.aoeRadius > 0,
+      }));
+    }
   }
 
   moveAndHitProjectiles(projectiles, enemies, damageEvents);
