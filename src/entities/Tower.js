@@ -22,5 +22,14 @@ export function createTower(type, x, y) {
     upgradesB:    0,
     upgradeSpent: 0,
     angle:        0, // radians — updated by CombatSystem; used by TowerRenderer for barrel direction
+    isSupport:    false,
+    buffFireRate: 0,
+    buffDamage:   0,
+    buffRange:    0,
+    camoDetect:   false,
+    buffedFireRate: 0,
+    buffedDamage:   0,
+    buffedRange:    0,
+    camoVisible:    false,
   };
 }

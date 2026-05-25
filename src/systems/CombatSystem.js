@@ -17,13 +17,15 @@ const SHOT_SOUND = {
  *   `full` = raw damage before resistance (used by DamageNumberRenderer for colour coding).
  */
 export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
+  applyBuffAuras(towers);
+
   for (const tower of towers) {
     if (tower.cooldown > 0) { tower.cooldown -= dt; continue; }
 
     if (tower.isSlow) {
       // R3 — rotate slow towers toward nearest in-range enemy
       let nearest = null, nearestDSq = Infinity;
-      const rSq = tower.range * tower.range;
+      const rSq = tower.buffedRange * tower.buffedRange;
       for (const e of enemies) {
         const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
         const dSq = dx * dx + dy * dy;
@@ -32,22 +34,27 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
       if (nearest) tower.angle = Math.atan2(nearest.worldY - tower.y, nearest.worldX - tower.x);
       applySlow(tower, enemies);
       AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
-      tower.cooldown = 1 / tower.fireRate;
+      tower.cooldown = 1 / tower.buffedFireRate;
       continue;
     }
 
+    // Temporarily set tower.range to buffedRange so selectTarget uses the buffed value,
+    // then restore it immediately after the call.
+    const baseRange = tower.range;
+    tower.range = tower.buffedRange;
     const target = selectTarget(tower, enemies);
+    tower.range = baseRange;
     if (!target) continue;
 
     // R3 — point the tower barrel toward its target
     tower.angle = Math.atan2(target.worldY - tower.y, target.worldX - tower.x);
 
-    tower.cooldown = 1 / tower.fireRate;
+    tower.cooldown = 1 / tower.buffedFireRate;
     AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
     projectiles.push(projectilePool.acquire({
       x: tower.x, y: tower.y, target,
       speed:     tower.projSpeed,
-      damage:    tower.damage,
+      damage:    tower.buffedDamage,
       aoeRadius: tower.aoeRadius,
       towerType: tower.type,
       ballistic: tower.aoeRadius > 0,
@@ -57,8 +64,32 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
   moveAndHitProjectiles(projectiles, enemies, damageEvents);
 }
 
+function applyBuffAuras(towers) {
+  // Reset buffed stats to base values each frame
+  for (const t of towers) {
+    t.buffedFireRate = t.fireRate;
+    t.buffedDamage   = t.damage;
+    t.buffedRange    = t.range;
+    t.camoVisible    = false;
+  }
+  // Apply support tower auras
+  for (const src of towers) {
+    if (!src.isSupport) continue;
+    const rSq = src.range * src.range;
+    for (const t of towers) {
+      if (t === src) continue;
+      const dSq = (t.x - src.x) ** 2 + (t.y - src.y) ** 2;
+      if (dSq > rSq) continue;
+      if (src.buffFireRate) t.buffedFireRate *= (1 + src.buffFireRate);
+      if (src.buffDamage)   t.buffedDamage   *= (1 + src.buffDamage);
+      if (src.buffRange)    t.buffedRange    *= (1 + src.buffRange);
+      if (src.camoDetect)   t.camoVisible    = true;
+    }
+  }
+}
+
 function applySlow(tower, enemies) {
-  const rSq = tower.range * tower.range;
+  const rSq = tower.buffedRange * tower.buffedRange;
   for (const e of enemies) {
     const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
     if (dx * dx + dy * dy <= rSq) {
