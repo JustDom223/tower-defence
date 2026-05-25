@@ -30,5 +30,6 @@ export function createTower(type, x, y) {
     upgradesB:    0,
     upgradeSpent: 0,
     angle:        0, // radians — updated by CombatSystem; used by TowerRenderer for barrel direction
+    multiShot:    1, // number of targets to fire at simultaneously (>1 = multi-shot)
   };
 }
