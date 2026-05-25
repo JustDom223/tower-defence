@@ -1,6 +1,7 @@
 import { TOWER_TYPES }             from '../data/towers.js';
 import { MAX_TIER, CROSSPATH_CAP } from '../systems/UpgradeSystem.js';
 import AudioManager                from '../audio/AudioManager.js';
+import { clearSave }               from '../core/SaveSystem.js';
 
 /**
  * R6 — Upgrade delta preview.
@@ -117,7 +118,6 @@ export class GameUI {
       });
     }
 
-    document.getElementById('end-restart').addEventListener('click', () => location.reload());
   }
 
   get selectedTowerType() { return this.#selectedTowerType; }
@@ -199,6 +199,15 @@ export class GameUI {
     }
 
     this.#endScreen.style.display = 'flex';
+
+    const btn = document.getElementById('end-restart');
+    btn.textContent = won ? 'Continue' : 'Try Again';
+    const fresh = btn.cloneNode(true);
+    btn.replaceWith(fresh);
+    fresh.addEventListener('click', () => {
+      if (!won) clearSave();
+      location.reload();
+    });
   }
 
   setFFActive(active) {
