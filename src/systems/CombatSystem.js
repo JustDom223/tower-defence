@@ -44,6 +44,16 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
 
     tower.cooldown = 1 / tower.fireRate;
     AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
+
+    let pierce = 0, dirX = 0, dirY = 0;
+    if (tower.pierce > 0) {
+      pierce = tower.pierce;
+      const dx = target.worldX - tower.x, dy = target.worldY - tower.y;
+      const len = Math.sqrt(dx * dx + dy * dy) || 1;
+      dirX = dx / len;
+      dirY = dy / len;
+    }
+
     projectiles.push(projectilePool.acquire({
       x: tower.x, y: tower.y, target,
       speed:     tower.projSpeed,
@@ -51,6 +61,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
       aoeRadius: tower.aoeRadius,
       towerType: tower.type,
       ballistic: tower.aoeRadius > 0,
+      pierce, dirX, dirY,
     }));
   }
 
@@ -74,9 +85,31 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
     p.prevX = p.x; p.prevY = p.y;
 
     const dt = 1 / 60;
-    let hit = false;
+    let remove = false;
 
-    if (p.ballistic) {
+    if (p.pierceLeft > 0) {
+      // Piercing projectile — travels in fixed direction, hits multiple enemies
+      p.x += p.dirX * p.speed * dt;
+      p.y += p.dirY * p.speed * dt;
+
+      // Check all enemies for proximity hits
+      for (const e of enemies) {
+        if (e.hp <= 0) continue;
+        if (p.pierceHit.has(e.id)) continue;
+        const dx = e.worldX - p.x, dy = e.worldY - p.y;
+        if (dx * dx + dy * dy < HIT_DIST_SQ) {
+          applyDamage(e, p.damage, p.towerType, e.worldX, e.worldY, damageEvents);
+          p.pierceHit.add(e.id);
+          p.pierceLeft--;
+          if (p.pierceLeft < 0) { remove = true; break; }
+        }
+      }
+
+      // Remove if off-canvas
+      if (!remove && (p.x < -20 || p.x > 1300 || p.y < -20 || p.y > 740)) {
+        remove = true;
+      }
+    } else if (p.ballistic) {
       p.x += p.vx * dt;
       p.y += p.vy * dt;
       const remX = p.landX - p.x, remY = p.landY - p.y;
@@ -84,7 +117,7 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
       if (remDist <= p.speed * dt) {
         p.x = p.landX;
         p.y = p.landY;
-        hit = true;
+        remove = true;
       }
     } else {
       // Guard against pool recycling (ID check) and enemies removed from play while
@@ -103,15 +136,16 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
 
       if (targetLive) {
         const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
-        if (dx * dx + dy * dy < HIT_DIST_SQ) hit = true;
+        if (dx * dx + dy * dy < HIT_DIST_SQ) remove = true;
       } else {
         // Target is gone — expire immediately rather than flying blind.
-        hit = true;
+        remove = true;
       }
     }
 
-    if (hit) {
-      onHit(p, enemies, damageEvents);
+    if (remove) {
+      // Piercing projectiles apply damage inline; standard projectiles call onHit on removal
+      if (!p.pierceHit) onHit(p, enemies, damageEvents);
       projectilePool.release(p);
       projectiles.splice(i, 1);
     }
