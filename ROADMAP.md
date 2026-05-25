@@ -113,3 +113,9 @@ All original R1–R6 phases and subsequent ticket docs are complete:
 **Next opportunity:** balance pass (tune wave compositions, difficulty curve, perk values) or new content (additional tower types, enemy variants, map 11+).
 
 Items 1–5 are short; 6 and 7 are the big content/progression milestones. Tackle 1 immediately (it's blocking play), then 2 so the rest gets cheap automated checking.
+
+6. **`SPEC_restart-map.md`** ✅ — Restart Map button in pause menu (amber, confirm dialog, sessionStorage intent).
+7. **`SPEC_end-screen-flow.md`** ✅ — "Continue" on win / "Try Again" on loss; clears save on loss.
+8. **`SPEC_free-placement.md`** ✅ — Free tower placement with 10 px snap grid; save key bumped to v2.
+9. **`SPEC_exclusive-upgrade-paths.md`** ✅ — Mutually exclusive upgrade paths; first purchase on either path locks the other.
+10. **`SPEC_fullscreen.md`** ✅ — Fullscreen toggle on HUD and map-select; upscales to fill screen in fullscreen.
