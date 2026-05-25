@@ -20,6 +20,7 @@ export function createTower(type, x, y) {
     isStun:       def.isStun      ?? false,
     stunDuration: def.stunDuration ?? 0,
     globalRange:  def.globalRange  ?? false,
+    isEconomy:    def.isEconomy    ?? false,
     pierce:       def.pierce       ?? 0,
     dotDamage:        def.dotDamage        ?? 0,
     dotDuration:      def.dotDuration      ?? 0,

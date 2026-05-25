@@ -100,6 +100,43 @@ export const TOWER_TYPES = {
     },
   },
 
+  generator: {
+    name: 'Generator',
+    cost: 225,
+    damage:    0,
+    range:     120,
+    fireRate:  0,
+    projSpeed: 0,
+    aoeRadius: 0,
+    isSlow:    false,
+    isEconomy: true,
+    incomePerWave:      30,
+    killCashBoostRange: 0,
+    killCashBoostMult:  0,
+    color: 0xeab308,
+    projColor: 0,
+    upgrades: {
+      pathA: {
+        label: 'Bank',
+        tiers: [
+          { name: 'Savings Account',    desc: '+$55/wave',    cost:  150, stats: { incomePerWave: 25 } },
+          { name: 'Investment Fund',    desc: '+$100/wave',   cost:  280, stats: { incomePerWave: 45 } },
+          { name: 'Compound Interest',  desc: '+$180/wave',   cost:  600, stats: { incomePerWave: 80 } },
+          { name: 'Money Press',        desc: '+$300/wave',   cost: 1200, stats: { incomePerWave: 120 } },
+        ],
+      },
+      pathB: {
+        label: 'Market',
+        tiers: [
+          { name: 'Pawn Shop',     desc: '+25% kill cash nearby',  cost:  150, stats: { killCashBoostRange: 120, killCashBoostMult: 0.25 } },
+          { name: 'Trading Post',  desc: '+50% total',             cost:  280, stats: { killCashBoostMult: 0.25 } },
+          { name: 'Stock Exchange',desc: '+75%; wider aura',        cost:  600, stats: { killCashBoostRange: 60, killCashBoostMult: 0.25 } },
+          { name: 'Black Market',  desc: '+100% — kills doubled',   cost: 1200, stats: { killCashBoostMult: 0.25 } },
+        ],
+      },
+    },
+  },
+
   marksman: {
     name: 'Marksman',
     cost: 125,

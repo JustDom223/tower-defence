@@ -22,6 +22,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
 
   for (const tower of towers) {
     if (tower.cooldown > 0) { tower.cooldown -= dt; continue; }
+    if (tower.isSupport || tower.isEconomy) continue;
 
     if (tower.isStun) {
       // Rotate toward nearest in-range enemy (mirrors isSlow behaviour)
