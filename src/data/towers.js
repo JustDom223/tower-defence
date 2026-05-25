@@ -137,6 +137,44 @@ export const TOWER_TYPES = {
     },
   },
 
+  commandpost: {
+    name: 'Command Post',
+    cost: 200,
+    damage:    0,
+    range:     180,
+    fireRate:  0,
+    projSpeed: 0,
+    aoeRadius: 0,
+    isSlow:    false,
+    isSupport: true,
+    buffFireRate: 0.15,
+    buffDamage:   0,
+    buffRange:    0,
+    camoDetect:   false,
+    color: 0x10b981,
+    projColor: 0,
+    upgrades: {
+      pathA: {
+        label: 'Drill Sgt',
+        tiers: [
+          { name: 'Drills',         desc: '+10% fire rate nearby',   cost: 150, stats: { buffFireRate: 0.10 } },
+          { name: 'Field Training', desc: '+20% fire rate nearby',   cost: 280, stats: { buffFireRate: 0.20 } },
+          { name: 'War Academy',    desc: '+30% fire rate nearby',   cost: 600, stats: { buffFireRate: 0.30 } },
+          { name: 'Elite Corps',    desc: '+50% fire rate nearby',   cost: 1400, stats: { buffFireRate: 0.50 } },
+        ],
+      },
+      pathB: {
+        label: 'Spotter',
+        tiers: [
+          { name: 'Rangefinder',    desc: '+15% damage nearby',      cost: 150, stats: { buffDamage: 0.15 } },
+          { name: 'Sniper School',  desc: '+25% damage nearby',      cost: 300, stats: { buffDamage: 0.25 } },
+          { name: 'Camo Detect',    desc: '+10% dmg; camo reveal',   cost: 650, stats: { buffDamage: 0.10, camoDetect: true } },
+          { name: 'Shadow Network', desc: '+40% dmg; wider range',   cost: 1500, stats: { buffDamage: 0.40, buffRange: 0.20 } },
+        ],
+      },
+    },
+  },
+
   marksman: {
     name: 'Marksman',
     cost: 125,
