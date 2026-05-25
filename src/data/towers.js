@@ -137,6 +137,47 @@ export const TOWER_TYPES = {
     },
   },
 
+  alchemist: {
+    name: 'Alchemist',
+    cost: 200,
+    damage:    15,
+    range:     150,
+    fireRate:  1.2,
+    projSpeed: 280,
+    aoeRadius: 0,
+    isSlow:    false,
+    color: 0x8b5cf6,
+    projColor: 0xc4b5fd,
+    dotDamage:        10,
+    dotDuration:      3.0,
+    dotTickRate:      1.0,
+    dotIgnoresArmour: true,
+    dotStackCap:      2,
+    debuffVulnerability: 1.3,
+    debuffDuration:      3.0,
+    ignoresArmour:    false,
+    upgrades: {
+      pathA: {
+        label: 'Corrosion',
+        tiers: [
+          { name: 'Acid Flask',     desc: '+8 acid DoT/tick',           cost: 160, stats: { dotDamage: 8 } },
+          { name: 'Caustic Brew',   desc: '+15 acid DoT, +1s duration', cost: 320, stats: { dotDamage: 15, dotDuration: 1.0 } },
+          { name: 'Viral Agent',    desc: '+25 acid DoT, stack cap +1', cost: 700, stats: { dotDamage: 25, dotStackCap: 1 } },
+          { name: 'Plague Serum',   desc: '+40 acid DoT, +1.5s dur',    cost: 1600, stats: { dotDamage: 40, dotDuration: 1.5 } },
+        ],
+      },
+      pathB: {
+        label: 'Debuff',
+        tiers: [
+          { name: 'Weakening Potion', desc: '+10% vulnerability',        cost: 160, stats: { debuffVulnerability: 0.10 } },
+          { name: 'Armor Solvent',    desc: 'Shots ignore armour',       cost: 350, stats: { ignoresArmour: true } },
+          { name: 'Exploit Weakness', desc: '+20% vulnerability, +1s',  cost: 750, stats: { debuffVulnerability: 0.20, debuffDuration: 1.0 } },
+          { name: 'Total Breakdown',  desc: '+40% vulnerability, +2s',  cost: 1700, stats: { debuffVulnerability: 0.40, debuffDuration: 2.0 } },
+        ],
+      },
+    },
+  },
+
   flamethrower: {
     name: 'Flamethrower',
     cost: 175,
