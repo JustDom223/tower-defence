@@ -21,6 +21,8 @@ import { WAVES as WAVES_MAP8 }  from './data/waves-map8.js';
 import { WAVES as WAVES_MAP9 }  from './data/waves-map9.js';
 import { WAVES as WAVES_MAP10 } from './data/waves-map10.js';
 import { enemyPool }            from './entities/Enemy.js';
+import { ENEMY_TYPES }          from './data/enemies.js';
+import { projectilePool }       from './entities/Projectile.js';
 import { createTower }          from './entities/Tower.js';
 import { updateMovement }       from './systems/MovementSystem.js';
 import { WaveSpawner }          from './systems/WaveSpawner.js';
@@ -274,6 +276,11 @@ function awaitMapSelect(profile) {
       );
     }
 
+    document.getElementById('map-sandbox').onclick = () => {
+      clearSave();
+      pickMap('map1', null, 'sandbox');
+    };
+
     // C1/C3 — map buttons are generated dynamically; bind after updateMapSelectUI
     function bindMapBtns() {
       document.querySelectorAll('#map-list .map-btn:not([disabled])').forEach(btn => {
@@ -316,8 +323,11 @@ async function main() {
   const { mapKey, savedData, diffKey } = await awaitMapSelect(profile);
   document.body.classList.add('game-active');
 
+  const isSandbox = diffKey === 'sandbox';
   // C0 — resolve difficulty config; remap legacy 'easy' to 'normal'
-  const difficulty = DIFFICULTIES[diffKey] ?? DIFFICULTIES.normal;
+  const difficulty = isSandbox
+    ? DIFFICULTIES.normal
+    : (DIFFICULTIES[diffKey] ?? DIFFICULTIES.normal);
 
   const container = document.getElementById('game-container');
   const renderer  = new Renderer();
@@ -334,9 +344,10 @@ async function main() {
   const state = {
     mapKey,
     diffKey,
+    sandbox:     isSandbox,
     difficulty: difficulty.key,
-    lives:       20 + (perks.startLives ?? 0),
-    cash:        difficulty.startingCash + (perks.startCash ?? 0),
+    lives:       isSandbox ? 9999 : 20 + (perks.startLives ?? 0),
+    cash:        isSandbox ? 999999 : difficulty.startingCash + (perks.startCash ?? 0),
     score:       0,
     kills:       0,
     waveIndex:   -1,
@@ -357,8 +368,8 @@ async function main() {
   const mapHpMult   = mapDef.hpMult ?? 1;
   const waveSpawner = new WaveSpawner(enemyPool, difficulty, waves, mapHpMult);
 
-  // M4 — show difficulty badge in HUD
-  document.getElementById('hud-diff').textContent = `${difficulty.emoji} ${difficulty.label}`;
+  // M4 — show difficulty badge in HUD (hidden in sandbox; badge replaced by sandbox badge)
+  document.getElementById('hud-diff').textContent = isSandbox ? '' : `${difficulty.emoji} ${difficulty.label}`;
 
   // --- Renderers ---
   const pathRenderer = new PathRenderer();
@@ -406,13 +417,52 @@ async function main() {
   // --- UI ---
   const ui = new GameUI();
   ui.init();
-  ui.setProfileUnlocks(profile.unlocks); // M1 — gate shop + upgrade panel
-  ui.setPerks(profile.perks);            // P1 — pass perks so shop uses discounted costs
+  ui.setProfileUnlocks(isSandbox ? null : profile.unlocks); // M1 — gate shop (null = all unlocked)
+  ui.setPerks(isSandbox ? null : profile.perks);            // P1 — pass perks so shop uses discounted costs
+  if (isSandbox) ui.setSandbox(true);
   ui.update(state);
   ui.setWavePreview(fmtWavePreview(waves[0])); // R3 — show wave 1 contents before start
 
+  // Sandbox one-time setup
+  if (isSandbox) {
+    document.body.classList.add('sandbox-active');
+    document.getElementById('hud-sandbox-badge').style.display = 'inline';
+
+    // Populate enemy type selector from data
+    const spawnSel = document.getElementById('spawn-type');
+    for (const type of Object.keys(ENEMY_TYPES)) {
+      const opt = document.createElement('option');
+      opt.value = type;
+      opt.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+      spawnSel.appendChild(opt);
+    }
+
+    document.getElementById('spawn-btn').addEventListener('click', () => {
+      const type  = spawnSel.value;
+      const count = Math.max(1, parseInt(document.getElementById('spawn-count').value) || 1);
+      for (let i = 0; i < count; i++) {
+        const dist = i * 30;
+        const e    = enemyPool.acquire({ type, distance: dist });
+        const pos  = positionAtDistance(path, dist);
+        e.worldX   = pos.x;
+        e.worldY   = pos.y;
+        state.enemies.push(e);
+      }
+    });
+
+    document.getElementById('clear-enemies-btn').addEventListener('click', () => {
+      for (const e of state.enemies) enemyPool.release(e);
+      state.enemies.length = 0;
+      for (const p of state.projectiles) projectilePool.release(p);
+      state.projectiles.length = 0;
+    });
+  }
+
   ui.onStartWave = () => {
-    if (state.waveActive || state.waveIndex >= waves.length - 1 || state.gameOver) return;
+    if (state.waveActive || state.gameOver) return;
+    if (!state.sandbox && state.waveIndex >= waves.length - 1) return;
+    // Sandbox: cycle back to the first wave after the last one
+    if (state.sandbox && state.waveIndex >= waves.length - 1) state.waveIndex = -1;
     state.waveIndex++;
     state.waveActive  = true;
     state.spawnerDone = false;
@@ -439,11 +489,14 @@ async function main() {
 
   ui.onUpgrade = (tower, path) => {
     // M1 — pass profile path-unlock state into the upgrade gating
-    const pathUnlocked = isPathUnlocked(profile, tower.type, path);
-    const result = canBuyUpgrade(tower, path, state.cash, TOWER_TYPES[tower.type], pathUnlocked);
+    const pathUnlocked = state.sandbox || isPathUnlocked(profile, tower.type, path);
+    const effectiveCash = state.sandbox ? Infinity : state.cash;
+    const result = canBuyUpgrade(tower, path, effectiveCash, TOWER_TYPES[tower.type], pathUnlocked);
     if (!result.ok) return;
-    state.cash -= result.tier.cost;
-    tower.upgradeSpent += result.tier.cost;
+    if (!state.sandbox) {
+      state.cash -= result.tier.cost;
+      tower.upgradeSpent += result.tier.cost;
+    }
     applyTier(tower, result.tier);
     if (path === 'A') tower.upgradesA++;
     else              tower.upgradesB++;
@@ -460,9 +513,10 @@ async function main() {
   };
 
   ui.onToggleFF = () => {
-    const next = loop.speed === 1 ? 2 : 1;
-    loop.speed = next;
-    ui.setFFActive(next !== 1);
+    const speeds = state.sandbox ? [1, 2, 4, 8] : [1, 2];
+    const idx    = speeds.indexOf(loop.speed);
+    loop.speed   = speeds[(idx + 1) % speeds.length];
+    ui.setFFActive(loop.speed !== 1, loop.speed);
   };
 
   // --- Canvas input ---
@@ -549,19 +603,20 @@ async function main() {
 
     const type = ui.selectedTowerType;
     if (!type) return;
-    // M1 — placement guard: profile must have this tower unlocked
-    if (!isTowerUnlocked(profile, type)) return;
+    // M1 — placement guard: profile must have this tower unlocked (waived in sandbox)
+    if (!state.sandbox && !isTowerUnlocked(profile, type)) return;
     const def = TOWER_TYPES[type];
     // P1 — Bulk Discount perk reduces tower costs
     const effectiveCost = Math.ceil(def.cost * (1 - (perks.towerCostPct ?? 0)));
     const { x, y } = snapToGrid(wx, wy);
-    if (state.cash < effectiveCost || !isPositionFree(x, y, path.waypoints, state.towers)) return;
+    if (!state.sandbox && state.cash < effectiveCost) return;
+    if (!isPositionFree(x, y, path.waypoints, state.towers)) return;
 
     const tower = createTower(type, x, y);
     // P1 — Power Core perk: bake global damage bonus into tower at creation
-    if ((perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
+    if (!state.sandbox && (perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
     state.towers.push(tower);
-    state.cash -= effectiveCost;
+    if (!state.sandbox) state.cash -= effectiveCost;
     towerRenderer.markDirty();
     ui.clearTowerTypeSelection();
     towerRenderer.setHoverTile(null);
@@ -612,7 +667,7 @@ async function main() {
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const e = state.enemies[i];
         if (e.distance >= path.totalLength) {
-          state.lives = Math.max(0, state.lives - 1);
+          if (!state.sandbox) state.lives = Math.max(0, state.lives - 1);
           enemyPool.release(e);
           state.enemies.splice(i, 1);
         } else if (e.hp <= 0) {
@@ -651,8 +706,9 @@ async function main() {
         }
       }
 
-      // Win
-      if (!state.waveActive &&
+      // Win — not triggered in sandbox
+      if (!state.sandbox &&
+          !state.waveActive &&
           state.waveIndex >= waves.length - 1 &&
           state.spawnerDone &&
           state.enemies.length === 0) {
@@ -666,8 +722,8 @@ async function main() {
         ui.showEndScreen(true, state.score, stars, availableStars(profile), newBest);
       }
 
-      // Lose
-      if (state.lives === 0) {
+      // Lose — not triggered in sandbox
+      if (!state.sandbox && state.lives === 0) {
         state.gameOver = true;
         clearSave();
         AudioManager.play('lose');

@@ -562,6 +562,55 @@
         border-radius: calc(20px * var(--ui-scale));
       }
 
+      /* ── Sandbox mode ──────────────────────────────────────────── */
+      #map-sandbox {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        width: 100%; margin-top: 8px;
+        background: #1c1412; border: 1px solid #4c1d95; color: #a78bfa;
+        padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+        transition: border-color .1s, color .1s;
+      }
+      #map-sandbox:hover { border-color: #7c3aed; color: #c4b5fd; background: #1e1525; }
+      #hud-sandbox-badge {
+        display: none; background: #4c1d95; color: #c4b5fd;
+        border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 700;
+        letter-spacing: .04em; white-space: nowrap;
+      }
+      /* Sandbox spawner bar — sits above the tower shop, hidden unless sandbox-active */
+      #sandbox-panel {
+        position: absolute; bottom: 52px; left: 0; right: 0;
+        display: none; gap: 10px; align-items: center;
+        background: rgba(10,6,20,.88); border-top: 1px solid #4c1d95;
+        padding: 7px 14px; pointer-events: all;
+      }
+      body.sandbox-active #sandbox-panel { display: flex; }
+      #sandbox-label {
+        color: #a78bfa; font-size: 11px; font-weight: 700;
+        letter-spacing: .05em; white-space: nowrap;
+      }
+      #spawn-type {
+        background: #1f2937; color: #e5e7eb;
+        border: 1px solid #374151; border-radius: 5px;
+        padding: 4px 6px; font-size: 12px; cursor: pointer;
+      }
+      #spawn-count {
+        width: 54px; background: #1f2937; color: #e5e7eb;
+        border: 1px solid #374151; border-radius: 5px;
+        padding: 4px 6px; font-size: 12px;
+      }
+      #spawn-btn {
+        background: #4c1d95; color: #e9d5ff; border: none;
+        border-radius: 5px; padding: 5px 12px; cursor: pointer;
+        font-size: 12px; font-weight: 600;
+      }
+      #spawn-btn:hover { background: #6d28d9; }
+      #clear-enemies-btn {
+        background: #1c0a0a; color: #fca5a5;
+        border: 1px solid #7f1d1d; border-radius: 5px;
+        padding: 5px 10px; cursor: pointer; font-size: 12px;
+      }
+      #clear-enemies-btn:hover { background: #7f1d1d; color: #fff; }
+
       /* ── MB6 — Remove sticky hover states on touch devices ────── */
       @media (hover: none) {
         .tower-btn:hover         { border-color: #374151 !important; }
@@ -617,6 +666,7 @@
           <div id="map-list"></div>
           <button id="map-continue">↩ Continue saved game</button>
           <button id="map-upgrades">✦ Unlock Tree <span id="upgrades-badge"></span></button>
+          <button id="map-sandbox">⚗️ Sandbox Mode</button>
           <button id="map-fs">⛶ Fullscreen</button>
         </div>
       </div>
@@ -657,6 +707,7 @@
         <div class="stat">💀 <span id="hud-kills">0</span></div>
         <div class="stat" id="hud-diff" style="font-size:13px;opacity:.7"></div>
         <span id="hud-preview"></span>
+        <span id="hud-sandbox-badge">⚗️ SANDBOX</span>
         <button id="hud-mute">🔊</button>
         <button id="hud-pause">⏸</button>
         <button id="hud-fs">⛶</button>
@@ -676,6 +727,15 @@
           <button class="target-btn"        data-target="strong">Strong</button>
         </div>
         <button id="sell-btn">Sell</button>
+      </div>
+
+      <!-- Sandbox spawner bar (visible only in sandbox mode) -->
+      <div id="sandbox-panel">
+        <span id="sandbox-label">⚗️ SPAWN</span>
+        <select id="spawn-type"></select>
+        <input id="spawn-count" type="number" min="1" max="50" value="1">
+        <button id="spawn-btn">Spawn</button>
+        <button id="clear-enemies-btn">Clear All</button>
       </div>
 
       <!-- Tower shop -->

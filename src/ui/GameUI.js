@@ -59,6 +59,8 @@ export class GameUI {
   /** Mortar targeting — set to a tower object while waiting for the player to click a target. */
   mortarSetMode = null;
 
+  #sandbox = false;
+
   init() {
     this.#livesEl        = document.getElementById('hud-lives');
     this.#cashEl         = document.getElementById('hud-cash');
@@ -214,8 +216,12 @@ export class GameUI {
     });
   }
 
-  setFFActive(active) {
-    this.#ffBtn.textContent = active ? '⏩ 2×' : '⏩ 1×';
+  setSandbox(enabled) {
+    this.#sandbox = enabled;
+  }
+
+  setFFActive(active, speed = 2) {
+    this.#ffBtn.textContent = active ? `⏩ ${speed}×` : '⏩ 1×';
     this.#ffBtn.classList.toggle('active', active);
   }
 
@@ -229,8 +235,9 @@ export class GameUI {
       this.#currentCash = state.cash;
       this.#refreshShop();
     }
-    this.#startBtn.disabled   =
-      state.waveActive || state.waveIndex >= state.totalWaves - 1 || state.gameOver;
+    this.#startBtn.disabled = this.#sandbox
+      ? (state.waveActive || state.gameOver)
+      : (state.waveActive || state.waveIndex >= state.totalWaves - 1 || state.gameOver);
     this.#startBtn.textContent = state.waveActive ? 'Wave Active…' : 'Start Wave';
   }
 
