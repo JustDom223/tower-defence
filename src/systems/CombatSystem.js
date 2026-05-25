@@ -46,11 +46,14 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
     AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
     projectiles.push(projectilePool.acquire({
       x: tower.x, y: tower.y, target,
-      speed:     tower.projSpeed,
-      damage:    tower.damage,
-      aoeRadius: tower.aoeRadius,
-      towerType: tower.type,
-      ballistic: tower.aoeRadius > 0,
+      speed:               tower.projSpeed,
+      damage:              tower.damage,
+      aoeRadius:           tower.aoeRadius,
+      towerType:           tower.type,
+      ballistic:           tower.aoeRadius > 0,
+      debuffVulnerability: tower.debuffVulnerability ?? 0,
+      debuffDuration:      tower.debuffDuration      ?? 0,
+      ignoresArmour:       tower.ignoresArmour       ?? false,
     }));
   }
 
@@ -119,9 +122,12 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
 }
 
 /** Apply damage respecting per-enemy resistance vs the tower type that fired. */
-function applyDamage(e, rawDamage, towerType, hitX, hitY, damageEvents) {
-  const mult   = e.resistance?.[towerType] ?? 1;
-  const damage = mult < 1 ? Math.ceil(rawDamage * mult) : rawDamage;
+function applyDamage(e, rawDamage, towerType, hitX, hitY, damageEvents, ignoresArmour = false) {
+  const resistMult = ignoresArmour ? 1 : (e.resistance?.[towerType] ?? 1);
+  const vulnMult   = e.vulnerabilityMult ?? 1.0;
+  const damage = resistMult < 1
+    ? Math.ceil(rawDamage * resistMult * vulnMult)
+    : Math.round(rawDamage * vulnMult);
   e.hp = Math.max(0, e.hp - damage);
   e.flashTimer = FLASH_DURATION;
   if (damageEvents) {
@@ -138,11 +144,15 @@ function onHit(p, enemies, damageEvents) {
       if (e.hp <= 0) continue;
       const dx = e.worldX - p.x, dy = e.worldY - p.y;
       if (dx * dx + dy * dy <= rSq) {
-        applyDamage(e, p.damage, p.towerType, e.worldX, e.worldY, damageEvents);
+        applyDamage(e, p.damage, p.towerType, e.worldX, e.worldY, damageEvents, p.ignoresArmour);
       }
     }
   } else if (p.target && p.target.id === p.targetId && p.target.hp > 0) {
     applyDamage(p.target, p.damage, p.towerType,
-      p.target.worldX, p.target.worldY, damageEvents);
+      p.target.worldX, p.target.worldY, damageEvents, p.ignoresArmour);
+    if (p.debuffVulnerability > 0) {
+      p.target.vulnerabilityMult  = p.debuffVulnerability;
+      p.target.vulnerabilityTimer = p.debuffDuration;
+    }
   }
 }

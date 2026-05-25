@@ -11,6 +11,8 @@ function make() {
     worldX: 0, worldY: 0,
     slowFactor: 1, slowTimer: 0,
     flashTimer: 0,
+    vulnerabilityMult: 1.0,
+    vulnerabilityTimer: 0,
   };
 }
 
@@ -35,6 +37,8 @@ function reset(e, { type, distance = 0 }) {
   e.slowFactor = 1;
   e.slowTimer = 0;
   e.flashTimer = 0;
+  e.vulnerabilityMult = 1.0;
+  e.vulnerabilityTimer = 0;
 }
 
 export const enemyPool = new ObjectPool(make, reset);

@@ -8,10 +8,12 @@ function make() {
     speed: 0, damage: 0, aoeRadius: 0,
     target: null, targetId: 0, towerType: '',
     ballistic: false, landX: 0, landY: 0,
+    debuffVulnerability: 0, debuffDuration: 0, ignoresArmour: false,
   };
 }
 
-function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', ballistic = false }) {
+function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', ballistic = false,
+                    debuffVulnerability = 0, debuffDuration = 0, ignoresArmour = false }) {
   p.active    = true;
   p.x         = p.prevX = x;
   p.y         = p.prevY = y;
@@ -22,6 +24,9 @@ function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', 
   p.targetId  = target ? target.id : 0;
   p.towerType = towerType;
   p.ballistic = ballistic;
+  p.debuffVulnerability = debuffVulnerability;
+  p.debuffDuration      = debuffDuration;
+  p.ignoresArmour       = ignoresArmour;
 
   const destX = ballistic && target ? target.worldX : (target ? target.worldX : x);
   const destY = ballistic && target ? target.worldY : (target ? target.worldY : y);
