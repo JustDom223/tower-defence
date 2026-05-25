@@ -5,6 +5,7 @@ export function selectTarget(tower, enemies) {
   let best = null;
 
   for (const e of enemies) {
+    if (e.isCamo && !tower.camoVisible) continue;
     const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
     const dSq = dx * dx + dy * dy;
     if (dSq > rangeSq) continue;
@@ -42,6 +43,7 @@ export function selectTopNTargets(tower, enemies, n) {
   // Collect all in-range enemies with their sort key pre-computed.
   const inRange = [];
   for (const e of enemies) {
+    if (e.isCamo && !tower.camoVisible) continue;
     const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
     const dSq = dx * dx + dy * dy;
     if (dSq > rangeSq) continue;

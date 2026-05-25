@@ -703,6 +703,19 @@ async function main() {
           }
           enemyPool.release(e);
           state.enemies.splice(i, 1);
+        } else if (e.liveSpawnInterval > 0) {
+          // Carrier — periodically spawn minions while alive
+          e.liveSpawnTimer -= dt;
+          if (e.liveSpawnTimer <= 0) {
+            e.liveSpawnTimer = e.liveSpawnInterval;
+            for (let j = 0; j < e.liveSpawnCount; j++) {
+              const child = enemyPool.acquire({ type: e.liveSpawnType, distance: e.distance });
+              const cpos  = positionAtDistance(path, child.distance);
+              child.worldX = cpos.x;
+              child.worldY = cpos.y;
+              state.enemies.push(child);
+            }
+          }
         }
       }
 

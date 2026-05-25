@@ -147,7 +147,13 @@ export class EnemyRenderer {
       // Body circle only for types without a sprite
       if (!e.sprite) {
         g.circle(pos.x, pos.y, e.radius);
-        g.fill({ color: e.color });
+        g.fill({ color: e.color, alpha: e.isCamo ? 0.45 : 1 });
+      }
+
+      // Camo indicator — dashed ghost ring
+      if (e.isCamo) {
+        g.circle(pos.x, pos.y, e.radius + 4);
+        g.stroke({ color: 0x94a3b8, width: 1.5, alpha: 0.6 });
       }
 
       // Hit-flash overlay (white semi-transparent circle on top of sprite or circle)

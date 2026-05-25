@@ -6,7 +6,10 @@ let nextId = 0;
 function make() {
   return {
     active: false, id: 0, type: '', hp: 0, maxHp: 0, speed: 0, reward: 0,
+    cashReward: 0,
     radius: 10, color: 0, sprite: null, spawns: null, resistance: null,
+    isCamo: false,
+    liveSpawnInterval: 0, liveSpawnTimer: 0, liveSpawnType: null, liveSpawnCount: 0,
     distance: 0, prevDistance: 0,
     worldX: 0, worldY: 0,
     slowFactor: 1, slowTimer: 0,
@@ -27,11 +30,17 @@ function reset(e, { type, distance = 0 }) {
   e.maxHp = def.hp;
   e.speed = def.speed;
   e.reward = def.reward;
+  e.cashReward = def.cashReward ?? def.reward;
   e.radius = def.radius;
   e.color = def.color;
   e.sprite = def.sprite ?? null;
   e.spawns = def.spawns ?? null;
   e.resistance = def.resistance ?? null;
+  e.isCamo = def.isCamo ?? false;
+  e.liveSpawnInterval = def.liveSpawnInterval ?? 0;
+  e.liveSpawnTimer = 0;
+  e.liveSpawnType = def.liveSpawnType ?? null;
+  e.liveSpawnCount = def.liveSpawnCount ?? 0;
   e.distance = distance;
   e.prevDistance = distance;
   e.worldX = 0;
