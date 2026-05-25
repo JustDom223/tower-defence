@@ -1,4 +1,4 @@
-const SAVE_KEY = 'tower-defence-v1';
+const SAVE_KEY = 'tower-defence-v2';
 
 /**
  * Persist mid-game state (called on wave completion).
@@ -14,8 +14,8 @@ export function saveGame(state) {
     waveIndex:  state.waveIndex,
     towers: state.towers.map(t => ({
       type:         t.type,
-      col:          t.col,
-      row:          t.row,
+      x:            t.x,
+      y:            t.y,
       targeting:    t.targeting,
       upgradesA:    t.upgradesA,
       upgradesB:    t.upgradesB,
@@ -29,6 +29,7 @@ export function saveGame(state) {
 
 /** Returns the saved game object, or null if none exists. */
 export function loadGame() {
+  try { localStorage.removeItem('tower-defence-v1'); } catch (_) {}
   try {
     const raw = localStorage.getItem(SAVE_KEY);
     return raw ? JSON.parse(raw) : null;

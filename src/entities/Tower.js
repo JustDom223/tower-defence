@@ -2,11 +2,11 @@ import { TOWER_TYPES } from '../data/towers.js';
 
 let nextId = 0;
 
-export function createTower(type, col, row, x, y) {
+export function createTower(type, x, y) {
   const def = TOWER_TYPES[type];
   return {
     id: ++nextId,
-    type, col, row, x, y,
+    type, x, y,
     targeting: 'first',
     cooldown: 0,
     damage:       def.damage,
