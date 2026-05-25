@@ -707,6 +707,27 @@ async function main() {
     clearSave();
     location.reload();
   });
+
+  // ── Fullscreen toggle ────────────────────────────────────────────────────────
+  function toggleFullscreen() {
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }
+
+  function updateFsButtons() {
+    const icon   = document.fullscreenElement ? '✕' : '⛶';
+    const hudBtn = document.getElementById('hud-fs');
+    const mapBtn = document.getElementById('map-fs');
+    if (hudBtn) hudBtn.textContent = icon;
+    if (mapBtn) mapBtn.textContent = document.fullscreenElement ? '✕ Exit fullscreen' : '⛶ Fullscreen';
+  }
+
+  document.addEventListener('fullscreenchange', updateFsButtons);
+  document.getElementById('hud-fs')?.addEventListener('click', toggleFullscreen);
+  document.getElementById('map-fs')?.addEventListener('click', toggleFullscreen);
 }
 
 main().catch(console.error);
