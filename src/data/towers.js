@@ -137,6 +137,49 @@ export const TOWER_TYPES = {
     },
   },
 
+  flamethrower: {
+    name: 'Flamethrower',
+    cost: 175,
+    damage:    20,
+    range:     130,
+    fireRate:  3.0,
+    projSpeed: 260,
+    aoeRadius: 0,
+    isSlow:    false,
+    color: 0xef4444,
+    projColor: 0xfb923c,
+    dotDamage:        8,
+    dotDuration:      2.5,
+    dotTickRate:      1.0,
+    dotIgnoresArmour: false,
+    dotStackCap:      3,
+    leavesHazard:     true,
+    hazardDamage:     6,
+    hazardRadius:     38,
+    hazardDuration:   3.5,
+    hazardTickRate:   0.8,
+    upgrades: {
+      pathA: {
+        label: 'Inferno',
+        tiers: [
+          { name: 'Napalm',       desc: '+4 DoT/tick, +1s burn',      cost: 140, stats: { dotDamage: 4, dotDuration: 1.0 } },
+          { name: 'Firestorm',    desc: '+8 DoT/tick, stack cap +1',   cost: 280, stats: { dotDamage: 8, dotStackCap: 1 } },
+          { name: 'Magma Core',   desc: '+14 DoT/tick',                cost: 600, stats: { dotDamage: 14 } },
+          { name: 'Hellfire',     desc: '+25 DoT/tick, +1.5s burn',    cost: 1400, stats: { dotDamage: 25, dotDuration: 1.5 } },
+        ],
+      },
+      pathB: {
+        label: 'Hazard',
+        tiers: [
+          { name: 'Oil Slick',    desc: '+12 hazard dmg, +1s pool',   cost: 140, stats: { hazardDamage: 12, hazardDuration: 1.0 } },
+          { name: 'Burning Pool', desc: '+20 hazard dmg, +20 radius', cost: 280, stats: { hazardDamage: 20, hazardRadius: 20 } },
+          { name: 'Lava Field',   desc: '+30 hazard dmg, +2s pool',   cost: 620, stats: { hazardDamage: 30, hazardDuration: 2.0 } },
+          { name: 'Inferno Zone', desc: '+50 hazard dmg, +40 radius', cost: 1500, stats: { hazardDamage: 50, hazardRadius: 40 } },
+        ],
+      },
+    },
+  },
+
   commandpost: {
     name: 'Command Post',
     cost: 200,
