@@ -1,11 +1,9 @@
-export const MAX_TIER      = 4;
-export const CROSSPATH_CAP = 2;
+export const MAX_TIER = 4;
 
 /**
  * Returns whether the next tier on `path` ('A'|'B') can be purchased.
- * Reasons for failure: 'locked' | 'maxed' | 'crosspath' | 'cash' | 'nodef'.
- * `pathUnlocked` comes from the meta-progression profile; default true for
- * backwards compat (pre-profile code paths, tests).
+ * Paths are mutually exclusive — any purchase on one path locks the other.
+ * Reasons for failure: 'locked' | 'maxed' | 'path-exclusive' | 'cash' | 'nodef'.
  */
 export function canBuyUpgrade(tower, path, cash, towerDef, pathUnlocked = true) {
   if (!pathUnlocked) return { ok: false, reason: 'locked' };
@@ -13,12 +11,11 @@ export function canBuyUpgrade(tower, path, cash, towerDef, pathUnlocked = true) 
   const otherTiers = path === 'A' ? tower.upgradesB : tower.upgradesA;
 
   if (ownTiers >= MAX_TIER) return { ok: false, reason: 'maxed' };
-  if (otherTiers >= MAX_TIER && ownTiers >= CROSSPATH_CAP)
-    return { ok: false, reason: 'crosspath' };
+  if (otherTiers > 0)       return { ok: false, reason: 'path-exclusive' };
 
   const pathDef = path === 'A' ? towerDef.upgrades.pathA : towerDef.upgrades.pathB;
   const tier    = pathDef.tiers[ownTiers];
-  if (!tier) return { ok: false, reason: 'nodef' };
+  if (!tier)            return { ok: false, reason: 'nodef' };
   if (cash < tier.cost) return { ok: false, reason: 'cash', cost: tier.cost };
 
   return { ok: true, tier };

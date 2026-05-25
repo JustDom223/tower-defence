@@ -1,5 +1,5 @@
 import { TOWER_TYPES }             from '../data/towers.js';
-import { MAX_TIER, CROSSPATH_CAP } from '../systems/UpgradeSystem.js';
+import { MAX_TIER } from '../systems/UpgradeSystem.js';
 import AudioManager                from '../audio/AudioManager.js';
 import { clearSave }               from '../core/SaveSystem.js';
 
@@ -258,12 +258,13 @@ export class GameUI {
       const pathDef    = def.upgrades[pathKey];
       const ownTiers   = pathChar === 'A' ? tower.upgradesA : tower.upgradesB;
       const otherTiers = pathChar === 'A' ? tower.upgradesB : tower.upgradesA;
-      const crosspathFull = otherTiers >= MAX_TIER;
 
       // M1 — check profile lock for this path
       const profileLocked =
         this.#profileUnlocks !== null &&
         !(this.#profileUnlocks.paths?.[tower.type]?.[pathChar] ?? true);
+
+      const pathExclusive = otherTiers > 0 && ownTiers === 0;
 
       let html = `<div class="upgrade-col"><div class="path-label">${pathDef.label}</div>`;
 
@@ -271,22 +272,19 @@ export class GameUI {
         html += `<button class="upg-btn locked" disabled style="white-space:normal;height:auto;padding:6px;">
           🔒 Locked<br><span style="font-size:9px;color:#475569">Unlock in upgrade tree</span>
         </button>`;
+      } else if (pathExclusive) {
+        html += `<button class="upg-btn locked" disabled>🔒 Path locked</button>`;
       } else {
         pathDef.tiers.forEach((tier, i) => {
           if (i < ownTiers) {
             html += `<button class="upg-btn bought" disabled>✓ ${tier.name}</button>`;
           } else if (i === ownTiers) {
-            const crossLocked = crosspathFull && ownTiers >= CROSSPATH_CAP;
-            if (crossLocked) {
-              html += `<button class="upg-btn locked" disabled>🔒 ${tier.name}</button>`;
-            } else if (cash >= tier.cost) {
+            if (cash >= tier.cost) {
               const delta = upgradeDeltaPreview(tower, tier.stats);
-              html += `<button class="upg-btn next" data-path="${pathChar}"
-                title="${tier.desc}">${tier.name} $${tier.cost}${delta ? `<span class="upg-delta">${delta}</span>` : ''}</button>`;
+              html += `<button class="upg-btn next" data-path="${pathChar}" title="${tier.desc}">${tier.name} $${tier.cost}${delta ? `<span class="upg-delta">${delta}</span>` : ''}</button>`;
             } else {
               const delta = upgradeDeltaPreview(tower, tier.stats);
-              html += `<button class="upg-btn costly" data-path="${pathChar}"
-                title="Need $${tier.cost - cash} more">${tier.name} $${tier.cost}${delta ? `<span class="upg-delta">${delta}</span>` : ''}</button>`;
+              html += `<button class="upg-btn costly" data-path="${pathChar}" title="Need $${tier.cost - cash} more">${tier.name} $${tier.cost}${delta ? `<span class="upg-delta">${delta}</span>` : ''}</button>`;
             }
           } else {
             html += `<button class="upg-btn locked" disabled>${tier.name}</button>`;
