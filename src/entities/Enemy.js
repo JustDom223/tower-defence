@@ -11,6 +11,7 @@ function make() {
     worldX: 0, worldY: 0,
     slowFactor: 1, slowTimer: 0,
     flashTimer: 0,
+    dotStacks: [],   // [{ damage, tickRate, remaining, nextTick, ignoresArmour, sourceType }]
   };
 }
 
@@ -35,6 +36,7 @@ function reset(e, { type, distance = 0 }) {
   e.slowFactor = 1;
   e.slowTimer = 0;
   e.flashTimer = 0;
+  e.dotStacks = [];
 }
 
 export const enemyPool = new ObjectPool(make, reset);
