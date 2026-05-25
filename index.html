@@ -312,6 +312,11 @@
         padding: 8px 28px; border-radius: 8px; cursor: pointer; font-size: 13px;
       }
       #pause-main-menu:hover { border-color: #6b7280; color: #e5e7eb; }
+      #pause-restart {
+        background: #431407; border: 1px solid #9a3412; color: #fb923c;
+        padding: 8px 28px; border-radius: 8px; cursor: pointer; font-size: 13px;
+      }
+      #pause-restart:hover { background: #9a3412; color: #fff; }
 
       /* ── R1 — Interest toast ────────────────────────────────── */
       #interest-toast {
@@ -521,6 +526,11 @@
         padding:   calc(9px * var(--ui-scale)) calc(24px * var(--ui-scale));
         min-height: calc(40px * var(--ui-scale));
       }
+      body.mobile-scaled #pause-restart {
+        font-size: calc(12px * var(--ui-scale));
+        padding:   calc(9px * var(--ui-scale)) calc(24px * var(--ui-scale));
+        min-height: calc(44px * var(--ui-scale));
+      }
 
       body.mobile-scaled #end-panel {
         padding:    calc(24px * var(--ui-scale)) calc(32px * var(--ui-scale));
@@ -556,6 +566,7 @@
         #map-continue:hover      { border-color: #3b82f6 !important; }
         #end-restart:hover       { background: #22c55e !important; }
         #pause-resume:hover      { background: #22c55e !important; }
+        #pause-restart:hover { background: #431407 !important; color: #fb923c !important; }
       }
     </style>
   </head>
@@ -572,6 +583,7 @@
           </div>
           <div class="pause-actions">
             <button id="pause-resume">Resume</button>
+            <button id="pause-restart">Restart Map</button>
             <button id="pause-main-menu">Main Menu</button>
           </div>
         </div>

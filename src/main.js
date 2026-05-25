@@ -226,6 +226,15 @@ function updateMapSelectUI(profile) {
 // ── Map select ──────────────────────────────────────────────────────────────
 
 function awaitMapSelect(profile) {
+  const restartRaw = sessionStorage.getItem('restartIntent');
+  if (restartRaw) {
+    sessionStorage.removeItem('restartIntent');
+    try {
+      const { mapKey, diffKey } = JSON.parse(restartRaw);
+      if (mapKey && diffKey) return { mapKey, savedData: null, diffKey };
+    } catch (_) { /* corrupt — fall through */ }
+  }
+
   updateMapSelectUI(profile);
   const savedData = loadGame();
 
@@ -325,6 +334,7 @@ async function main() {
   const perks = profile.perks ?? {};
   const state = {
     mapKey,
+    diffKey,
     difficulty: difficulty.key,
     lives:       20 + (perks.startLives ?? 0),
     cash:        difficulty.startingCash + (perks.startCash ?? 0),
@@ -688,6 +698,13 @@ async function main() {
     // Save at the last completed wave; if mid-wave, step back so Continue replays it
     const saveIndex = state.waveActive ? state.waveIndex - 1 : state.waveIndex;
     saveGame({ ...state, waveIndex: saveIndex });
+    location.reload();
+  });
+
+  document.getElementById('pause-restart').addEventListener('click', () => {
+    if (!confirm('Restart this map from wave 1? Current run will be lost.')) return;
+    sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: state.mapKey, diffKey: state.diffKey }));
+    clearSave();
     location.reload();
   });
 }
