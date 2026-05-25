@@ -8,14 +8,17 @@ export class TowerRenderer {
   #towerG;
   #barrelG;
   #rangeG;
+  #hazardG;
   #dirty = true;
   #selectedTower = null;
   #hoverTile = null; // { x, y, valid, type }
 
   init(renderer) {
+    this.#hazardG = new Graphics();
     this.#towerG  = new Graphics();
     this.#barrelG = new Graphics();
     this.#rangeG  = new Graphics();
+    renderer.stage.addChild(this.#hazardG);
     renderer.stage.addChild(this.#towerG);
     renderer.stage.addChild(this.#barrelG);
     renderer.stage.addChild(this.#rangeG);
@@ -25,7 +28,10 @@ export class TowerRenderer {
   setSelectedTower(t) { this.#selectedTower = t; }
   setHoverTile(tile)  { this.#hoverTile = tile; }
 
-  render(towers) {
+  render(towers, hazards) {
+    // Ground hazards drawn below towers
+    this.#drawHazards(hazards ?? []);
+
     if (this.#dirty) {
       this.#dirty = false;
       this.#drawBodies(towers);
@@ -66,6 +72,16 @@ export class TowerRenderer {
         this.#rangeG.circle(sel.x, sel.y, sel.aoeRadius);
         this.#rangeG.stroke({ color: 0xfbbf24, width: 1, alpha: 0.4 });
       }
+    }
+  }
+
+  #drawHazards(hazards) {
+    const g = this.#hazardG;
+    g.clear();
+    for (const h of hazards) {
+      const alpha = (h.remaining / 4.0) * 0.35;
+      g.circle(h.x, h.y, h.radius);
+      g.fill({ color: 0xff6600, alpha });
     }
   }
 

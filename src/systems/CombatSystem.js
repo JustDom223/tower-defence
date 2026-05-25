@@ -16,8 +16,9 @@ const SHOT_SOUND = {
  * @param {Array} damageEvents  – shared array; push { x, y, amount, full, t } on each hit.
  *   `full` = raw damage before resistance (used by DamageNumberRenderer for colour coding).
  */
-export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
+export function updateCombat(towers, enemies, projectiles, dt, damageEvents, hazards) {
   applyBuffAuras(towers);
+
 
   for (const tower of towers) {
     if (tower.cooldown > 0) { tower.cooldown -= dt; continue; }
@@ -99,11 +100,16 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
         debuffVulnerability: tower.debuffVulnerability,
         debuffDuration:      tower.debuffDuration,
         ignoresArmour:       tower.ignoresArmour,
+        leavesHazard:   tower.leavesHazard,
+        hazardDamage:   tower.hazardDamage,
+        hazardRadius:   tower.hazardRadius,
+        hazardDuration: tower.hazardDuration,
+        hazardTickRate: tower.hazardTickRate,
       }));
     }
   }
 
-  moveAndHitProjectiles(projectiles, enemies, damageEvents);
+  moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards);
 }
 
 function applyBuffAuras(towers) {
@@ -154,7 +160,7 @@ function applyStun(tower, enemies, damageEvents) {
   }
 }
 
-function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
+function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
     p.prevX = p.x; p.prevY = p.y;
@@ -220,7 +226,7 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
 
     if (remove) {
       // Piercing projectiles apply damage inline; standard projectiles call onHit on removal
-      if (!p.pierceHit) onHit(p, enemies, damageEvents);
+      if (!p.pierceHit) onHit(p, enemies, damageEvents, hazards);
       projectilePool.release(p);
       projectiles.splice(i, 1);
     }
@@ -254,7 +260,7 @@ function applyDot(p, target) {
   }
 }
 
-function onHit(p, enemies, damageEvents) {
+function onHit(p, enemies, damageEvents, hazards) {
   if (p.aoeRadius > 0) {
     // Bomb — play explosion sound on impact
     AudioManager.play('bomb-explode');
@@ -275,5 +281,17 @@ function onHit(p, enemies, damageEvents) {
       p.target.vulnerabilityMult  = p.debuffVulnerability;
       p.target.vulnerabilityTimer = p.debuffDuration;
     }
+  }
+
+  if (p.leavesHazard && hazards) {
+    hazards.push({
+      x:         p.x,
+      y:         p.y,
+      radius:    p.hazardRadius,
+      damage:    p.hazardDamage,
+      remaining: p.hazardDuration,
+      tickRate:  p.hazardTickRate,
+      nextTick:  0,
+    });
   }
 }
