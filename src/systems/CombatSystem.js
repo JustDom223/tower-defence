@@ -55,6 +55,33 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
       continue;
     }
 
+    // Mortar manual targeting — fire ballistic projectile(s) at player-set coordinate
+    if (tower.mortarMode && tower.mortarTargetX !== null) {
+      tower.angle = Math.atan2(tower.mortarTargetY - tower.y, tower.mortarTargetX - tower.x);
+      tower.cooldown = 1 / tower.fireRate;
+      AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
+
+      const volley = tower.mortarVolley > 1 ? tower.mortarVolley : 1;
+      for (let v = 0; v < volley; v++) {
+        const spread = volley > 1 ? (v - (volley - 1) / 2) * (40 / (volley - 1)) : 0;
+        const perpX = -Math.sin(tower.angle) * spread;
+        const perpY =  Math.cos(tower.angle) * spread;
+        const landX = tower.mortarTargetX + perpX;
+        const landY = tower.mortarTargetY + perpY;
+        const syntheticTarget = { worldX: landX, worldY: landY, id: 0 };
+        projectiles.push(projectilePool.acquire({
+          x: tower.x, y: tower.y,
+          target:    syntheticTarget,
+          speed:     tower.projSpeed,
+          damage:    tower.damage,
+          aoeRadius: tower.aoeRadius,
+          towerType: tower.type,
+          ballistic: true,
+        }));
+      }
+      continue;
+    }
+
     const baseRange = tower.range;
     tower.range = tower.buffedRange;
     const n = tower.multiShot > 1 ? tower.multiShot : 1;

@@ -51,5 +51,9 @@ export function createTower(type, x, y) {
     debuffVulnerability: def.debuffVulnerability ?? 0,
     debuffDuration:      def.debuffDuration      ?? 0,
     ignoresArmour:       def.ignoresArmour       ?? false,
+    mortarMode:    false,
+    mortarTargetX: null,
+    mortarTargetY: null,
+    mortarVolley:  1,
   };
 }
