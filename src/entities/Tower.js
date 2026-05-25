@@ -43,5 +43,8 @@ export function createTower(type, x, y) {
     buffedDamage:   0,
     buffedRange:    0,
     camoVisible:    false,
+    debuffVulnerability: def.debuffVulnerability ?? 0,
+    debuffDuration:      def.debuffDuration      ?? 0,
+    ignoresArmour:       def.ignoresArmour       ?? false,
   };
 }

@@ -8,16 +8,17 @@ function make() {
     speed: 0, damage: 0, aoeRadius: 0,
     target: null, targetId: 0, towerType: '',
     ballistic: false, landX: 0, landY: 0,
-<<<<<<< HEAD
     pierceLeft: 0, pierceHit: null, dirX: 0, dirY: 0,
     dotDamage: 0, dotDuration: 0, dotTickRate: 1.0,
     dotIgnoresArmour: false, dotStackCap: 1,
+    debuffVulnerability: 0, debuffDuration: 0, ignoresArmour: false,
   };
 }
 
 function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', ballistic = false,
   pierce = 0, dirX = 0, dirY = 0,
-  dotDamage = 0, dotDuration = 0, dotTickRate = 1.0, dotIgnoresArmour = false, dotStackCap = 1 }) {
+  dotDamage = 0, dotDuration = 0, dotTickRate = 1.0, dotIgnoresArmour = false, dotStackCap = 1,
+  debuffVulnerability = 0, debuffDuration = 0, ignoresArmour = false }) {
   p.active     = true;
   p.x          = p.prevX = x;
   p.y          = p.prevY = y;
@@ -37,6 +38,9 @@ function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', 
   p.dotTickRate      = dotTickRate;
   p.dotIgnoresArmour = dotIgnoresArmour;
   p.dotStackCap      = dotStackCap;
+  p.debuffVulnerability = debuffVulnerability;
+  p.debuffDuration      = debuffDuration;
+  p.ignoresArmour       = ignoresArmour;
 
   const destX = ballistic && target ? target.worldX : (target ? target.worldX : x);
   const destY = ballistic && target ? target.worldY : (target ? target.worldY : y);

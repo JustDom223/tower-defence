@@ -12,7 +12,9 @@ function make() {
     slowFactor: 1, slowTimer: 0,
     stunTimer: 0,
     flashTimer: 0,
-    dotStacks: [],   // [{ damage, tickRate, remaining, nextTick, ignoresArmour, sourceType }]
+    dotStacks: [],
+    vulnerabilityMult: 1.0,
+    vulnerabilityTimer: 0,
   };
 }
 
@@ -39,6 +41,8 @@ function reset(e, { type, distance = 0 }) {
   e.stunTimer = 0;
   e.flashTimer = 0;
   e.dotStacks = [];
+  e.vulnerabilityMult = 1.0;
+  e.vulnerabilityTimer = 0;
 }
 
 export const enemyPool = new ObjectPool(make, reset);
