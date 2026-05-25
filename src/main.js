@@ -562,6 +562,8 @@ async function main() {
           state.cash += interest;
           showInterestToast(interest);
         }
+        const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
+        if (income > 0) state.cash += income;
         saveGame(state);
       }
 
@@ -588,7 +590,14 @@ async function main() {
           enemyPool.release(e);
           state.enemies.splice(i, 1);
         } else if (e.hp <= 0) {
-          state.cash  += e.reward;
+          const baseReward = e.cashReward ?? 10;
+          const totalBoost = state.towers
+            .filter(t => t.killCashBoostRange > 0)
+            .reduce((total, gen) => {
+              const dSq = (gen.x - e.worldX)**2 + (gen.y - e.worldY)**2;
+              return dSq <= gen.killCashBoostRange**2 ? total + gen.killCashBoostMult : total;
+            }, 0);
+          state.cash  += Math.round(baseReward * (1 + totalBoost));
           state.score += e.reward;
           state.kills += 1;
           AudioManager.play('enemy-death');
