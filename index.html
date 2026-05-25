@@ -38,7 +38,7 @@
         pointer-events: none; font-size: 15px; font-weight: 600;
       }
       .stat { display: flex; align-items: center; gap: 5px; }
-      #hud-start, #hud-ff, #hud-mute, #hud-pause {
+      #hud-start, #hud-ff, #hud-mute, #hud-pause, #hud-fs {
         pointer-events: all; border: none; color: #fff;
         border-radius: 6px; cursor: pointer; font-size: 13px;
       }
@@ -46,7 +46,7 @@
       #hud-start:disabled { background: #4b5563; cursor: default; }
       #hud-ff    { background: #374151; padding: 5px 12px; font-weight: 700; }
       #hud-ff.active { background: #7c3aed; }
-      #hud-mute, #hud-pause { background: #374151; padding: 5px 9px; }
+      #hud-mute, #hud-pause, #hud-fs { background: #374151; padding: 5px 9px; }
 
       /* ── Tower shop (bottom) ────────────────────────────────── */
       #tower-shop {
@@ -192,6 +192,12 @@
         transition: border-color .1s, color .1s;
       }
       #map-upgrades:hover { border-color: #facc15; color: #facc15; }
+      #map-fs {
+        background: none; border: 1px solid #334155; color: #64748b;
+        border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer;
+        margin-top: 8px; width: 100%;
+      }
+      #map-fs:hover { border-color: #4b5563; color: #9ca3af; }
       #upgrades-badge {
         display: none; background: #facc15; color: #0f172a;
         border-radius: 99px; font-size: 10px; font-weight: 800;
@@ -382,7 +388,8 @@
       body.mobile-scaled #hud-start,
       body.mobile-scaled #hud-ff,
       body.mobile-scaled #hud-mute,
-      body.mobile-scaled #hud-pause {
+      body.mobile-scaled #hud-pause,
+      body.mobile-scaled #hud-fs {
         font-size:  calc(13px * var(--ui-scale));
         padding:    calc(10px * var(--ui-scale)) calc(14px * var(--ui-scale));
         min-height: calc(44px * var(--ui-scale));
@@ -553,6 +560,7 @@
         .upg-btn.next:hover      { background: #1c1917 !important; }
         .tree-buy-btn:hover:not([disabled]) { background: #1e3a2f !important; }
         #map-upgrades:hover      { border-color: #4b5563 !important; color: #9ca3af !important; }
+        #map-fs:hover { border-color: #334155 !important; color: #64748b !important; }
         #map-continue:hover      { border-color: #3b82f6 !important; }
         #end-restart:hover       { background: #22c55e !important; }
         #pause-resume:hover      { background: #22c55e !important; }
@@ -597,6 +605,7 @@
           <div id="map-list"></div>
           <button id="map-continue">↩ Continue saved game</button>
           <button id="map-upgrades">✦ Unlock Tree <span id="upgrades-badge"></span></button>
+          <button id="map-fs">⛶ Fullscreen</button>
         </div>
       </div>
 
@@ -638,6 +647,7 @@
         <span id="hud-preview"></span>
         <button id="hud-mute">🔊</button>
         <button id="hud-pause">⏸</button>
+        <button id="hud-fs">⛶</button>
         <button id="hud-ff">⏩ 1×</button>
         <button id="hud-start">Start Wave</button>
       </div>
@@ -681,7 +691,9 @@
         var VIRTUAL_W = 1280, VIRTUAL_H = 720;
         function scaleGame() {
           // Scale DOWN only — don't upscale on large desktop monitors (canvas stays crisp)
-          var scale = Math.min(1,
+          var inFullscreen = !!document.fullscreenElement;
+          var scale = Math.min(
+            inFullscreen ? Infinity : 1,
             window.innerWidth  / VIRTUAL_W,
             window.innerHeight / VIRTUAL_H
           );
