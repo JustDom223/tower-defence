@@ -12,16 +12,16 @@ export const TOWER_TYPES = {
     projColor: 0x93c5fd,
     upgrades: {
       pathA: {
-        label: 'Sharp',
+        label: 'Sharpshooter',
         tiers: [
-          { name: 'Sharp Tips',  desc: '+8 damage',           cost:  80, stats: { damage: 8 } },
-          { name: 'Long Range',  desc: '+40 range',            cost: 130, stats: { range: 40 } },
-          { name: 'Razor Sharp', desc: '+14 damage',           cost: 280, stats: { damage: 14 } },
-          { name: 'Spike Storm', desc: '+20 dmg, +2 fire/sec', cost: 950, stats: { damage: 20, fireRate: 2.0 } },
+          { name: 'Sharp Tips',    desc: '+8 damage',                  cost:  80, stats: { damage: 8 } },
+          { name: 'Long Range',    desc: '+40 range',                   cost: 130, stats: { range: 40 } },
+          { name: 'Piercing Shot', desc: '+10 dmg; pierce 1 enemy',    cost: 320, stats: { damage: 10, pierce: 1 } },
+          { name: 'Spike Storm',   desc: '+20 dmg; pierce 2 enemies',  cost: 950, stats: { damage: 20, pierce: 1 } },
         ],
       },
       pathB: {
-        label: 'Quick',
+        label: 'Gatling',
         tiers: [
           { name: 'Quick Shots',  desc: '+0.5 fire/sec',          cost:  90, stats: { fireRate: 0.5 } },
           { name: 'Even Quicker', desc: '+0.8 fire/sec',          cost: 180, stats: { fireRate: 0.8 } },
@@ -80,12 +80,12 @@ export const TOWER_TYPES = {
     projColor: 0,
     upgrades: {
       pathA: {
-        label: 'Freeze',
+        label: 'Glacier',
         tiers: [
-          { name: 'Deeper Chill',   desc: 'Stronger slow (-0.1)',      cost: 120, stats: { slowFactor: -0.1 } },
-          { name: 'Glacial Pulse',  desc: 'Stronger slow, +0.5 rate',  cost: 200, stats: { slowFactor: -0.1, fireRate: 0.5 } },
-          { name: 'Ice Shard',      desc: '+30 range, deeper slow',    cost: 450, stats: { slowFactor: -0.05, range: 30 } },
-          { name: 'Absolute Zero',  desc: 'Max slow, +1.5s duration',  cost: 1100, stats: { slowFactor: -0.1, slowDuration: 1.5 } },
+          { name: 'Deeper Chill',   desc: 'Stronger slow (-0.1)',           cost: 120, stats: { slowFactor: -0.1 } },
+          { name: 'Glacial Pulse',  desc: 'Stronger slow, +0.5 rate',       cost: 200, stats: { slowFactor: -0.1, fireRate: 0.5 } },
+          { name: 'Flash Freeze',   desc: 'Enables stun (0.5s)',            cost: 500, stats: { isStun: true, stunDuration: 0.5 } },
+          { name: 'Absolute Zero',  desc: 'Stun 1.2s; max slow',           cost: 1200, stats: { stunDuration: 0.7, slowFactor: -0.1 } },
         ],
       },
       pathB: {
@@ -281,12 +281,12 @@ export const TOWER_TYPES = {
         ],
       },
       pathB: {
-        label: 'Watchful',
+        label: 'Ranger',
         tiers: [
           { name: 'Long Watch',    desc: '+100 range',                  cost: 160, stats: { range: 100 } },
           { name: 'Global Sight',  desc: 'Unlimited range',             cost: 380, stats: { globalRange: true } },
-          { name: 'Rapid Fire',    desc: '+0.5 fire/sec',               cost: 650, stats: { fireRate: 0.5 } },
-          { name: 'Sentry',        desc: '+0.8 fire/sec, +50 dmg',     cost: 1500, stats: { fireRate: 0.8, damage: 50 } },
+          { name: 'Twin Barrel',   desc: 'Fire at 2 targets at once',  cost: 700, stats: { multiShot: 1 } },
+          { name: 'Triple Tap',    desc: 'Fire at 3 targets; +50 dmg', cost: 1600, stats: { multiShot: 1, damage: 50 } },
         ],
       },
     },
