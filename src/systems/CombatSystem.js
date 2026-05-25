@@ -16,7 +16,7 @@ const SHOT_SOUND = {
  * @param {Array} damageEvents  – shared array; push { x, y, amount, full, t } on each hit.
  *   `full` = raw damage before resistance (used by DamageNumberRenderer for colour coding).
  */
-export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
+export function updateCombat(towers, enemies, projectiles, dt, damageEvents, hazards) {
   for (const tower of towers) {
     if (tower.cooldown > 0) { tower.cooldown -= dt; continue; }
 
@@ -46,15 +46,20 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents) {
     AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
     projectiles.push(projectilePool.acquire({
       x: tower.x, y: tower.y, target,
-      speed:     tower.projSpeed,
-      damage:    tower.damage,
-      aoeRadius: tower.aoeRadius,
-      towerType: tower.type,
-      ballistic: tower.aoeRadius > 0,
+      speed:          tower.projSpeed,
+      damage:         tower.damage,
+      aoeRadius:      tower.aoeRadius,
+      towerType:      tower.type,
+      ballistic:      tower.aoeRadius > 0,
+      leavesHazard:   tower.leavesHazard,
+      hazardDamage:   tower.hazardDamage,
+      hazardRadius:   tower.hazardRadius,
+      hazardDuration: tower.hazardDuration,
+      hazardTickRate: tower.hazardTickRate,
     }));
   }
 
-  moveAndHitProjectiles(projectiles, enemies, damageEvents);
+  moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards);
 }
 
 function applySlow(tower, enemies) {
@@ -68,7 +73,7 @@ function applySlow(tower, enemies) {
   }
 }
 
-function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
+function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
     p.prevX = p.x; p.prevY = p.y;
@@ -111,7 +116,7 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents) {
     }
 
     if (hit) {
-      onHit(p, enemies, damageEvents);
+      onHit(p, enemies, damageEvents, hazards);
       projectilePool.release(p);
       projectiles.splice(i, 1);
     }
@@ -129,7 +134,7 @@ function applyDamage(e, rawDamage, towerType, hitX, hitY, damageEvents) {
   }
 }
 
-function onHit(p, enemies, damageEvents) {
+function onHit(p, enemies, damageEvents, hazards) {
   if (p.aoeRadius > 0) {
     // Bomb — play explosion sound on impact
     AudioManager.play('bomb-explode');
@@ -144,5 +149,17 @@ function onHit(p, enemies, damageEvents) {
   } else if (p.target && p.target.id === p.targetId && p.target.hp > 0) {
     applyDamage(p.target, p.damage, p.towerType,
       p.target.worldX, p.target.worldY, damageEvents);
+  }
+
+  if (p.leavesHazard && hazards) {
+    hazards.push({
+      x:         p.x,
+      y:         p.y,
+      radius:    p.hazardRadius,
+      damage:    p.hazardDamage,
+      remaining: p.hazardDuration,
+      tickRate:  p.hazardTickRate,
+      nextTick:  0,
+    });
   }
 }

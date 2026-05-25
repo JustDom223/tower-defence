@@ -25,6 +25,7 @@ import { createTower }          from './entities/Tower.js';
 import { updateMovement }       from './systems/MovementSystem.js';
 import { WaveSpawner }          from './systems/WaveSpawner.js';
 import { updateCombat }         from './systems/CombatSystem.js';
+import { updateGroundHazards }  from './systems/GroundHazardSystem.js';
 import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
 import { GameUI }               from './ui/GameUI.js';
 import AudioManager             from './audio/AudioManager.js';
@@ -345,6 +346,7 @@ async function main() {
     projectiles: [],
     damageEvents:   [], // R3 — floating damage numbers
     deathParticles: [], // R3 — death burst particles
+    groundHazards:  [],
     totalWaves:  waves.length,
     gameOver:    false,
     paused:      false,
@@ -566,7 +568,8 @@ async function main() {
       }
 
       updateMovement(state.enemies, path, dt);
-      updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents);
+      updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents, state.groundHazards);
+      updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
 
       // R3 — advance and cull damage events
       for (let i = state.damageEvents.length - 1; i >= 0; i--) {
@@ -642,7 +645,7 @@ async function main() {
 
     render(alpha) {
       enemyRenderer.render(state.enemies, path, alpha);
-      towerRenderer.render(state.towers);
+      towerRenderer.render(state.towers, state.groundHazards);
       projectileRenderer.render(state.projectiles, alpha);
       particleRenderer.render(state.deathParticles);
       damageNumberRenderer.render(state.damageEvents);
