@@ -110,7 +110,13 @@ All original R1–R6 phases and subsequent ticket docs are complete:
 4. **`SPEC_campaign-maps.md`** ✅ — 10-map star-gated campaign (C0–C4).
 5. **`META_PROGRESSION.md` §11** ✅ — global perks & ranked star-sink (P1–P4).
 
-**Next opportunity:** balance pass (tune wave compositions, difficulty curve, perk values) or new content (additional tower types, enemy variants, map 11+).
+**Next opportunity:** balance pass (tune wave compositions, difficulty curve, perk values) or new content (map 11+, wave compositions using the new enemies, unlock-tree nodes for the 12 new towers).
+
+**Content added (feat/new-towers-and-enemies):**
+- 12 new towers: Tesla, Sticky Cannon, Mine Layer, Boomerang, Laser, Engineer, Druid, Wizard, Scatter Gun, Solar Tower, Trapper, Gravity Well — all available in Sandbox.
+- 10 new enemies: shielded, regenerator, flyer, magma, insulated, aquatic, cleric, stutter, juggernaut, megaboss — all available in Sandbox spawn dropdown; not yet placed in maps.
+- Dart tower fires in fixed direction at fire time (ballistic-style); Gatling tier 3 now fires a 3-dart ±15° cone volley instead of ×3 fire rate.
+- New systems: shield layer, enemy regen, flying flag, immuneSlow, heals-nearby aura, stutter movement, projSlowFactor on-hit slow.
 
 Items 1–5 are short; 6 and 7 are the big content/progression milestones. Tackle 1 immediately (it's blocking play), then 2 so the rest gets cheap automated checking.
 
