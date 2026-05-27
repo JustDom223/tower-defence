@@ -9,6 +9,7 @@ export function updateGroundHazards(hazards, enemies, dt, damageEvents) {
     const rSq = h.radius * h.radius;
     for (const e of enemies) {
       if (e.hp <= 0) continue;
+      if (e.isFlying) continue; // flying enemies are unaffected by ground hazards
       const dSq = (e.worldX - h.x)**2 + (e.worldY - h.y)**2;
       if (dSq <= rSq) {
         e.hp = Math.max(0, e.hp - h.damage);

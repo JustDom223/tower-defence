@@ -1,6 +1,6 @@
 # SPEC — Dart Tower Rework
 
-**Status: ⬜ Not started**
+**Status: ✅ Done** — implemented with fixed-direction ballistic firing (not tracking) and cone shot on Gatling tier 3 (3 darts at ±15° spread), deviating from the stat tables in this spec.
 
 **Prerequisite systems:** Pierce (from `SPEC_systems-new-mechanics.md`)
 

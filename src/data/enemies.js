@@ -26,4 +26,45 @@ export const ENEMY_TYPES = {
   /** Carrier — periodically spawns Swarmlings while alive. */
   carrier: { hp: 350, speed: 45, reward: 30, cashReward: 35, radius: 18, color: 0x0ea5e9,
              liveSpawnInterval: 3.0, liveSpawnType: 'swarmling', liveSpawnCount: 2 },
+
+  /** Shielded — absorbs damage with a shield layer first; shield ignores DoT. */
+  shielded: { hp: 150, speed: 65, reward: 22, cashReward: 25, radius: 13, color: 0x60a5fa,
+              shield: 120 },
+
+  /** Regenerator — regenerates HP over time; countered by sustained DoT. */
+  regenerator: { hp: 280, speed: 55, reward: 28, cashReward: 30, radius: 14, color: 0x34d399,
+                 regenRate: 20 },
+
+  /** Flyer — floats above the path; immune to ground hazards. */
+  flyer: { hp: 90, speed: 130, reward: 15, cashReward: 18, radius: 11, color: 0x93c5fd,
+           isFlying: true },
+
+  /** Magma — immune to slow and freeze; fire-natured, resists frost. */
+  magma: { hp: 220, speed: 60, reward: 22, cashReward: 25, radius: 14, color: 0xf97316,
+           immuneSlow: true, resistance: { frost: 0 } },
+
+  /** Insulated — immune to lightning (Tesla); use other towers to deal with it. */
+  insulated: { hp: 180, speed: 70, reward: 18, cashReward: 22, radius: 13, color: 0x4b5563,
+               resistance: { tesla: 0 } },
+
+  /** Aquatic — resists fire and burn DoT; countered by physical damage. */
+  aquatic: { hp: 160, speed: 75, reward: 18, cashReward: 20, radius: 12, color: 0x0ea5e9,
+             resistance: { flamethrower: 0.3, dot: 0.4 } },
+
+  /** Cleric — heals nearby enemies; a priority kill target. */
+  cleric: { hp: 60, speed: 70, reward: 25, cashReward: 30, radius: 9, color: 0xfde047,
+            healsNearby: 12, healsNearbyRadius: 80 },
+
+  /** Stutter — moves in stop-and-go bursts; hard to lead-aim at. */
+  stutter: { hp: 100, speed: 130, reward: 15, cashReward: 18, radius: 11, color: 0xa78bfa,
+             stutterInterval: 1.5, stutterPauseTime: 0.6 },
+
+  /** Juggernaut — resists all damage types; only raw burst cuts through. */
+  juggernaut: { hp: 600, speed: 32, reward: 50, cashReward: 60, radius: 22, color: 0x374151,
+                resistance: { dart: 0.5, marksman: 0.5, frost: 0.7, bomb: 0.8,
+                              flamethrower: 0.6, dot: 0.3, tesla: 0.6, laser: 0.5 } },
+
+  /** Mega Boss — end-game boss; extremely tanky; spawns Armoured on death. */
+  megaboss: { hp: 8000, speed: 15, reward: 500, cashReward: 300, radius: 40, color: 0x7f1d1d,
+              spawns: { type: 'armoured', count: 4 } },
 };

@@ -28,7 +28,7 @@ export function applyTier(tower, tier) {
       tower[key] = val;
     } else {
       tower[key] = (tower[key] ?? 0) + val;
-      if (key === 'slowFactor') tower[key] = Math.max(0.05, tower[key]);
+      if (key === 'slowFactor' || key === 'projSlowFactor') tower[key] = Math.max(0.05, tower[key]);
     }
   }
 }

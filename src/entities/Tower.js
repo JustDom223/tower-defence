@@ -56,5 +56,8 @@ export function createTower(type, x, y) {
     mortarTargetX: null,
     mortarTargetY: null,
     mortarVolley:  1,
+    coneShot:         def.coneShot         ?? 0,
+    projSlowFactor:   def.projSlowFactor   ?? 0,
+    projSlowDuration: def.projSlowDuration ?? 0,
   };
 }

@@ -18,6 +18,12 @@ function make() {
     dotStacks: [],
     vulnerabilityMult: 1.0,
     vulnerabilityTimer: 0,
+    shield: 0, maxShield: 0,
+    regenRate: 0,
+    isFlying: false,
+    immuneSlow: false,
+    healsNearby: 0, healsNearbyRadius: 0,
+    stutterInterval: 0, stutterPauseTime: 0, stutterTimer: 0, stutterPausing: false,
   };
 }
 
@@ -52,6 +58,17 @@ function reset(e, { type, distance = 0 }) {
   e.dotStacks = [];
   e.vulnerabilityMult = 1.0;
   e.vulnerabilityTimer = 0;
+  e.shield       = def.shield       ?? 0;
+  e.maxShield    = def.shield       ?? 0;
+  e.regenRate    = def.regenRate    ?? 0;
+  e.isFlying     = def.isFlying     ?? false;
+  e.immuneSlow   = def.immuneSlow   ?? false;
+  e.healsNearby      = def.healsNearby      ?? 0;
+  e.healsNearbyRadius = def.healsNearbyRadius ?? 0;
+  e.stutterInterval  = def.stutterInterval  ?? 0;
+  e.stutterPauseTime = def.stutterPauseTime ?? 0;
+  e.stutterTimer     = def.stutterInterval ?? 0; // start mid-run, not mid-pause
+  e.stutterPausing   = false;
 }
 
 export const enemyPool = new ObjectPool(make, reset);

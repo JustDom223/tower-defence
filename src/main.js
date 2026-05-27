@@ -651,6 +651,17 @@ async function main() {
       updateDoT(state.enemies, dt, state.damageEvents);
       updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
 
+      // Cleric healing aura — heals nearby enemies
+      for (const e of state.enemies) {
+        if (e.healsNearby <= 0) continue;
+        const rSq = e.healsNearbyRadius * e.healsNearbyRadius;
+        for (const target of state.enemies) {
+          if (target === e) continue;
+          const dSq = (target.worldX - e.worldX) ** 2 + (target.worldY - e.worldY) ** 2;
+          if (dSq <= rSq) target.hp = Math.min(target.maxHp, target.hp + e.healsNearby * dt);
+        }
+      }
+
       // R3 — advance and cull damage events
       for (let i = state.damageEvents.length - 1; i >= 0; i--) {
         state.damageEvents[i].t += dt;

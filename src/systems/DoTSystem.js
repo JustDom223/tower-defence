@@ -1,6 +1,7 @@
 export function updateDoT(enemies, dt, damageEvents) {
   for (const e of enemies) {
     if (!e.dotStacks?.length) continue;
+    if (e.shield > 0) continue; // shield absorbs direct hits; DoT waits for it to drop
     for (let i = e.dotStacks.length - 1; i >= 0; i--) {
       const s = e.dotStacks[i];
       s.remaining -= dt;

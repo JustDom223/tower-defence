@@ -1,6 +1,6 @@
 # SPEC — New Mechanics (Shared Systems)
 
-**Status: ⬜ Not started**
+**Status: ✅ Done**
 
 > These are the engine-level additions that multiple towers depend on.
 > Build the system first, then the tower that uses it.
