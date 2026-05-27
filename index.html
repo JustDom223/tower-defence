@@ -584,6 +584,7 @@
         padding: 7px 14px; pointer-events: all;
       }
       body.sandbox-active #sandbox-panel { display: flex; }
+      body.sandbox-active #tower-shop   { display: none;  }
       #sandbox-label {
         color: #a78bfa; font-size: 11px; font-weight: 700;
         letter-spacing: .05em; white-space: nowrap;
@@ -610,6 +611,24 @@
         padding: 5px 10px; cursor: pointer; font-size: 12px;
       }
       #clear-enemies-btn:hover { background: #7f1d1d; color: #fff; }
+      #sandbox-tower-label {
+        color: #86efac; font-size: 11px; font-weight: 700;
+        letter-spacing: .05em; white-space: nowrap; margin-left: 6px;
+      }
+      #sandbox-tower-type {
+        background: #1f2937; color: #e5e7eb;
+        border: 1px solid #374151; border-radius: 5px;
+        padding: 4px 6px; font-size: 12px; cursor: pointer;
+      }
+      #sandbox-place-btn {
+        background: #14532d; color: #86efac; border: 1px solid #166534;
+        border-radius: 5px; padding: 5px 12px; cursor: pointer;
+        font-size: 12px; font-weight: 600;
+      }
+      #sandbox-place-btn:hover { background: #166534; }
+      #sandbox-place-btn.active {
+        background: #854d0e; color: #fde68a; border-color: #a16207;
+      }
 
       /* ── MB6 — Remove sticky hover states on touch devices ────── */
       @media (hover: none) {
@@ -736,6 +755,10 @@
         <input id="spawn-count" type="number" min="1" max="50" value="1">
         <button id="spawn-btn">Spawn</button>
         <button id="clear-enemies-btn">Clear All</button>
+        <span style="color:#4b5563;margin:0 4px;">│</span>
+        <span id="sandbox-tower-label">🏗 PLACE</span>
+        <select id="sandbox-tower-type"></select>
+        <button id="sandbox-place-btn">Place Tower</button>
       </div>
 
       <!-- Tower shop -->

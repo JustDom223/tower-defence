@@ -112,6 +112,8 @@ All original R1–R6 phases and subsequent ticket docs are complete:
 
 **Next opportunity:** balance pass (tune wave compositions, difficulty curve, perk values) or new content (map 11+, wave compositions using the new enemies, unlock-tree nodes for the 12 new towers).
 
+**Sandbox UX (feat/sandbox-tower-dropdown):** Replaced the 20-button tower bar in sandbox with a compact dropdown + Place Tower / Cancel button, matching the enemy spawner style. Normal mode shop unchanged.
+
 **Content added (feat/new-towers-and-enemies):**
 - 12 new towers: Tesla, Sticky Cannon, Mine Layer, Boomerang, Laser, Engineer, Druid, Wizard, Scatter Gun, Solar Tower, Trapper, Gravity Well — all available in Sandbox.
 - 10 new enemies: shielded, regenerator, flyer, magma, insulated, aquatic, cleric, stutter, juggernaut, megaboss — all available in Sandbox spawn dropdown; not yet placed in maps.
