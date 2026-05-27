@@ -60,6 +60,8 @@ export class GameUI {
   mortarSetMode = null;
 
   #sandbox = false;
+  #sandboxTowerSelect = null;
+  #sandboxPlaceBtn    = null;
 
   init() {
     this.#livesEl        = document.getElementById('hud-lives');
@@ -113,6 +115,18 @@ export class GameUI {
       this.onUpgrade?.(this.#selectedTower, btn.dataset.path);
     });
 
+    // Sandbox tower placement dropdown + button
+    this.#sandboxTowerSelect = document.getElementById('sandbox-tower-type');
+    this.#sandboxPlaceBtn    = document.getElementById('sandbox-place-btn');
+    this.#sandboxPlaceBtn?.addEventListener('click', () => {
+      const type = this.#sandboxTowerSelect.value;
+      if (!type) return;
+      this.#selectedTowerType = this.#selectedTowerType === type ? null : type;
+      this.#refreshSandboxPlaceBtn();
+      this.hideTowerPanel();
+      this.onTowerTypeSelect?.(this.#selectedTowerType);
+    });
+
     // Mute toggle
     const muteBtn = document.getElementById('hud-mute');
     if (muteBtn) {
@@ -149,6 +163,7 @@ export class GameUI {
   clearTowerTypeSelection() {
     this.#selectedTowerType = null;
     this.#refreshShop();
+    this.#refreshSandboxPlaceBtn();
   }
 
   /** R3 — set the upcoming-wave preview text. Pass '' to clear. */
@@ -218,6 +233,11 @@ export class GameUI {
 
   setSandbox(enabled) {
     this.#sandbox = enabled;
+    if (enabled && this.#sandboxTowerSelect) {
+      this.#sandboxTowerSelect.innerHTML = Object.entries(TOWER_TYPES)
+        .map(([key, def]) => `<option value="${key}">${def.name} ($${def.cost})</option>`)
+        .join('');
+    }
   }
 
   setFFActive(active, speed = 2) {
@@ -370,5 +390,12 @@ export class GameUI {
       btn.classList.toggle('active', btn.dataset.target === mode);
     });
     if (this.#selectedTower) this.#selectedTower.targeting = mode;
+  }
+
+  #refreshSandboxPlaceBtn() {
+    if (!this.#sandboxPlaceBtn) return;
+    const active = this.#selectedTowerType !== null;
+    this.#sandboxPlaceBtn.classList.toggle('active', active);
+    this.#sandboxPlaceBtn.textContent = active ? 'Cancel' : 'Place Tower';
   }
 }
