@@ -9,18 +9,21 @@ function make() {
     target: null, targetId: 0, towerType: '',
     ballistic: false, landX: 0, landY: 0,
     pierceLeft: 0, pierceHit: null, dirX: 0, dirY: 0,
+    fixedDir: false,
     dotDamage: 0, dotDuration: 0, dotTickRate: 1.0,
     dotIgnoresArmour: false, dotStackCap: 1,
     debuffVulnerability: 0, debuffDuration: 0, ignoresArmour: false,
     leavesHazard: false, hazardDamage: 0, hazardRadius: 30, hazardDuration: 4.0, hazardTickRate: 0.5,
+    projSlowFactor: 0, projSlowDuration: 0,
   };
 }
 
 function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', ballistic = false,
-  pierce = 0, dirX = 0, dirY = 0,
+  pierce = 0, dirX = 0, dirY = 0, fixedDir = false,
   dotDamage = 0, dotDuration = 0, dotTickRate = 1.0, dotIgnoresArmour = false, dotStackCap = 1,
   debuffVulnerability = 0, debuffDuration = 0, ignoresArmour = false,
-  leavesHazard = false, hazardDamage = 0, hazardRadius = 30, hazardDuration = 4.0, hazardTickRate = 0.5 }) {
+  leavesHazard = false, hazardDamage = 0, hazardRadius = 30, hazardDuration = 4.0, hazardTickRate = 0.5,
+  projSlowFactor = 0, projSlowDuration = 0 }) {
   p.active     = true;
   p.x          = p.prevX = x;
   p.y          = p.prevY = y;
@@ -48,6 +51,9 @@ function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', 
   p.hazardRadius   = hazardRadius;
   p.hazardDuration = hazardDuration;
   p.hazardTickRate = hazardTickRate;
+  p.fixedDir        = fixedDir;
+  p.projSlowFactor  = projSlowFactor;
+  p.projSlowDuration = projSlowDuration;
 
   const destX = ballistic && target ? target.worldX : (target ? target.worldX : x);
   const destY = ballistic && target ? target.worldY : (target ? target.worldY : y);

@@ -6,10 +6,26 @@ const HIT_DIST_SQ    = 12 * 12;
 const FLASH_DURATION = 0.12;
 
 const SHOT_SOUND = {
-  dart:     'dart-shot',
-  bomb:     'dart-shot',    // bomb uses the same tick; explosion plays on hit
-  frost:    'frost-pulse',
-  marksman: 'marksman-shot',
+  dart:         'dart-shot',
+  bomb:         'dart-shot',
+  frost:        'frost-pulse',
+  marksman:     'marksman-shot',
+  tesla:        'dart-shot',
+  stickycannon: 'dart-shot',
+  minelayer:    'dart-shot',
+  boomerang:    'dart-shot',
+  laser:        'dart-shot',
+  engineer:     'dart-shot',
+  druid:        'dart-shot',
+  wizard:       'marksman-shot',
+  scattergun:   'dart-shot',
+  solartower:   'marksman-shot',
+  trapper:      'dart-shot',
+  gravitywell:  'frost-pulse',
+  flamethrower: 'dart-shot',
+  alchemist:    'dart-shot',
+  commandpost:  'frost-pulse',
+  generator:    'dart-shot',
 };
 
 /**
@@ -103,37 +119,57 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
     tower.cooldown = 1 / tower.buffedFireRate;
     AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
 
+    // Dart fires in a fixed direction; with coneShot >= 3 it fans into a cone.
+    const isDart     = tower.type === 'dart';
+    const coneCount  = isDart && tower.coneShot >= 3 ? tower.coneShot : 1;
+    const CONE_SPREAD = Math.PI / 12; // 15° between each dart
+
     for (const target of targets) {
-      let pierce = 0, dirX = 0, dirY = 0;
-      if (tower.pierce > 0) {
-        pierce = tower.pierce;
-        const dx = target.worldX - tower.x, dy = target.worldY - tower.y;
-        const len = Math.sqrt(dx * dx + dy * dy) || 1;
-        dirX = dx / len;
-        dirY = dy / len;
+      const baseAngle = Math.atan2(target.worldY - tower.y, target.worldX - tower.x);
+
+      for (let c = 0; c < coneCount; c++) {
+        let pierce = 0, dirX = 0, dirY = 0, fixedDir = false;
+
+        if (isDart) {
+          const offset = coneCount > 1 ? (c - (coneCount - 1) / 2) * CONE_SPREAD : 0;
+          const angle  = baseAngle + offset;
+          dirX     = Math.cos(angle);
+          dirY     = Math.sin(angle);
+          pierce   = tower.pierce;
+          fixedDir = true;
+        } else if (tower.pierce > 0) {
+          const dx = target.worldX - tower.x, dy = target.worldY - tower.y;
+          const len = Math.sqrt(dx * dx + dy * dy) || 1;
+          dirX   = dx / len;
+          dirY   = dy / len;
+          pierce = tower.pierce;
+        }
+
+        projectiles.push(projectilePool.acquire({
+          x: tower.x, y: tower.y, target,
+          speed:     tower.projSpeed,
+          damage:    tower.buffedDamage,
+          aoeRadius: tower.aoeRadius,
+          towerType: tower.type,
+          ballistic: tower.aoeRadius > 0,
+          pierce, dirX, dirY, fixedDir,
+          dotDamage:        tower.dotDamage,
+          dotDuration:      tower.dotDuration,
+          dotTickRate:      tower.dotTickRate,
+          dotIgnoresArmour: tower.dotIgnoresArmour,
+          dotStackCap:      tower.dotStackCap,
+          debuffVulnerability: tower.debuffVulnerability,
+          debuffDuration:      tower.debuffDuration,
+          ignoresArmour:       tower.ignoresArmour,
+          leavesHazard:   tower.leavesHazard,
+          hazardDamage:   tower.hazardDamage,
+          hazardRadius:   tower.hazardRadius,
+          hazardDuration: tower.hazardDuration,
+          hazardTickRate: tower.hazardTickRate,
+          projSlowFactor:   tower.projSlowFactor,
+          projSlowDuration: tower.projSlowDuration,
+        }));
       }
-      projectiles.push(projectilePool.acquire({
-        x: tower.x, y: tower.y, target,
-        speed:     tower.projSpeed,
-        damage:    tower.buffedDamage,
-        aoeRadius: tower.aoeRadius,
-        towerType: tower.type,
-        ballistic: tower.aoeRadius > 0,
-        pierce, dirX, dirY,
-        dotDamage:        tower.dotDamage,
-        dotDuration:      tower.dotDuration,
-        dotTickRate:      tower.dotTickRate,
-        dotIgnoresArmour: tower.dotIgnoresArmour,
-        dotStackCap:      tower.dotStackCap,
-        debuffVulnerability: tower.debuffVulnerability,
-        debuffDuration:      tower.debuffDuration,
-        ignoresArmour:       tower.ignoresArmour,
-        leavesHazard:   tower.leavesHazard,
-        hazardDamage:   tower.hazardDamage,
-        hazardRadius:   tower.hazardRadius,
-        hazardDuration: tower.hazardDuration,
-        hazardTickRate: tower.hazardTickRate,
-      }));
     }
   }
 
@@ -167,6 +203,7 @@ function applyBuffAuras(towers) {
 function applySlow(tower, enemies) {
   const rSq = tower.buffedRange * tower.buffedRange;
   for (const e of enemies) {
+    if (e.immuneSlow) continue;
     const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
     if (dx * dx + dy * dy <= rSq) {
       e.slowFactor = Math.min(e.slowFactor, tower.slowFactor);
@@ -207,7 +244,8 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
         if (p.pierceHit.has(e.id)) continue;
         const dx = e.worldX - p.x, dy = e.worldY - p.y;
         if (dx * dx + dy * dy < HIT_DIST_SQ) {
-          applyDamage(e, p.damage, p.towerType, e.worldX, e.worldY, damageEvents);
+          applyDamage(e, p.damage, p.towerType, e.worldX, e.worldY, damageEvents, p.ignoresArmour);
+          applyDot(p, e);
           p.pierceHit.add(e.id);
           p.pierceLeft--;
           if (p.pierceLeft < 0) { remove = true; break; }
@@ -216,6 +254,26 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
 
       // Remove if off-canvas
       if (!remove && (p.x < -20 || p.x > 1300 || p.y < -20 || p.y > 740)) {
+        remove = true;
+      }
+    } else if (p.fixedDir) {
+      // Fixed-direction non-pierce projectile (dart base) — travels straight, hits first enemy touched
+      p.x += p.dirX * p.speed * dt;
+      p.y += p.dirY * p.speed * dt;
+
+      for (const e of enemies) {
+        if (e.hp <= 0) continue;
+        const dx = e.worldX - p.x, dy = e.worldY - p.y;
+        if (dx * dx + dy * dy < HIT_DIST_SQ) {
+          p.target   = e;
+          p.targetId = e.id;
+          remove = true;
+          break;
+        }
+      }
+
+      if (!remove && (p.x < -20 || p.x > 1300 || p.y < -20 || p.y > 740)) {
+        p.target = null; // miss — suppress onHit damage
         remove = true;
       }
     } else if (p.ballistic) {
@@ -265,13 +323,24 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
 function applyDamage(e, rawDamage, towerType, hitX, hitY, damageEvents, ignoresArmour = false) {
   const resistMult = ignoresArmour ? 1 : (e.resistance?.[towerType] ?? 1);
   const vulnMult   = e.vulnerabilityMult ?? 1.0;
-  const damage = resistMult < 1
+  let damage = resistMult < 1
     ? Math.ceil(rawDamage * resistMult * vulnMult)
     : Math.round(rawDamage * vulnMult);
+
+  // Shield absorbs damage first; DoT bypasses shield (checked in DoTSystem)
+  if (e.shield > 0) {
+    const absorbed = Math.min(e.shield, damage);
+    e.shield -= absorbed;
+    damage   -= absorbed;
+  }
+
   e.hp = Math.max(0, e.hp - damage);
   e.flashTimer = FLASH_DURATION;
   if (damageEvents) {
-    damageEvents.push({ x: hitX, y: hitY - e.radius, amount: damage, full: rawDamage, t: 0 });
+    const shownDamage = resistMult < 1
+      ? Math.ceil(rawDamage * resistMult * vulnMult)
+      : Math.round(rawDamage * vulnMult);
+    damageEvents.push({ x: hitX, y: hitY - e.radius, amount: shownDamage, full: rawDamage, t: 0 });
   }
 }
 
@@ -299,6 +368,10 @@ function onHit(p, enemies, damageEvents, hazards) {
       if (dx * dx + dy * dy <= rSq) {
         applyDamage(e, p.damage, p.towerType, e.worldX, e.worldY, damageEvents, p.ignoresArmour);
         applyDot(p, e);
+        if (p.projSlowFactor > 0 && !e.immuneSlow) {
+          e.slowFactor = Math.min(e.slowFactor, p.projSlowFactor);
+          e.slowTimer  = Math.max(e.slowTimer,  p.projSlowDuration);
+        }
       }
     }
   } else if (p.target && p.target.id === p.targetId && p.target.hp > 0) {
@@ -308,6 +381,10 @@ function onHit(p, enemies, damageEvents, hazards) {
     if (p.debuffVulnerability > 0) {
       p.target.vulnerabilityMult  = p.debuffVulnerability;
       p.target.vulnerabilityTimer = p.debuffDuration;
+    }
+    if (p.projSlowFactor > 0 && !p.target.immuneSlow) {
+      p.target.slowFactor = Math.min(p.target.slowFactor, p.projSlowFactor);
+      p.target.slowTimer  = Math.max(p.target.slowTimer,  p.projSlowDuration);
     }
   }
 
