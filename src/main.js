@@ -31,6 +31,7 @@ import { updateDoT }            from './systems/DoTSystem.js';
 import { updateGroundHazards }  from './systems/GroundHazardSystem.js';
 import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
 import { GameUI }               from './ui/GameUI.js';
+import { initFeedback }         from './ui/Feedback.js';
 import AudioManager             from './audio/AudioManager.js';
 import { saveGame, loadGame, clearSave } from './core/SaveSystem.js';
 import { DIFFICULTIES }         from './data/difficulties.js';
@@ -363,6 +364,8 @@ async function main() {
     gameOver:    false,
     paused:      false,
   };
+  // Expose the live state to the bug-report system so reports auto-attach run context.
+  currentState = state;
 
   // C2 — pass per-map HP curve multiplier to WaveSpawner
   const mapHpMult   = mapDef.hpMult ?? 1;
@@ -839,5 +842,25 @@ async function main() {
   document.getElementById('hud-fs')?.addEventListener('click', toggleFullscreen);
   document.getElementById('map-fs')?.addEventListener('click', toggleFullscreen);
 }
+
+// ── Bug report system (available on the menu and in-game) ──────────────────
+let currentState = null;
+let feedbackPausedGame = false;
+initFeedback({
+  getState: () => currentState,
+  onOpen: () => {
+    // Freeze the simulation behind the modal so the run doesn't advance while typing.
+    if (currentState && !currentState.gameOver && !currentState.paused) {
+      currentState.paused  = true;
+      feedbackPausedGame   = true;
+    }
+  },
+  onClose: () => {
+    if (feedbackPausedGame && currentState) {
+      currentState.paused = false;
+      feedbackPausedGame  = false;
+    }
+  },
+});
 
 main().catch(console.error);
