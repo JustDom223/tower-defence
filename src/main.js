@@ -324,6 +324,11 @@ async function main() {
 
   const { mapKey, savedData, diffKey } = await awaitMapSelect(profile);
   document.body.classList.add('game-active');
+  // Always hide the map-select overlay once a run begins. The restart-intent path
+  // in awaitMapSelect() returns early without going through pickMap() (which is what
+  // normally hides it), so without this a "Restart Map" reload leaves the menu
+  // covering the running game — making it look frozen/locked.
+  document.getElementById('map-select').style.display = 'none';
 
   const isSandbox = diffKey === 'sandbox';
   // C0 — resolve difficulty config; remap legacy 'easy' to 'normal'
