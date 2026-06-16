@@ -644,6 +644,46 @@
         #pause-resume:hover      { background: #22c55e !important; }
         #pause-restart:hover { background: #431407 !important; color: #fb923c !important; }
       }
+
+      /* ── Bug report ─────────────────────────────────────────── */
+      #report-btn {
+        position: absolute; left: 10px; bottom: 10px; z-index: 30;
+        pointer-events: all; cursor: pointer;
+        background: rgba(15,23,42,.85); border: 1px solid #334155; color: #cbd5e1;
+        border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600;
+        opacity: .6; transition: opacity .15s, background .15s;
+      }
+      #report-btn:hover { opacity: 1; background: rgba(30,41,59,.95); }
+      #report-modal {
+        position: absolute; inset: 0; z-index: 50;
+        background: rgba(0,0,0,.82);
+        display: none; flex-direction: column; align-items: center; justify-content: center;
+      }
+      #report-panel {
+        background: rgba(15,23,42,.97); border: 1px solid #334155;
+        border-radius: 14px; padding: 28px 32px; width: 440px; max-width: 92%; text-align: left;
+      }
+      #report-panel h2 { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+      .report-sub { font-size: 13px; color: #94a3b8; margin-bottom: 14px; }
+      #report-text, #report-name {
+        width: 100%; background: #0f172a; border: 1px solid #334155; color: #fff;
+        border-radius: 8px; padding: 10px; font-family: inherit; font-size: 14px;
+        margin-bottom: 10px; resize: vertical;
+      }
+      #report-text:focus, #report-name:focus { outline: none; border-color: #3b82f6; }
+      .report-context { font-size: 11px; color: #64748b; margin-bottom: 8px; min-height: 14px; }
+      .report-status  { font-size: 12px; min-height: 16px; margin-bottom: 10px; color: #94a3b8; }
+      .report-status-ok  { color: #4ade80; }
+      .report-status-err { color: #f87171; }
+      .report-actions { display: flex; gap: 10px; justify-content: flex-end; }
+      .report-actions button {
+        border: none; border-radius: 8px; padding: 9px 18px; font-size: 14px; font-weight: 700; cursor: pointer;
+      }
+      #report-cancel { background: #374151; color: #e5e7eb; }
+      #report-cancel:hover { background: #4b5563; }
+      #report-send { background: #3b82f6; color: #fff; }
+      #report-send:hover { background: #2563eb; }
+      #report-send:disabled { background: #1e3a5f; color: #94a3b8; cursor: default; }
     </style>
   </head>
   <body>
@@ -714,6 +754,23 @@
           <div id="end-stars-msg"></div>
           <div id="end-score-line">Score: <strong id="end-score">0</strong></div>
           <button id="end-restart"></button>
+        </div>
+      </div>
+
+      <!-- Bug report button + modal -->
+      <button id="report-btn" title="Report a bug">🐞 Report Bug</button>
+      <div id="report-modal">
+        <div id="report-panel">
+          <h2>🐞 Report a Bug</h2>
+          <p class="report-sub">Found something broken? Tell me what happened — it helps a lot.</p>
+          <textarea id="report-text" rows="5" placeholder="What went wrong? What were you doing when it happened?"></textarea>
+          <input id="report-name" type="text" placeholder="Your name (optional)">
+          <div id="report-context" class="report-context"></div>
+          <div id="report-status" class="report-status"></div>
+          <div class="report-actions">
+            <button id="report-cancel">Cancel</button>
+            <button id="report-send">Send Report</button>
+          </div>
         </div>
       </div>
 
