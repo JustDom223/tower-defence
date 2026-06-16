@@ -5,7 +5,7 @@ export const TOWER_TYPES = {
     damage: 18,
     range: 160,
     fireRate: 1.5,
-    projSpeed: 320,
+    projSpeed: 600,
     aoeRadius: 0,
     isSlow: false,
     color: 0x3b82f6,
