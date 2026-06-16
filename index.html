@@ -735,14 +735,17 @@
         #pause-restart:hover { background: #431407 !important; color: #fb923c !important; }
       }
 
-      /* ── Bug report (entry lives in the pause menu) ─────────── */
-      #pause-report {
-        background: #1f2937; border: 1px solid #374151; color: #9ca3af;
-        padding: 8px 28px; border-radius: 8px; cursor: pointer; font-size: 13px;
+      /* ── Bug report — always-on-top button, fixed top-right ── */
+      #report-btn {
+        position: absolute; top: 40px; right: 8px; z-index: 100;
+        pointer-events: all; cursor: pointer;
+        background: rgba(15,23,42,.9); border: 1px solid #334155;
+        border-radius: 8px; padding: 4px 9px; font-size: 16px; line-height: 1;
+        opacity: .8; transition: opacity .15s, background .15s;
       }
-      #pause-report:hover { border-color: #6b7280; color: #e5e7eb; }
+      #report-btn:hover { opacity: 1; background: rgba(30,41,59,.97); }
       #report-modal {
-        position: absolute; inset: 0; z-index: 50;
+        position: absolute; inset: 0; z-index: 110;
         background: rgba(0,0,0,.82);
         display: none; flex-direction: column; align-items: center; justify-content: center;
       }
@@ -790,7 +793,6 @@
             <button id="pause-resume">Resume</button>
             <button id="pause-restart">Restart Map</button>
             <button id="pause-main-menu">Main Menu</button>
-            <button id="pause-report">🐞 Report a Bug</button>
           </div>
         </div>
       </div>
@@ -847,7 +849,8 @@
         </div>
       </div>
 
-      <!-- Bug report modal (opened from the pause-menu "Report a Bug" button) -->
+      <!-- Bug report — always-on-top button (top-right) + modal -->
+      <button id="report-btn" title="Report a bug">🐞</button>
       <div id="report-modal">
         <div id="report-panel">
           <h2>🐞 Report a Bug</h2>
