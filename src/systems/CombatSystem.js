@@ -359,9 +359,8 @@ function applyDot(p, target) {
 
 function onHit(p, enemies, damageEvents, hazards) {
   if (p.aoeRadius > 0) {
-    // Bomb — play explosion sound on impact
-    AudioManager.play('bomb-explode');
     const rSq = p.aoeRadius * p.aoeRadius;
+    let hitAny = false;
     for (const e of enemies) {
       if (e.hp <= 0) continue;
       const dx = e.worldX - p.x, dy = e.worldY - p.y;
@@ -372,8 +371,12 @@ function onHit(p, enemies, damageEvents, hazards) {
           e.slowFactor = Math.min(e.slowFactor, p.projSlowFactor);
           e.slowTimer  = Math.max(e.slowTimer,  p.projSlowDuration);
         }
+        hitAny = true;
       }
     }
+    // Bomb — only play the explosion when the blast actually catches an enemy.
+    // Prevents phantom booms from in-flight bombs landing on empty ground after a wave clears.
+    if (hitAny) AudioManager.play('bomb-explode');
   } else if (p.target && p.target.id === p.targetId && p.target.hp > 0) {
     applyDamage(p.target, p.damage, p.towerType,
       p.target.worldX, p.target.worldY, damageEvents, p.ignoresArmour);

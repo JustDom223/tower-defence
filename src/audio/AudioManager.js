@@ -115,11 +115,21 @@ const SOUNDS = {
   },
 };
 
+// Minimum seconds between repeats of the same sound. Coalesces bursts of
+// identical one-shots (e.g. a whole pack dying to one AoE/pierce volley at the
+// end of a wave) so they don't machine-gun and overdrive the output. Sounds not
+// listed here (shots, etc.) are never throttled.
+const THROTTLE = {
+  'enemy-death':  0.05,
+  'bomb-explode': 0.04,
+};
+
 class _AudioManager {
   #ctx        = null;
   #masterGain = null;
   #muted      = false;
   #volume     = 0.7;
+  #lastPlay   = Object.create(null);
 
   #init() {
     if (this.#ctx) return;
@@ -147,6 +157,14 @@ class _AudioManager {
     if (this.#muted) return;
     this.#init();
     if (this.#ctx.state === 'suspended') this.#ctx.resume();
+    // Throttle bursts of identical sounds (see THROTTLE above).
+    const min = THROTTLE[name];
+    if (min) {
+      const now  = this.#ctx.currentTime;
+      const last = this.#lastPlay[name];
+      if (last !== undefined && now - last < min) return;
+      this.#lastPlay[name] = now;
+    }
     SOUNDS[name]?.(this.#ctx, this.#masterGain);
   }
 }
