@@ -50,6 +50,27 @@ export function initFeedback({ getState, onOpen, onClose } = {}) {
     return towers.map(t => ({ type: t.type, a: t.upgradesA, b: t.upgradesB, target: t.targeting }));
   }
 
+  // Which overlay/HUD layers are currently on screen, and how they stack — so a
+  // "wrong layer is showing / something's covering the game" bug is visible in
+  // the report without a screenshot. Topmost (highest z-index) shown layer first.
+  const LAYER_IDS = [
+    'report-modal', 'pause-screen', 'end-screen', 'unlock-tree', 'boss-warning',
+    'map-select', 'tower-panel', 'tower-shop', 'hud',
+  ];
+  function captureUiLayers() {
+    const layers = [];
+    for (const id of LAYER_IDS) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      const cs = getComputedStyle(el);
+      const z = cs.zIndex === 'auto' ? 0 : (parseInt(cs.zIndex, 10) || 0);
+      const shown = cs.display !== 'none' && cs.visibility !== 'hidden' && +cs.opacity > 0;
+      layers.push({ id, shown, display: cs.display, z, opacity: +cs.opacity, pointerEvents: cs.pointerEvents });
+    }
+    // Shown layers first, ordered top→bottom by z-index.
+    return layers.sort((a, b) => (b.shown - a.shown) || (b.z - a.z));
+  }
+
   function collectContext() {
     const s = getState?.() ?? null;
     const ctx = {
@@ -77,6 +98,8 @@ export function initFeedback({ getState, onOpen, onClose } = {}) {
       checkpoint: readSave('tower-defence-v1'),
       profile:    readSave('tower-defence-profile-v1'),
     };
+    // Which UI layers are showing + their stacking — catches overlay/"frozen" bugs.
+    ctx.uiLayers = captureUiLayers();
     if (s) {
       ctx.map          = s.mapKey;
       ctx.difficulty   = s.diffKey;
