@@ -50,7 +50,7 @@ export const TOWER_TYPES = {
           { name: 'Bigger Blast',   desc: '+25 aoe radius',           cost: 130, stats: { aoeRadius: 25 } },
           { name: 'Heavy Payload',  desc: '+35 damage',               cost: 220, stats: { damage: 35 } },
           { name: 'Massive Blast',  desc: '+45 aoe radius',           cost: 500, stats: { aoeRadius: 45 } },
-          { name: 'The Big One',    desc: '+70 aoe, +65 dmg',         cost: 1300, stats: { aoeRadius: 70, damage: 65 } },
+          { name: 'The Big Fella',  desc: '+70 aoe, +65 dmg',         cost: 1300, stats: { aoeRadius: 70, damage: 65 } },
         ],
       },
       pathB: {
