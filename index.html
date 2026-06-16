@@ -30,45 +30,93 @@
       /* MB6 — prevent accidental double-tap zoom on all buttons */
       button { touch-action: manipulation; }
 
-      /* ── HUD bar (top) ──────────────────────────────────────── */
+      /* ── HUD bar (top) — three-zone layout ──────────────────── */
       #hud {
         position: absolute; top: 0; left: 0; right: 0;
-        display: flex; align-items: center; gap: 16px;
-        background: rgba(0,0,0,.72); padding: 7px 14px;
-        pointer-events: none; font-size: 15px; font-weight: 600;
+        display: flex; align-items: center; gap: 0;
+        background: rgba(0,0,0,.75); padding: 6px 12px;
+        pointer-events: none; font-size: 14px; font-weight: 600;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+      }
+      /* Three zones: left sticks to start, center expands, right at end */
+      .hud-group { display: flex; align-items: center; gap: 8px; }
+      .hud-center { flex: 1; justify-content: center; }
+      .hud-right  { margin-left: auto; gap: 6px; }
+      /* Thin vertical separator between stat pairs */
+      .hud-sep {
+        width: 1px; height: 16px;
+        background: rgba(255,255,255,0.15);
+        margin: 0 2px;
       }
       .stat { display: flex; align-items: center; gap: 5px; }
       #hud-start, #hud-ff, #hud-mute, #hud-pause, #hud-fs {
         pointer-events: all; border: none; color: #fff;
         border-radius: 6px; cursor: pointer; font-size: 13px;
       }
-      #hud-start { margin-left: auto; background: #22c55e; padding: 5px 12px; font-weight: 700; }
+      #hud-start { background: #22c55e; padding: 5px 12px; font-weight: 700; }
       #hud-start:disabled { background: #4b5563; cursor: default; }
       #hud-ff    { background: #374151; padding: 5px 12px; font-weight: 700; }
       #hud-ff.active { background: #7c3aed; }
       #hud-mute, #hud-pause, #hud-fs { background: #374151; padding: 5px 9px; }
 
-      /* ── Tower shop (bottom) ────────────────────────────────── */
+      /* ── Tower shop (bottom) — icon-only with CSS tooltips ──── */
       #tower-shop {
         position: absolute; bottom: 0; left: 0; right: 0;
-        display: flex; gap: 8px; align-items: center;
-        background: rgba(0,0,0,.72); padding: 8px 14px;
+        display: flex; gap: 4px; align-items: center;
+        background: rgba(0,0,0,.8); padding: 6px 10px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+        overflow-x: auto; scrollbar-width: none;
       }
+      #tower-shop::-webkit-scrollbar { display: none; }
+
+      /* Category label chips */
+      .shop-cat-label {
+        font-size: 12px; opacity: 0.5; padding: 0 3px;
+        flex-shrink: 0; user-select: none; pointer-events: none;
+      }
+      /* Thin vertical separator between groups */
+      .shop-sep-line {
+        width: 1px; height: 28px; flex-shrink: 0;
+        background: rgba(255,255,255,0.12); margin: 0 4px;
+      }
+
+      /* Icon-only tower buttons — square, emoji centered */
       .tower-btn {
-        background: #1f2937; border: 2px solid #374151; color: #e5e7eb;
-        padding: 5px 11px; border-radius: 7px; cursor: pointer; font-size: 13px;
-        transition: border-color .1s, opacity .1s;
+        width: 40px; height: 40px; flex-shrink: 0;
+        background: #1e2a3a; border: 2px solid #334155; color: #e5e7eb;
+        border-radius: 8px; cursor: pointer; font-size: 18px;
+        display: flex; align-items: center; justify-content: center;
+        transition: border-color .12s, background .12s, box-shadow .12s;
+        position: relative;
       }
-      .tower-btn:hover  { border-color: #6b7280; }
-      .tower-btn.selected { border-color: #facc15; color: #facc15; }
+      /* CSS tooltip via data-tip */
+      .tower-btn[data-tip]::after {
+        content: attr(data-tip);
+        position: absolute; bottom: calc(100% + 6px); left: 50%;
+        transform: translateX(-50%);
+        background: #1e293b; color: #e2e8f0;
+        border: 1px solid #334155; border-radius: 5px;
+        padding: 3px 8px; font-size: 11px; font-weight: 600;
+        white-space: nowrap; pointer-events: none; z-index: 50;
+        opacity: 0; transition: opacity .12s;
+      }
+      .tower-btn[data-tip]:hover::after { opacity: 1; }
+
+      .tower-btn:hover  { border-color: #6b7280; background: #243245; }
+      .tower-btn.selected {
+        border-color: #facc15; background: #2a2510;
+        box-shadow: 0 0 0 1px rgba(250,204,21,.3), 0 0 10px rgba(250,204,21,.12);
+      }
       /* M1 — locked tower in shop */
       .tower-btn.tower-locked {
-        opacity: 0.35; cursor: not-allowed;
-        border-color: #374151 !important; color: #6b7280 !important;
+        opacity: 0.3; cursor: not-allowed;
+        border-color: #1e293b !important; background: #111827 !important;
+        box-shadow: none !important;
       }
-      /* R6 — unaffordable (unlocked but can't buy right now) */
+      /* R6 — unaffordable */
       .tower-btn.tower-unaffordable {
-        opacity: 0.5; border-color: #4b5563 !important; color: #6b7280 !important;
+        opacity: 0.4; border-color: #1e293b !important; background: #111827 !important;
+        box-shadow: none !important;
       }
 
       /* ── Hide HUD/shop until game starts ───────────────────── */
@@ -83,25 +131,58 @@
         max-width: 280px;
       }
 
-      /* ── Tower panel (right side, shows on tower select) ───── */
+      /* ── Tower panel (right side) — tabbed layout ───────────── */
       #tower-panel {
         position: absolute; right: 10px; top: 46px;
-        background: rgba(15,23,42,.9); border: 1px solid #334155;
-        border-radius: 9px; padding: 12px 14px; min-width: 270px; display: none;
+        background: rgba(10,17,34,.95); border: 1px solid #1e2d42;
+        border-radius: 10px; padding: 12px 12px 10px; min-width: 230px; display: none;
+        box-shadow: -2px 4px 20px rgba(0,0,0,.5);
       }
-      #tower-name { display: block; font-size: 14px; font-weight: 700;
-                    margin-bottom: 8px; letter-spacing: .03em; }
-      .target-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
+      #tower-name {
+        display: block; font-size: 13px; font-weight: 700;
+        margin-bottom: 8px; letter-spacing: .03em;
+        padding-bottom: 7px; border-bottom: 1px solid rgba(255,255,255,0.07);
+      }
+
+      /* Tab buttons row */
+      #panel-tabs {
+        display: flex; gap: 3px; margin-bottom: 8px;
+      }
+      .panel-tab {
+        flex: 1; background: transparent;
+        border: 1px solid #1e293b; border-bottom: none;
+        color: #64748b; padding: 4px 6px; border-radius: 5px 5px 0 0;
+        cursor: pointer; font-size: 10px; font-weight: 700;
+        letter-spacing: .04em; text-transform: uppercase;
+        transition: color .12s, background .12s, border-color .12s;
+      }
+      .panel-tab:hover { color: #94a3b8; background: rgba(255,255,255,0.04); }
+      .panel-tab.active {
+        background: #0d1b2e; border-color: #334155;
+        color: #e2e8f0;
+      }
+
+      /* Tab content areas */
+      .tab-content { min-height: 40px; }
+
+      .target-row { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 4px; }
       .target-btn {
+        flex: 1; min-width: 48px;
         background: #1e293b; border: 1px solid #334155; color: #94a3b8;
-        padding: 3px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+        padding: 5px 6px; border-radius: 5px; cursor: pointer; font-size: 11px;
+        text-align: center;
+        transition: background .12s, border-color .12s, color .12s;
       }
+      .target-btn:hover { border-color: #4b5563; color: #e2e8f0; }
       .target-btn.active { background: #3b82f6; border-color: #3b82f6; color: #fff; }
       #sell-btn {
-        width: 100%; background: #dc2626; border: none; color: #fff;
-        padding: 5px; border-radius: 6px; cursor: pointer; font-size: 12px;
-        font-weight: 600;
+        width: 100%; background: #991b1b;
+        border: 1px solid #dc2626; color: #fca5a5;
+        padding: 6px; border-radius: 6px; cursor: pointer; font-size: 12px;
+        font-weight: 600; margin-top: 8px;
+        transition: background .12s, color .12s;
       }
+      #sell-btn:hover { background: #dc2626; color: #fff; }
 
       /* ── R6 — Tower stat strip ──────────────────────────────── */
       #tower-stats {
@@ -160,20 +241,23 @@
       }
       .diff-btn:hover  { border-color: #6b7280; color: #e5e7eb; }
       .diff-btn.active { border-color: #facc15; color: #facc15; background: #1c1917; }
-      /* C3 — scrollable map list */
+      /* C3 — 2-column grid map list */
       #map-list {
+        display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
         max-height: 320px; overflow-y: auto; margin-bottom: 4px;
         scrollbar-width: thin; scrollbar-color: #374151 transparent;
       }
-      /* M5/C3 — map buttons with star ratings */
+      /* M5/C3 — map buttons with star ratings — grid-friendly */
       .map-btn {
-        display: flex; justify-content: space-between; align-items: center;
+        display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
         width: 100%;
-        background: #1f2937; border: 2px solid #374151; color: #e5e7eb;
-        padding: 10px 14px; border-radius: 8px; cursor: pointer; font-size: 14px;
-        margin-bottom: 6px; transition: border-color .1s;
+        background: #1e2a3a; border: 2px solid #334155; color: #e5e7eb;
+        padding: 9px 11px; border-radius: 8px; cursor: pointer; font-size: 13px;
+        transition: border-color .1s, background .1s, color .1s;
       }
-      .map-btn:hover:not([disabled]) { border-color: #22c55e; color: #86efac; }
+      .map-btn:hover:not([disabled]) {
+        border-color: #22c55e; color: #86efac; background: #18302a;
+      }
       /* C1 — locked map styling */
       .map-btn-locked { opacity: 0.45; cursor: not-allowed; }
       .map-stars { font-size: 12px; color: #facc15; letter-spacing: .05em; }
@@ -298,8 +382,13 @@
         background: rgba(15,23,42,.97); border: 1px solid #334155;
         border-radius: 14px; padding: 36px 48px; text-align: center; min-width: 280px;
       }
-      #pause-panel h2 { font-size: 22px; font-weight: 800; margin-bottom: 20px; }
-      .pause-settings { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+      #pause-panel h2 { font-size: 22px; font-weight: 800; margin-bottom: 16px; }
+      .pause-section-label {
+        font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+        color: #4b5563; padding-bottom: 8px;
+        border-bottom: 1px solid #1e293b; margin-bottom: 10px;
+      }
+      .pause-settings { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
       .pause-settings label { font-size: 13px; color: #94a3b8; display: flex; align-items: center; gap: 10px; justify-content: space-between; }
       #pause-volume { flex: 1; accent-color: #3b82f6; }
       #pause-mute-btn {
@@ -406,9 +495,10 @@
         gap:     calc(6px * var(--ui-scale));
       }
       body.mobile-scaled .tower-btn {
-        font-size:  calc(13px * var(--ui-scale));
-        padding:    calc(8px * var(--ui-scale)) calc(12px * var(--ui-scale));
-        min-height: calc(48px * var(--ui-scale));
+        font-size:  calc(20px * var(--ui-scale));
+        width:      calc(44px * var(--ui-scale));
+        height:     calc(44px * var(--ui-scale));
+        padding:    0;
         border-radius: calc(7px * var(--ui-scale));
       }
 
@@ -645,15 +735,12 @@
         #pause-restart:hover { background: #431407 !important; color: #fb923c !important; }
       }
 
-      /* ── Bug report ─────────────────────────────────────────── */
-      #report-btn {
-        position: absolute; left: 10px; bottom: 10px; z-index: 30;
-        pointer-events: all; cursor: pointer;
-        background: rgba(15,23,42,.85); border: 1px solid #334155; color: #cbd5e1;
-        border-radius: 8px; padding: 6px 10px; font-size: 12px; font-weight: 600;
-        opacity: .6; transition: opacity .15s, background .15s;
+      /* ── Bug report (entry lives in the pause menu) ─────────── */
+      #pause-report {
+        background: #1f2937; border: 1px solid #374151; color: #9ca3af;
+        padding: 8px 28px; border-radius: 8px; cursor: pointer; font-size: 13px;
       }
-      #report-btn:hover { opacity: 1; background: rgba(30,41,59,.95); }
+      #pause-report:hover { border-color: #6b7280; color: #e5e7eb; }
       #report-modal {
         position: absolute; inset: 0; z-index: 50;
         background: rgba(0,0,0,.82);
@@ -693,14 +780,17 @@
       <div id="pause-screen">
         <div id="pause-panel">
           <h2>Paused</h2>
+          <div class="pause-section-label">Settings</div>
           <div class="pause-settings">
             <label>Volume <input id="pause-volume" type="range" min="0" max="100" value="70"></label>
             <label>Mute <button id="pause-mute-btn">🔊</button></label>
           </div>
+          <div class="pause-section-label">Actions</div>
           <div class="pause-actions">
             <button id="pause-resume">Resume</button>
             <button id="pause-restart">Restart Map</button>
             <button id="pause-main-menu">Main Menu</button>
+            <button id="pause-report">🐞 Report a Bug</button>
           </div>
         </div>
       </div>
@@ -757,8 +847,7 @@
         </div>
       </div>
 
-      <!-- Bug report button + modal -->
-      <button id="report-btn" title="Report a bug">🐞 Report Bug</button>
+      <!-- Bug report modal (opened from the pause-menu "Report a Bug" button) -->
       <div id="report-modal">
         <div id="report-panel">
           <h2>🐞 Report a Bug</h2>
@@ -774,33 +863,52 @@
         </div>
       </div>
 
-      <!-- HUD -->
+      <!-- HUD — three-zone layout: left / center / right -->
       <div id="hud">
-        <div class="stat">❤️ <span id="hud-lives">20</span></div>
-        <div class="stat">💰 <span id="hud-cash">150</span></div>
-        <div class="stat">🌊 <span id="hud-wave">1 / 10</span></div>
-        <div class="stat">⭐ <span id="hud-score">0</span></div>
-        <div class="stat">💀 <span id="hud-kills">0</span></div>
-        <div class="stat" id="hud-diff" style="font-size:13px;opacity:.7"></div>
-        <span id="hud-preview"></span>
-        <span id="hud-sandbox-badge">⚗️ SANDBOX</span>
-        <button id="hud-mute">🔊</button>
-        <button id="hud-pause">⏸</button>
-        <button id="hud-fs">⛶</button>
-        <button id="hud-ff">⏩ 1×</button>
-        <button id="hud-start">Start Wave</button>
+        <div class="hud-group hud-left">
+          <div class="stat">❤️ <span id="hud-lives">20</span></div>
+          <div class="hud-sep"></div>
+          <div class="stat">💰 <span id="hud-cash">150</span></div>
+        </div>
+        <div class="hud-group hud-center">
+          <div class="stat">🌊 <span id="hud-wave">1 / 10</span></div>
+          <span id="hud-preview"></span>
+          <span id="hud-sandbox-badge">⚗️ SANDBOX</span>
+          <div class="stat" id="hud-diff" style="font-size:13px;opacity:.7"></div>
+        </div>
+        <div class="hud-group hud-right">
+          <div class="stat">⭐ <span id="hud-score">0</span></div>
+          <div class="stat">💀 <span id="hud-kills">0</span></div>
+          <div class="hud-sep"></div>
+          <button id="hud-mute">🔊</button>
+          <button id="hud-pause">⏸</button>
+          <button id="hud-fs">⛶</button>
+          <button id="hud-ff">⏩ 1×</button>
+          <button id="hud-start">Start Wave</button>
+        </div>
       </div>
 
-      <!-- Tower panel (shown when a placed tower is selected) -->
+      <!-- Tower panel — tabbed layout -->
       <div id="tower-panel">
         <span id="tower-name">Tower</span>
-        <div id="tower-stats"></div>
-        <div id="upgrade-paths"></div>
-        <div class="target-row">
-          <button class="target-btn active" data-target="first">First</button>
-          <button class="target-btn"        data-target="last">Last</button>
-          <button class="target-btn"        data-target="close">Close</button>
-          <button class="target-btn"        data-target="strong">Strong</button>
+        <div id="panel-tabs">
+          <button class="panel-tab active" data-tab="upgrades">Upgrades</button>
+          <button class="panel-tab" data-tab="stats">Stats</button>
+          <button class="panel-tab" data-tab="target">Target</button>
+        </div>
+        <div class="tab-content" id="tab-upgrades">
+          <div id="upgrade-paths"></div>
+        </div>
+        <div class="tab-content" id="tab-stats" style="display:none">
+          <div id="tower-stats"></div>
+        </div>
+        <div class="tab-content" id="tab-target" style="display:none">
+          <div class="target-row">
+            <button class="target-btn active" data-target="first">First</button>
+            <button class="target-btn"        data-target="last">Last</button>
+            <button class="target-btn"        data-target="close">Close</button>
+            <button class="target-btn"        data-target="strong">Strong</button>
+          </div>
         </div>
         <button id="sell-btn">Sell</button>
       </div>
@@ -818,29 +926,33 @@
         <button id="sandbox-place-btn">Place Tower</button>
       </div>
 
-      <!-- Tower shop -->
+      <!-- Tower shop — icon-only with tooltip on hover, grouped by role -->
       <div id="tower-shop">
-        <span style="font-size:12px;color:#9ca3af;margin-right:4px;">Place:</span>
-        <button class="tower-btn" data-tower="dart">🎯 Dart $50</button>
-        <button class="tower-btn" data-tower="bomb">💣 Bomb $100</button>
-        <button class="tower-btn" data-tower="frost">❄️ Frost $75</button>
-        <button class="tower-btn" data-tower="marksman">🔭 Marksman $125</button>
-        <button class="tower-btn" data-tower="generator">💰 Generator $225</button>
-        <button class="tower-btn" data-tower="alchemist">⚗️ Alchemist $200</button>
-        <button class="tower-btn" data-tower="flamethrower">🔥 Flamethrower $175</button>
-        <button class="tower-btn" data-tower="commandpost">📡 Cmd Post $200</button>
-        <button class="tower-btn" data-tower="tesla">⚡ Tesla $200</button>
-        <button class="tower-btn" data-tower="stickycannon">🧪 Sticky Cannon $100</button>
-        <button class="tower-btn" data-tower="minelayer">🔩 Mine Layer $150</button>
-        <button class="tower-btn" data-tower="boomerang">🪃 Boomerang $120</button>
-        <button class="tower-btn" data-tower="laser">🔴 Laser $175</button>
-        <button class="tower-btn" data-tower="engineer">🔧 Engineer $200</button>
-        <button class="tower-btn" data-tower="druid">🌿 Druid $175</button>
-        <button class="tower-btn" data-tower="wizard">🪄 Wizard $225</button>
-        <button class="tower-btn" data-tower="scattergun">📌 Scatter Gun $75</button>
-        <button class="tower-btn" data-tower="solartower">☀️ Solar Tower $500</button>
-        <button class="tower-btn" data-tower="trapper">🪤 Trapper $125</button>
-        <button class="tower-btn" data-tower="gravitywell">🌀 Gravity Well $175</button>
+        <span class="shop-cat-label">⚔</span>
+        <button class="tower-btn" data-tower="dart"         data-tip="Dart ($50)">🎯</button>
+        <button class="tower-btn" data-tower="bomb"         data-tip="Bomb ($100)">💣</button>
+        <button class="tower-btn" data-tower="marksman"     data-tip="Marksman ($125)">🔭</button>
+        <button class="tower-btn" data-tower="flamethrower" data-tip="Flamethrower ($175)">🔥</button>
+        <button class="tower-btn" data-tower="tesla"        data-tip="Tesla ($200)">⚡</button>
+        <button class="tower-btn" data-tower="laser"        data-tip="Laser ($175)">🔴</button>
+        <button class="tower-btn" data-tower="scattergun"   data-tip="Scatter Gun ($75)">📌</button>
+        <button class="tower-btn" data-tower="boomerang"    data-tip="Boomerang ($120)">🪃</button>
+        <button class="tower-btn" data-tower="wizard"       data-tip="Wizard ($225)">🪄</button>
+        <button class="tower-btn" data-tower="druid"        data-tip="Druid ($175)">🌿</button>
+        <span class="shop-sep-line"></span>
+        <span class="shop-cat-label">🛡</span>
+        <button class="tower-btn" data-tower="frost"        data-tip="Frost ($75)">❄️</button>
+        <button class="tower-btn" data-tower="alchemist"    data-tip="Alchemist ($200)">⚗️</button>
+        <button class="tower-btn" data-tower="commandpost"  data-tip="Cmd Post ($200)">📡</button>
+        <button class="tower-btn" data-tower="stickycannon" data-tip="Sticky Cannon ($100)">🧪</button>
+        <button class="tower-btn" data-tower="minelayer"    data-tip="Mine Layer ($150)">🔩</button>
+        <button class="tower-btn" data-tower="engineer"     data-tip="Engineer ($200)">🔧</button>
+        <button class="tower-btn" data-tower="trapper"      data-tip="Trapper ($125)">🪤</button>
+        <button class="tower-btn" data-tower="gravitywell"  data-tip="Gravity Well ($175)">🌀</button>
+        <span class="shop-sep-line"></span>
+        <span class="shop-cat-label">💰</span>
+        <button class="tower-btn" data-tower="generator"    data-tip="Generator ($225)">💰</button>
+        <button class="tower-btn" data-tower="solartower"   data-tip="Solar Tower ($500)">☀️</button>
       </div>
 
     </div>
