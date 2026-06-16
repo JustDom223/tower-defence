@@ -57,6 +57,11 @@ export function initFeedback({ getState, onOpen, onClose } = {}) {
     'report-modal', 'pause-screen', 'end-screen', 'unlock-tree', 'boss-warning',
     'map-select', 'tower-panel', 'tower-shop', 'hud',
   ];
+  function rectOf(el) {
+    const r = el.getBoundingClientRect();
+    return { x: Math.round(r.x), y: Math.round(r.y), w: Math.round(r.width), h: Math.round(r.height) };
+  }
+
   function captureUiLayers() {
     const layers = [];
     for (const id of LAYER_IDS) {
@@ -65,10 +70,25 @@ export function initFeedback({ getState, onOpen, onClose } = {}) {
       const cs = getComputedStyle(el);
       const z = cs.zIndex === 'auto' ? 0 : (parseInt(cs.zIndex, 10) || 0);
       const shown = cs.display !== 'none' && cs.visibility !== 'hidden' && +cs.opacity > 0;
-      layers.push({ id, shown, display: cs.display, z, opacity: +cs.opacity, pointerEvents: cs.pointerEvents });
+      const entry = { id, shown, display: cs.display, z, opacity: +cs.opacity,
+        position: cs.position, pointerEvents: cs.pointerEvents };
+      if (shown) entry.rect = rectOf(el); // where/how big it actually is on screen
+      layers.push(entry);
     }
     // Shown layers first, ordered top→bottom by z-index.
     return layers.sort((a, b) => (b.shown - a.shown) || (b.z - a.z));
+  }
+
+  // Container + body state that drives layout (the game canvas is fixed-size and
+  // CSS-scaled, so most layout bugs trace back to these).
+  function captureLayout() {
+    const out = { bodyClasses: document.body.className || '(none)' };
+    const gc = document.getElementById('game-container');
+    if (gc) {
+      const cs = getComputedStyle(gc);
+      out.gameContainer = { transform: cs.transform, transformOrigin: cs.transformOrigin, rect: rectOf(gc) };
+    }
+    return out;
   }
 
   function collectContext() {
@@ -100,6 +120,7 @@ export function initFeedback({ getState, onOpen, onClose } = {}) {
     };
     // Which UI layers are showing + their stacking — catches overlay/"frozen" bugs.
     ctx.uiLayers = captureUiLayers();
+    ctx.layout   = captureLayout();
     if (s) {
       ctx.map          = s.mapKey;
       ctx.difficulty   = s.diffKey;
