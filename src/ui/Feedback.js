@@ -28,7 +28,7 @@ const isConfigured = () => !FORMSPREE_ENDPOINT.includes('REPLACE_ME');
  * @param {Function} [opts.onClose] called when the modal closes (e.g. to resume)
  */
 export function initFeedback({ getState, onOpen, onClose } = {}) {
-  const btn      = document.getElementById('report-btn');
+  const btn      = document.getElementById('pause-report'); // pause-menu entry
   const modal    = document.getElementById('report-modal');
   const textEl   = document.getElementById('report-text');
   const nameEl   = document.getElementById('report-name');

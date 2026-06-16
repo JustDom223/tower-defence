@@ -63,6 +63,9 @@ export class GameUI {
   #sandboxTowerSelect = null;
   #sandboxPlaceBtn    = null;
 
+  /** Currently active tower-panel tab ('upgrades' | 'stats' | 'target') */
+  #activeTab = 'upgrades';
+
   init() {
     this.#livesEl        = document.getElementById('hud-lives');
     this.#cashEl         = document.getElementById('hud-cash');
@@ -113,6 +116,11 @@ export class GameUI {
       const btn = e.target.closest('[data-path]');
       if (!btn || !this.#selectedTower) return;
       this.onUpgrade?.(this.#selectedTower, btn.dataset.path);
+    });
+
+    // Panel tab switching
+    document.querySelectorAll('.panel-tab').forEach(btn => {
+      btn.addEventListener('click', () => this.#switchTab(btn.dataset.tab));
     });
 
     // Sandbox tower placement dropdown + button
@@ -179,6 +187,7 @@ export class GameUI {
     this.#renderStats(tower);
     this.#renderMortarControls(tower);
     this.#towerPanel.style.display = 'block';
+    this.#switchTab('upgrades');
     this.#refreshTargetBtns(tower.targeting);
     // P1 — sell value uses the Salvage perk bonus if active
     const sellMult = 0.6 + (this.#perks?.sellBonus ?? 0);
@@ -189,6 +198,14 @@ export class GameUI {
   hideTowerPanel() {
     this.#selectedTower = null;
     this.#towerPanel.style.display = 'none';
+  }
+
+  #switchTab(name) {
+    this.#activeTab = name;
+    document.querySelectorAll('.panel-tab').forEach(b =>
+      b.classList.toggle('active', b.dataset.tab === name));
+    document.querySelectorAll('.tab-content').forEach(div =>
+      div.style.display = div.id === `tab-${name}` ? '' : 'none');
   }
 
   /**
