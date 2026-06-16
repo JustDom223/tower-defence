@@ -13,6 +13,8 @@
  * │ Until then, the form shows a "not set up yet" message instead of sending.│
  * └─────────────────────────────────────────────────────────────────────────┘
  */
+import { getRecentErrors } from '../diagnostics.js';
+
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mlgkvddk';
 
 // Build stamp injected by Vite (see vite.config.js); 'dev' when run unbuilt.
@@ -38,6 +40,16 @@ export function initFeedback({ getState, onOpen, onClose } = {}) {
   const ctxEl    = document.getElementById('report-context');
   if (!btn || !modal) return; // markup missing — nothing to wire
 
+  function readSave(key) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; }
+    catch { return null; }
+  }
+
+  function summarizeTowers(towers) {
+    if (!towers?.length) return [];
+    return towers.map(t => ({ type: t.type, a: t.upgradesA, b: t.upgradesB, target: t.targeting }));
+  }
+
   function collectContext() {
     const s = getState?.() ?? null;
     const ctx = {
@@ -47,16 +59,37 @@ export function initFeedback({ getState, onOpen, onClose } = {}) {
       userAgent: navigator.userAgent,
       viewport:  `${window.innerWidth}x${window.innerHeight}`,
       where:     s ? 'in-game' : 'menu',
+      // runtime / environment
+      dpr:        window.devicePixelRatio,
+      fullscreen: !!document.fullscreenElement,
+      pointer:    (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) ? 'touch' : 'mouse',
+      language:   navigator.language,
+      online:     navigator.onLine,
+    };
+    if (performance.memory) {
+      ctx.jsHeapMB = Math.round(performance.memory.usedJSHeapSize / 1048576);
+    }
+    // Recent JS errors — usually the most useful part of a report.
+    const errs = getRecentErrors();
+    if (errs.length) ctx.recentErrors = errs;
+    // Save snapshots — let the owner load the exact run to reproduce it.
+    ctx.saves = {
+      checkpoint: readSave('tower-defence-v1'),
+      profile:    readSave('tower-defence-profile-v1'),
     };
     if (s) {
-      ctx.map        = s.mapKey;
-      ctx.difficulty = s.diffKey;
-      ctx.wave       = `${(s.waveIndex ?? -1) + 1}/${s.totalWaves ?? '?'}`;
-      ctx.lives      = s.lives;
-      ctx.cash       = s.cash;
-      ctx.score      = s.score;
-      ctx.sandbox    = !!s.sandbox;
-      ctx.gameOver   = !!s.gameOver;
+      ctx.map          = s.mapKey;
+      ctx.difficulty   = s.diffKey;
+      ctx.wave         = `${(s.waveIndex ?? -1) + 1}/${s.totalWaves ?? '?'}`;
+      ctx.lives        = s.lives;
+      ctx.cash         = s.cash;
+      ctx.score        = s.score;
+      ctx.sandbox      = !!s.sandbox;
+      ctx.gameOver     = !!s.gameOver;
+      ctx.enemiesAlive = s.enemies?.length ?? 0;
+      ctx.loopSpeed    = s.loopSpeed ?? 1;
+      ctx.runSeconds   = s.runStartedAt ? Math.round((performance.now() - s.runStartedAt) / 1000) : undefined;
+      ctx.towers       = summarizeTowers(s.towers);
     }
     return ctx;
   }
@@ -67,9 +100,11 @@ export function initFeedback({ getState, onOpen, onClose } = {}) {
     sendBtn.disabled     = false;
     const ctx = collectContext();
     // Show the player what's being attached (transparency — no surprises).
+    const errN   = ctx.recentErrors?.length ?? 0;
+    const errStr = errN ? ` · ${errN} JS error${errN > 1 ? 's' : ''} captured` : '';
     ctxEl.textContent = ctx.where === 'in-game'
-      ? `Auto-attached: ${ctx.map} · ${ctx.difficulty} · wave ${ctx.wave} · build ${ctx.build}`
-      : `Auto-attached: menu · build ${ctx.build}`;
+      ? `Auto-attached: ${ctx.map} · ${ctx.difficulty} · wave ${ctx.wave} · build ${ctx.build}${errStr}`
+      : `Auto-attached: menu · build ${ctx.build}${errStr}`;
     modal.dataset.context = JSON.stringify(ctx);
     modal.style.display = 'flex';
     onOpen?.();
@@ -105,6 +140,8 @@ export function initFeedback({ getState, onOpen, onClose } = {}) {
           // flattened for at-a-glance email readability
           map: context.map, difficulty: context.difficulty, wave: context.wave,
           build: context.build, where: context.where,
+          errorCount: context.recentErrors?.length ?? 0,
+          runSeconds: context.runSeconds,
           context: JSON.stringify(context, null, 2),
         }),
       });

@@ -32,6 +32,7 @@ import { updateGroundHazards }  from './systems/GroundHazardSystem.js';
 import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
 import { GameUI }               from './ui/GameUI.js';
 import { initFeedback }         from './ui/Feedback.js';
+import { initDiagnostics }      from './diagnostics.js';
 import AudioManager             from './audio/AudioManager.js';
 import { saveGame, loadGame, clearSave } from './core/SaveSystem.js';
 import { DIFFICULTIES }         from './data/difficulties.js';
@@ -363,6 +364,8 @@ async function main() {
     totalWaves:  waves.length,
     gameOver:    false,
     paused:      false,
+    loopSpeed:    1,                  // mirrors GameLoop speed (diagnostics)
+    runStartedAt: performance.now(),  // run duration for bug reports
   };
   // Expose the live state to the bug-report system so reports auto-attach run context.
   currentState = state;
@@ -519,6 +522,7 @@ async function main() {
     const speeds = state.sandbox ? [1, 2, 4, 8] : [1, 2];
     const idx    = speeds.indexOf(loop.speed);
     loop.speed   = speeds[(idx + 1) % speeds.length];
+    state.loopSpeed = loop.speed;
     ui.setFFActive(loop.speed !== 1, loop.speed);
   };
 
@@ -842,6 +846,9 @@ async function main() {
   document.getElementById('hud-fs')?.addEventListener('click', toggleFullscreen);
   document.getElementById('map-fs')?.addEventListener('click', toggleFullscreen);
 }
+
+// Start capturing runtime errors as early as possible (for bug reports).
+initDiagnostics();
 
 // ── Bug report system (available on the menu and in-game) ──────────────────
 let currentState = null;
