@@ -11,7 +11,7 @@ const SHOT_SOUND = {
   frost:        'silent',       // frost fires constantly; its pulse was too annoying — muted for now
 
   marksman:     'marksman-shot',
-  tesla:        'dart-shot',
+  tesla:        'tesla-zap',
   stickycannon: 'dart-shot',
   minelayer:    'dart-shot',
   boomerang:    'dart-shot',
@@ -33,7 +33,7 @@ const SHOT_SOUND = {
  * @param {Array} damageEvents  – shared array; push { x, y, amount, full, t } on each hit.
  *   `full` = raw damage before resistance (used by DamageNumberRenderer for colour coding).
  */
-export function updateCombat(towers, enemies, projectiles, dt, damageEvents, hazards) {
+export function updateCombat(towers, enemies, projectiles, dt, damageEvents, hazards, boltEvents) {
   applyBuffAuras(towers);
 
 
@@ -70,6 +70,55 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
       applySlow(tower, enemies);
       AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
       tower.cooldown = 1 / tower.buffedFireRate;
+      continue;
+    }
+
+    // Tesla-style hitscan — a lightning bolt strikes the target instantly and,
+    // when upgraded (Storm path), arcs to nearby enemies. No travelling projectile.
+    if (tower.instant) {
+      const baseRange = tower.range;
+      tower.range = tower.buffedRange;
+      const primary = selectTarget(tower, enemies);
+      tower.range = baseRange;
+      if (!primary) continue;
+
+      tower.angle    = Math.atan2(primary.worldY - tower.y, primary.worldX - tower.x);
+      tower.cooldown = 1 / tower.buffedFireRate;
+      AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
+
+      // Build the arc: start at the primary target, then hop to the nearest
+      // not-yet-struck enemy within chainRange of the previous link.
+      const hits   = [primary];
+      const hitIds = new Set([primary.id]);
+      const chainRangeSq = tower.chainRange * tower.chainRange;
+      let from = primary;
+      for (let j = 0; j < tower.chainTargets; j++) {
+        let next = null, nextDSq = Infinity;
+        for (const e of enemies) {
+          if (e.hp <= 0 || hitIds.has(e.id)) continue;
+          if (e.isCamo && !tower.camoVisible) continue;
+          const dx = e.worldX - from.worldX, dy = e.worldY - from.worldY;
+          const dSq = dx * dx + dy * dy;
+          if (dSq <= chainRangeSq && dSq < nextDSq) { next = e; nextDSq = dSq; }
+        }
+        if (!next) break;
+        hits.push(next); hitIds.add(next.id);
+        from = next;
+      }
+
+      // Damage falls off per arc link.
+      for (let k = 0; k < hits.length; k++) {
+        const e   = hits[k];
+        const dmg = Math.max(1, Math.round(tower.buffedDamage * Math.pow(tower.chainFalloff, k)));
+        applyDamage(e, dmg, tower.type, e.worldX, e.worldY, damageEvents);
+      }
+
+      // Emit the bolt polyline (tower → primary → arc links…) for the renderer.
+      if (boltEvents) {
+        const points = [[tower.x, tower.y]];
+        for (const e of hits) points.push([e.worldX, e.worldY]);
+        boltEvents.push({ points, t: 0 });
+      }
       continue;
     }
 

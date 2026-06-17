@@ -32,6 +32,30 @@ const SOUNDS = {
   // SHOT_SOUND entry here, without special-casing the play sites.
   'silent'() { /* no-op */ },
 
+  // Electric zap for the Tesla bolt — a quick descending buzz with a crackle.
+  // Kept short and modest in volume; it fires often (see THROTTLE).
+  'tesla-zap'(ctx, out) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sawtooth';
+    o.frequency.setValueAtTime(1800, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.12);
+
+    // Crackle: a short, fast-decaying noise burst through a bandpass.
+    const len = Math.floor(ctx.sampleRate * 0.08);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d   = buf.getChannelData(0);
+    for (let i = 0; i < len; i++)
+      d[i] = (Math.random() * 2 - 1) * Math.exp(-i / (ctx.sampleRate * 0.02));
+    const src = ctx.createBufferSource(); src.buffer = buf;
+    const bp  = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2200; bp.Q.value = 0.7;
+
+    g.gain.setValueAtTime(0.09, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.13);
+
+    o.connect(g); src.connect(bp); bp.connect(g); g.connect(out);
+    o.start(); o.stop(ctx.currentTime + 0.13); src.start();
+  },
+
   'frost-pulse'(ctx, out) {
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.connect(g); g.connect(out);
@@ -126,6 +150,7 @@ const SOUNDS = {
 const THROTTLE = {
   'enemy-death':  0.05,
   'bomb-explode': 0.04,
+  'tesla-zap':    0.05,
 };
 
 class _AudioManager {

@@ -316,7 +316,8 @@ export class GameUI {
         `<span>DMG <b>${tower.damage}</b></span>` +
         `<span>RNG <b>${rng}</b></span>` +
         `<span>RATE <b>${tower.fireRate.toFixed(1)}/s</b></span>` +
-        (tower.aoeRadius > 0 ? `<span>AoE <b>${tower.aoeRadius}</b></span>` : '');
+        (tower.aoeRadius > 0 ? `<span>AoE <b>${tower.aoeRadius}</b></span>` : '') +
+        (tower.chainTargets > 0 ? `<span>CHAIN <b>+${tower.chainTargets}</b></span>` : '');
     }
   }
 

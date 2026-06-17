@@ -298,28 +298,34 @@ export const TOWER_TYPES = {
     damage: 25,
     range: 160,
     fireRate: 1.2,
-    projSpeed: 400,
+    projSpeed: 0,          // instant — no travelling projectile
+    instant: true,         // hitscan: a lightning bolt strikes the target immediately
+    chainTargets: 0,       // extra enemies the bolt arcs to (granted by the Storm path)
+    chainRange: 110,       // max jump distance between arc links
+    chainFalloff: 0.78,    // damage multiplier applied per additional arc link
     aoeRadius: 0,
     isSlow: false,
     color: 0xfde047,
     projColor: 0xfef08a,
     upgrades: {
       pathA: {
+        // Storm — chain lightning: the bolt arcs to more and more nearby enemies.
         label: 'Storm',
         tiers: [
-          { name: 'Static Field', desc: '+15 dmg; AoE 40 chain',        cost: 160, stats: { damage: 15, aoeRadius: 40 } },
-          { name: 'Arc Chain',    desc: '+25 dmg; AoE +30',             cost: 320, stats: { damage: 25, aoeRadius: 30 } },
-          { name: 'Chain Storm',  desc: '+35 dmg; +2 targets; AoE +30', cost: 720, stats: { damage: 35, multiShot: 2, aoeRadius: 30 } },
-          { name: 'Supercell',    desc: '+60 dmg; AoE +50',             cost: 1700, stats: { damage: 60, aoeRadius: 50 } },
+          { name: 'Static Field', desc: '+10 dmg; arcs to 1 more enemy',  cost: 160, stats: { damage: 10, chainTargets: 1 } },
+          { name: 'Arc Chain',    desc: '+20 dmg; arcs to 1 more enemy',  cost: 320, stats: { damage: 20, chainTargets: 1 } },
+          { name: 'Chain Storm',  desc: '+30 dmg; arcs to 2 more enemies', cost: 720, stats: { damage: 30, chainTargets: 2 } },
+          { name: 'Supercell',    desc: '+55 dmg; arcs to 1 more; +range', cost: 1700, stats: { damage: 55, chainTargets: 1, range: 40, chainRange: 30 } },
         ],
       },
       pathB: {
+        // Railgun — single-target lightning lance: no chain, just escalating burst.
         label: 'Railgun',
         tiers: [
-          { name: 'Rail Coils',   desc: '+40 dmg; pierce 1',            cost: 180, stats: { damage: 40, pierce: 1 } },
-          { name: 'Charge Shot',  desc: '+70 dmg; pierce 2',            cost: 380, stats: { damage: 70, pierce: 1 } },
-          { name: 'Plasma Rail',  desc: '+120 dmg; pierce 3',           cost: 800, stats: { damage: 120, pierce: 1 } },
-          { name: 'Rail Cannon',  desc: '+200 dmg; +80 range',          cost: 1800, stats: { damage: 200, pierce: 1, range: 80 } },
+          { name: 'Rail Coils',   desc: '+45 dmg',             cost: 180, stats: { damage: 45 } },
+          { name: 'Charge Shot',  desc: '+75 dmg',             cost: 380, stats: { damage: 75 } },
+          { name: 'Plasma Rail',  desc: '+130 dmg',            cost: 800, stats: { damage: 130 } },
+          { name: 'Rail Cannon',  desc: '+220 dmg; +80 range', cost: 1800, stats: { damage: 220, range: 80 } },
         ],
       },
     },
