@@ -45,20 +45,27 @@ export class TowerRenderer {
     // Placement preview
     const ht = this.#hoverTile;
     if (ht) {
+      const def = TOWER_TYPES[ht.type];
+
+      // Range preview — drawn first (under the tile marker) and kept clearly
+      // visible so a finger-placed tower's reach reads on a phone. Shown for
+      // both valid and invalid spots so you can judge reach while dragging.
+      if (def.globalRange) {
+        this.#rangeG.rect(0, 0, 1280, 720);
+        this.#rangeG.fill({ color: 0xa855f7, alpha: 0.06 });
+        this.#rangeG.rect(0, 0, 1280, 720);
+        this.#rangeG.stroke({ color: 0xa855f7, width: 3, alpha: 0.4 });
+      } else {
+        const ringColor = ht.valid ? 0x38bdf8 : 0xef4444;
+        this.#rangeG.circle(ht.x, ht.y, def.range);
+        this.#rangeG.fill({ color: ringColor, alpha: 0.08 });
+        this.#rangeG.circle(ht.x, ht.y, def.range);
+        this.#rangeG.stroke({ color: ringColor, width: 2.5, alpha: 0.7 });
+      }
+
       const HALF_PREVIEW = 20;
       this.#rangeG.rect(ht.x - HALF_PREVIEW, ht.y - HALF_PREVIEW, HALF_PREVIEW * 2, HALF_PREVIEW * 2);
       this.#rangeG.fill({ color: ht.valid ? 0x22c55e : 0xef4444, alpha: 0.35 });
-
-      if (ht.valid) {
-        const def = TOWER_TYPES[ht.type];
-        if (!def.globalRange) {
-          this.#rangeG.circle(ht.x, ht.y, def.range);
-          this.#rangeG.stroke({ color: 0xffffff, width: 1, alpha: 0.2 });
-        } else {
-          this.#rangeG.rect(0, 0, 1280, 720);
-          this.#rangeG.stroke({ color: 0xa855f7, width: 1, alpha: 0.15 });
-        }
-      }
     }
 
     // Selected tower range + AoE ring
