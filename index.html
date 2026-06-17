@@ -570,6 +570,23 @@
         min-height: calc(40px * var(--ui-scale));
         margin-top: calc(10px * var(--ui-scale));
       }
+      body.mobile-scaled #map-sandbox,
+      body.mobile-scaled #map-fs {
+        font-size: calc(12px * var(--ui-scale));
+        padding: calc(8px * var(--ui-scale)) calc(16px * var(--ui-scale));
+        min-height: calc(44px * var(--ui-scale));
+      }
+      /* Bug-report button is fixed-position and outside the scaled flow — size it up for touch. */
+      body.mobile-scaled #report-btn {
+        top:    calc(40px * var(--ui-scale));
+        right:  calc(8px * var(--ui-scale));
+        font-size:  calc(17px * var(--ui-scale));
+        padding:    calc(8px * var(--ui-scale)) calc(11px * var(--ui-scale));
+        border-radius: calc(8px * var(--ui-scale));
+        min-width:  calc(44px * var(--ui-scale));
+        min-height: calc(44px * var(--ui-scale));
+        display: flex; align-items: center; justify-content: center;
+      }
 
       body.mobile-scaled #tree-panel {
         padding:   calc(20px * var(--ui-scale)) calc(24px * var(--ui-scale));
