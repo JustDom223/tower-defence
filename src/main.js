@@ -842,8 +842,13 @@ async function main() {
     clearSave();
     location.reload();
   });
+}
 
-  // ── Fullscreen toggle ────────────────────────────────────────────────────────
+// ── Fullscreen toggle ──────────────────────────────────────────────────────
+// Must be wired at page load, not inside main(): main() blocks on awaitMapSelect()
+// until a map is picked, so deferring this left the menu's #map-fs button with no
+// click handler while the menu was up — it did nothing until a game had started.
+function setupFullscreen() {
   const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   const fsApi     = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
   const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
@@ -896,6 +901,9 @@ async function main() {
 
 // Start capturing runtime errors as early as possible (for bug reports).
 initDiagnostics();
+
+// Wire the fullscreen buttons at load so the menu's #map-fs works before a game starts.
+setupFullscreen();
 
 // ── Bug report system (available on the menu and in-game) ──────────────────
 let currentState = null;
