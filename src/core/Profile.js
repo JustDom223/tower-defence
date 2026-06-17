@@ -23,13 +23,17 @@ export function defaultProfile() {
     missions: { map1: 0, map2: 0, map3: 0, map4: 0, map5: 0,
                 map6: 0, map7: 0, map8: 0, map9: 0, map10: 0 },
     unlocks: {
-      towers: { dart: true,  bomb: false, frost: false, marksman: false, tesla: false },
+      towers: { dart: true,  bomb: false, frost: false, marksman: false, tesla: false,
+                flamethrower: false, laser: false, commandpost: false },
       paths:  {
-        dart:     { A: true,  B: false },
-        bomb:     { A: false, B: false },
-        frost:    { A: false, B: false },
-        marksman: { A: false, B: false },
-        tesla:    { A: false, B: false },
+        dart:         { A: true,  B: false },
+        bomb:         { A: false, B: false },
+        frost:        { A: false, B: false },
+        marksman:     { A: false, B: false },
+        tesla:        { A: false, B: false },
+        flamethrower: { A: false, B: false },
+        laser:        { A: false, B: false },
+        commandpost:  { A: false, B: false },
       },
     },
     // P1 — global perks applied at run start. All zero = no effect.
@@ -169,6 +173,41 @@ export const UNLOCK_TREE = [
     id: 'tesla-B', label: 'Tesla — Path B (Railgun)', group: 'towers', cost: 1, requires: 'tesla',
     check: p => p.unlocks.paths.tesla?.B ?? false,
     apply: p => { (p.unlocks.paths.tesla ??= { A: false, B: false }).B = true; },
+  },
+  {
+    // Flamethrower — AoE burn / DoT; crowd-control vs swarms, splitters, regenerators.
+    // ??= guards profiles saved before these towers joined the tree (no deep-merge on load).
+    id: 'flamethrower', label: 'Flamethrower tower', group: 'towers', cost: 3, requires: null,
+    check: p => p.unlocks.towers.flamethrower ?? false,
+    apply: p => { p.unlocks.towers.flamethrower = true; (p.unlocks.paths.flamethrower ??= { A: false, B: false }).A = true; },
+  },
+  {
+    id: 'flamethrower-B', label: 'Flamethrower — Path B', group: 'towers', cost: 1, requires: 'flamethrower',
+    check: p => p.unlocks.paths.flamethrower?.B ?? false,
+    apply: p => { (p.unlocks.paths.flamethrower ??= { A: false, B: false }).B = true; },
+  },
+  {
+    // Laser — sustained beam; ramps up to shred Shielded / Brute / high-HP elites.
+    id: 'laser', label: 'Laser tower', group: 'towers', cost: 3, requires: null,
+    check: p => p.unlocks.towers.laser ?? false,
+    apply: p => { p.unlocks.towers.laser = true; (p.unlocks.paths.laser ??= { A: false, B: false }).A = true; },
+  },
+  {
+    id: 'laser-B', label: 'Laser — Path B', group: 'towers', cost: 1, requires: 'laser',
+    check: p => p.unlocks.paths.laser?.B ?? false,
+    apply: p => { (p.unlocks.paths.laser ??= { A: false, B: false }).B = true; },
+  },
+  {
+    // Command Post — team buff aura; its Path-B (Spotter) tier grants camo reveal,
+    // the only obtainable counter to Phantom. Path B is required for that.
+    id: 'commandpost', label: 'Command Post tower', group: 'towers', cost: 2, requires: null,
+    check: p => p.unlocks.towers.commandpost ?? false,
+    apply: p => { p.unlocks.towers.commandpost = true; (p.unlocks.paths.commandpost ??= { A: false, B: false }).A = true; },
+  },
+  {
+    id: 'commandpost-B', label: 'Command Post — Path B (Spotter / camo reveal)', group: 'towers', cost: 1, requires: 'commandpost',
+    check: p => p.unlocks.paths.commandpost?.B ?? false,
+    apply: p => { (p.unlocks.paths.commandpost ??= { A: false, B: false }).B = true; },
   },
 
   // ── P2 — One-time global perks ───────────────────────────────────────────
