@@ -561,23 +561,31 @@ async function main() {
   // getBoundingClientRect() already returns the post-CSS-transform rect, so the
   // existing coordinate math (clientX - rect.left) * (width / rect.width) works
   // correctly regardless of the CSS scale applied by the MB3 scaleGame() function.
-  function dispatchMouse(type, touch) {
+  //
+  // While placing a tower the fingertip hides the target tile, so lift the
+  // forwarded point up by TOUCH_PLACE_LIFT CSS px: the ghost preview (mousemove)
+  // and the placement itself (click) both use the same lifted point, so the
+  // tower lands where the ghost shows — just above the finger. Selection taps and
+  // mortar targeting use no lift, so they still register exactly under the finger.
+  const TOUCH_PLACE_LIFT = 48; // CSS px above the fingertip
+  function dispatchMouse(type, touch, liftY = 0) {
     renderer.canvas.dispatchEvent(new MouseEvent(type, {
       bubbles: true, cancelable: true, view: window,
-      clientX: touch.clientX, clientY: touch.clientY,
+      clientX: touch.clientX, clientY: touch.clientY - liftY,
     }));
   }
+  const placeLift = () => (ui.selectedTowerType ? TOUCH_PLACE_LIFT : 0);
   renderer.canvas.addEventListener('touchstart', e => {
     e.preventDefault();
-    dispatchMouse('mousemove', e.changedTouches[0]); // show hover tile
+    dispatchMouse('mousemove', e.changedTouches[0], placeLift()); // show hover tile
   }, { passive: false });
   renderer.canvas.addEventListener('touchmove', e => {
     e.preventDefault();
-    dispatchMouse('mousemove', e.changedTouches[0]); // update hover tile while dragging
+    dispatchMouse('mousemove', e.changedTouches[0], placeLift()); // update hover tile while dragging
   }, { passive: false });
   renderer.canvas.addEventListener('touchend', e => {
     e.preventDefault();
-    dispatchMouse('click', e.changedTouches[0]);     // place tower or select
+    dispatchMouse('click', e.changedTouches[0], placeLift());     // place tower or select
     // Clear hover tile after tap so ghost doesn't linger
     renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
   }, { passive: false });
