@@ -28,6 +28,10 @@ const SOUNDS = {
     src.start();
   },
 
+  // Deliberately silent — lets a tower's fire be muted by pointing its
+  // SHOT_SOUND entry here, without special-casing the play sites.
+  'silent'() { /* no-op */ },
+
   'frost-pulse'(ctx, out) {
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.connect(g); g.connect(out);

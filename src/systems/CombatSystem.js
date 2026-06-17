@@ -8,7 +8,8 @@ const FLASH_DURATION = 0.12;
 const SHOT_SOUND = {
   dart:         'dart-shot',
   bomb:         'dart-shot',
-  frost:        'frost-pulse',
+  frost:        'silent',       // frost fires constantly; its pulse was too annoying — muted for now
+
   marksman:     'marksman-shot',
   tesla:        'dart-shot',
   stickycannon: 'dart-shot',
