@@ -292,11 +292,18 @@ function awaitMapSelect(profile) {
     bindMapBtns();
 
     // Unlock tree
-    document.getElementById('map-upgrades').onclick = () => {
+    function openTree() {
       document.getElementById('map-select').style.display = 'none';
       document.getElementById('unlock-tree').style.display = 'flex';
       renderUnlockTree(profile);
-    };
+    }
+    document.getElementById('map-upgrades').onclick = openTree;
+
+    // Jump straight to the unlock tree if requested from the victory screen.
+    if (sessionStorage.getItem('openTree')) {
+      sessionStorage.removeItem('openTree');
+      openTree();
+    }
 
     document.getElementById('tree-close').onclick = () => {
       document.getElementById('unlock-tree').style.display = 'none';
@@ -428,6 +435,7 @@ async function main() {
   // --- UI ---
   const ui = new GameUI();
   ui.init();
+  window.__ui = ui; // dev convenience: e.g. __ui.showEndScreen(true, 0, 2, 3, false, {nextMapKey:'map2',diffKey:'normal'})
   ui.setProfileUnlocks(isSandbox ? null : profile.unlocks); // M1 — gate shop (null = all unlocked)
   ui.setPerks(isSandbox ? null : profile.perks);            // P1 — pass perks so shop uses discounted costs
   if (isSandbox) ui.setSandbox(true);
@@ -755,7 +763,12 @@ async function main() {
         const newBest = recordMissionResult(profile, state.mapKey, stars);
         saveProfile(profile);
         AudioManager.play('win');
-        ui.showEndScreen(true, state.score, stars, availableStars(profile), newBest);
+        // Offer "Next Map" when a following campaign map exists and is now unlocked.
+        const ci      = CAMPAIGN_ORDER.indexOf(state.mapKey);
+        const nextKey = (ci >= 0 && ci < CAMPAIGN_ORDER.length - 1) ? CAMPAIGN_ORDER[ci + 1] : null;
+        const nextMapKey = (nextKey && isMapUnlocked(profile, nextKey, CAMPAIGN_ORDER)) ? nextKey : null;
+        ui.showEndScreen(true, state.score, stars, availableStars(profile), newBest,
+          { nextMapKey, diffKey: state.diffKey });
       }
 
       // Lose — not triggered in sandbox
