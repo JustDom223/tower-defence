@@ -59,5 +59,10 @@ export function createTower(type, x, y) {
     coneShot:         def.coneShot         ?? 0,
     projSlowFactor:   def.projSlowFactor   ?? 0,
     projSlowDuration: def.projSlowDuration ?? 0,
+    // Instant/hitscan towers (Tesla) — strike immediately, optionally arcing to nearby enemies.
+    instant:      def.instant      ?? false,
+    chainTargets: def.chainTargets ?? 0,
+    chainRange:   def.chainRange   ?? 110,
+    chainFalloff: def.chainFalloff ?? 0.78,
   };
 }

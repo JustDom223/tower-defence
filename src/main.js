@@ -8,6 +8,7 @@ import { TowerRenderer }       from './render/TowerRenderer.js';
 import { ProjectileRenderer }  from './render/ProjectileRenderer.js';
 import { DamageNumberRenderer } from './render/DamageNumberRenderer.js';
 import { ParticleRenderer }     from './render/ParticleRenderer.js';
+import { LightningRenderer }    from './render/LightningRenderer.js';
 import { MAPS, CAMPAIGN_ORDER } from './data/maps.js';
 import { TOWER_TYPES }          from './data/towers.js';
 import { WAVES as WAVES_MAP1 }  from './data/waves-map1.js';
@@ -372,6 +373,7 @@ async function main() {
     projectiles: [],
     damageEvents:   [], // R3 — floating damage numbers
     deathParticles: [], // R3 — death burst particles
+    boltEvents:     [], // Tesla lightning bolts (transient; aged like damageEvents)
     groundHazards:  [],
     totalWaves:  waves.length,
     gameOver:    false,
@@ -407,6 +409,9 @@ async function main() {
 
   const particleRenderer = new ParticleRenderer();
   particleRenderer.init(renderer);
+
+  const lightningRenderer = new LightningRenderer();
+  lightningRenderer.init(renderer);
 
   // --- Restore saved game ---
   if (savedData) {
@@ -675,7 +680,7 @@ async function main() {
       }
 
       updateMovement(state.enemies, path, dt);
-      updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents, state.groundHazards);
+      updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents, state.groundHazards, state.boltEvents);
       updateDoT(state.enemies, dt, state.damageEvents);
       updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
 
@@ -694,6 +699,12 @@ async function main() {
       for (let i = state.damageEvents.length - 1; i >= 0; i--) {
         state.damageEvents[i].t += dt;
         if (state.damageEvents[i].t >= 0.65) state.damageEvents.splice(i, 1);
+      }
+
+      // Advance and cull Tesla lightning bolts (lifetime matches LightningRenderer)
+      for (let i = state.boltEvents.length - 1; i >= 0; i--) {
+        state.boltEvents[i].t += dt;
+        if (state.boltEvents[i].t >= 0.18) state.boltEvents.splice(i, 1);
       }
 
       // R3 — advance and cull death particles
@@ -792,6 +803,7 @@ async function main() {
       enemyRenderer.render(state.enemies, path, alpha);
       towerRenderer.render(state.towers, state.groundHazards);
       projectileRenderer.render(state.projectiles, alpha);
+      lightningRenderer.render(state.boltEvents);
       particleRenderer.render(state.deathParticles);
       damageNumberRenderer.render(state.damageEvents);
       ui.update(state);
