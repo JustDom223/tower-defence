@@ -416,6 +416,18 @@ export class GameUI {
       // R6 — grey out towers the player can't currently afford
       const canAfford = !def || this.#currentCash >= effectiveCost;
 
+      // Show the (discount-adjusted) cost under the icon — costs were previously
+      // only in the hover tooltip, which is invisible on touch devices.
+      if (def) {
+        let costEl = btn.querySelector('.tower-cost');
+        if (!costEl) {
+          costEl = document.createElement('span');
+          costEl.className = 'tower-cost';
+          btn.appendChild(costEl);
+        }
+        costEl.textContent = `$${effectiveCost}`;
+      }
+
       btn.classList.toggle('selected',          type === this.#selectedTowerType && unlocked);
       btn.classList.toggle('tower-locked',      !unlocked);
       btn.classList.toggle('tower-unaffordable', unlocked && !canAfford);

@@ -80,15 +80,20 @@
         background: rgba(255,255,255,0.12); margin: 0 4px;
       }
 
-      /* Icon-only tower buttons — square, emoji centered */
+      /* Tower buttons — emoji icon stacked over a visible cost label */
       .tower-btn {
-        width: 40px; height: 40px; flex-shrink: 0;
+        width: 42px; height: 46px; flex-shrink: 0;
         background: #1e2a3a; border: 2px solid #334155; color: #e5e7eb;
-        border-radius: 8px; cursor: pointer; font-size: 18px;
-        display: flex; align-items: center; justify-content: center;
+        border-radius: 8px; cursor: pointer; font-size: 16px; line-height: 1;
+        display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
         transition: border-color .12s, background .12s, box-shadow .12s;
         position: relative;
       }
+      .tower-cost {
+        font-size: 9px; font-weight: 800; line-height: 1; color: #fcd34d;
+        letter-spacing: -.02em;
+      }
+      .tower-btn.tower-unaffordable .tower-cost { color: #f87171; }
       /* CSS tooltip via data-tip */
       .tower-btn[data-tip]::after {
         content: attr(data-tip);
@@ -510,12 +515,13 @@
         gap:     calc(6px * var(--ui-scale));
       }
       body.mobile-scaled .tower-btn {
-        font-size:  calc(20px * var(--ui-scale));
-        width:      calc(44px * var(--ui-scale));
-        height:     calc(44px * var(--ui-scale));
+        font-size:  calc(18px * var(--ui-scale));
+        width:      calc(46px * var(--ui-scale));
+        height:     calc(50px * var(--ui-scale));
         padding:    0;
         border-radius: calc(7px * var(--ui-scale));
       }
+      body.mobile-scaled .tower-cost { font-size: calc(10px * var(--ui-scale)); }
 
       body.mobile-scaled #tower-panel {
         right:     calc(8px * var(--ui-scale));
