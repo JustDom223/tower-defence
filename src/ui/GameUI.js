@@ -212,7 +212,7 @@ export class GameUI {
    * M2/M5 — extended end screen with star display and new-best celebration.
    * newBest = true when this result beats the stored mission rating.
    */
-  showEndScreen(won, score, stars = 0, availableStars = 0, newBest = false) {
+  showEndScreen(won, score, stars = 0, availableStars = 0, newBest = false, opts = {}) {
     document.getElementById('end-title').textContent = won ? '🎉 Victory!' : '💀 Defeat';
     document.getElementById('end-msg').textContent   = won
       ? 'All waves survived!' : 'You ran out of lives.';
@@ -238,14 +238,35 @@ export class GameUI {
 
     this.#endScreen.style.display = 'flex';
 
-    const btn = document.getElementById('end-restart');
-    btn.textContent = won ? 'Continue' : 'Try Again';
-    const fresh = btn.cloneNode(true);
-    btn.replaceWith(fresh);
-    fresh.addEventListener('click', () => {
-      if (!won) clearSave();
-      location.reload();
-    });
+    // Build the end-screen action buttons fresh each time.
+    const actions = document.getElementById('end-actions');
+    actions.innerHTML = '';
+    const addBtn = (label, handler, primary = false) => {
+      const b = document.createElement('button');
+      b.textContent = label;
+      if (primary) b.classList.add('end-primary');
+      b.addEventListener('click', handler);
+      actions.appendChild(b);
+    };
+
+    if (won) {
+      // On a completed map: jump to the next map, the unlock tree, or back to maps.
+      if (opts.nextMapKey) {
+        addBtn('Next Map →', () => {
+          clearSave();
+          sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: opts.nextMapKey, diffKey: opts.diffKey }));
+          location.reload();
+        }, true);
+      }
+      addBtn('🌲 Unlock Tree', () => {
+        clearSave();
+        sessionStorage.setItem('openTree', '1');
+        location.reload();
+      }, !opts.nextMapKey); // make it the primary action when there's no next map
+      addBtn('Maps', () => { clearSave(); location.reload(); });
+    } else {
+      addBtn('Try Again', () => { clearSave(); location.reload(); }, true);
+    }
   }
 
   setSandbox(enabled) {

@@ -307,12 +307,15 @@
       #end-stars-msg { font-size: 12px; color: #94a3b8; margin-bottom: 12px; min-height: 18px; }
       #end-score-line { font-size: 16px; margin-bottom: 20px; }
       #end-score-line strong { color: #facc15; }
-      #end-restart {
-        background: #22c55e; border: none; color: #fff;
+      #end-actions { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+      #end-actions button {
+        border: 1px solid #374151; background: #1f2937; color: #e5e7eb;
         padding: 10px 28px; border-radius: 8px; cursor: pointer;
-        font-size: 15px; font-weight: 700;
+        font-size: 14px; font-weight: 700;
       }
-      #end-restart:hover { background: #16a34a; }
+      #end-actions button:hover { border-color: #6b7280; color: #fff; }
+      #end-actions .end-primary { background: #22c55e; border-color: #22c55e; color: #fff; }
+      #end-actions .end-primary:hover { background: #16a34a; border-color: #16a34a; }
 
       /* ── Unlock tree overlay (M3) ───────────────────────────── */
       #unlock-tree {
@@ -638,7 +641,7 @@
       body.mobile-scaled #end-stars-row { font-size: calc(22px * var(--ui-scale)); }
       body.mobile-scaled #end-stars-msg { font-size: calc(11px * var(--ui-scale)); }
       body.mobile-scaled #end-score-line { font-size: calc(14px * var(--ui-scale)); margin-bottom: calc(16px * var(--ui-scale)); }
-      body.mobile-scaled #end-restart {
+      body.mobile-scaled #end-actions button {
         font-size:  calc(14px * var(--ui-scale));
         padding:    calc(10px * var(--ui-scale)) calc(24px * var(--ui-scale));
         min-height: calc(48px * var(--ui-scale));
@@ -845,7 +848,7 @@
           <div id="end-stars-row"></div>
           <div id="end-stars-msg"></div>
           <div id="end-score-line">Score: <strong id="end-score">0</strong></div>
-          <button id="end-restart"></button>
+          <div id="end-actions"></div>
         </div>
       </div>
 
