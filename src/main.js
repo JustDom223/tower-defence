@@ -844,25 +844,54 @@ async function main() {
   });
 
   // ── Fullscreen toggle ────────────────────────────────────────────────────────
+  const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
+  const fsApi     = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
   function toggleFullscreen() {
-    if (document.fullscreenElement) {
-      document.exitFullscreen();
-    } else {
-      document.documentElement.requestFullscreen().catch(() => {});
-    }
+    const el = document.documentElement;
+    try {
+      if (fsElement()) {
+        (document.exitFullscreen || document.webkitExitFullscreen)?.call(document);
+      } else if (el.requestFullscreen) {
+        el.requestFullscreen().catch(() => {});
+      } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+      }
+    } catch (_) { /* unsupported (e.g. iOS Safari) — never throw */ }
   }
 
   function updateFsButtons() {
-    const icon   = document.fullscreenElement ? '✕' : '⛶';
+    const on = !!fsElement();
     const hudBtn = document.getElementById('hud-fs');
     const mapBtn = document.getElementById('map-fs');
-    if (hudBtn) hudBtn.textContent = icon;
-    if (mapBtn) mapBtn.textContent = document.fullscreenElement ? '✕ Exit fullscreen' : '⛶ Fullscreen';
+    if (hudBtn) hudBtn.textContent = on ? '✕' : '⛶';
+    if (mapBtn) mapBtn.textContent = on ? '✕ Exit fullscreen' : '⛶ Fullscreen';
   }
 
-  document.addEventListener('fullscreenchange', updateFsButtons);
-  document.getElementById('hud-fs')?.addEventListener('click', toggleFullscreen);
-  document.getElementById('map-fs')?.addEventListener('click', toggleFullscreen);
+  if (fsApi && !standalone) {
+    // Working fullscreen toggle (desktop + Android Chrome).
+    document.addEventListener('fullscreenchange', updateFsButtons);
+    document.addEventListener('webkitfullscreenchange', updateFsButtons);
+    document.getElementById('hud-fs')?.addEventListener('click', toggleFullscreen);
+    document.getElementById('map-fs')?.addEventListener('click', toggleFullscreen);
+  } else {
+    // No usable fullscreen: iOS Safari has no Fullscreen API, and a standalone
+    // PWA is already fullscreen. Hide the broken in-game button; turn the menu
+    // one into a hint pointing iOS users at the only real route (install as PWA).
+    document.getElementById('hud-fs')?.style.setProperty('display', 'none');
+    const mapBtn = document.getElementById('map-fs');
+    if (mapBtn) {
+      if (standalone) {
+        mapBtn.style.display = 'none';
+      } else {
+        mapBtn.textContent = '📲 Add to Home Screen for fullscreen';
+        mapBtn.disabled = true;
+        mapBtn.style.opacity = '0.7';
+        mapBtn.style.cursor = 'default';
+      }
+    }
+  }
 }
 
 // Start capturing runtime errors as early as possible (for bug reports).
