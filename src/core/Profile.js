@@ -23,12 +23,13 @@ export function defaultProfile() {
     missions: { map1: 0, map2: 0, map3: 0, map4: 0, map5: 0,
                 map6: 0, map7: 0, map8: 0, map9: 0, map10: 0 },
     unlocks: {
-      towers: { dart: true,  bomb: false, frost: false, marksman: false },
+      towers: { dart: true,  bomb: false, frost: false, marksman: false, tesla: false },
       paths:  {
         dart:     { A: true,  B: false },
         bomb:     { A: false, B: false },
         frost:    { A: false, B: false },
         marksman: { A: false, B: false },
+        tesla:    { A: false, B: false },
       },
     },
     // P1 — global perks applied at run start. All zero = no effect.
@@ -156,6 +157,18 @@ export const UNLOCK_TREE = [
     id: 'marksman-B', label: 'Marksman — Path B (Watchful)', group: 'towers', cost: 1, requires: 'marksman',
     check: p => p.unlocks.paths.marksman.B,
     apply: p => { p.unlocks.paths.marksman.B = true; },
+  },
+  {
+    // Tesla — chain-lightning anti-swarm tower (Storm path); Railgun path is B.
+    // ??= guards profiles saved before Tesla existed (loadProfile doesn't deep-merge).
+    id: 'tesla', label: 'Tesla tower', group: 'towers', cost: 3, requires: null,
+    check: p => p.unlocks.towers.tesla ?? false,
+    apply: p => { p.unlocks.towers.tesla = true; (p.unlocks.paths.tesla ??= { A: false, B: false }).A = true; },
+  },
+  {
+    id: 'tesla-B', label: 'Tesla — Path B (Railgun)', group: 'towers', cost: 1, requires: 'tesla',
+    check: p => p.unlocks.paths.tesla?.B ?? false,
+    apply: p => { (p.unlocks.paths.tesla ??= { A: false, B: false }).B = true; },
   },
 
   // ── P2 — One-time global perks ───────────────────────────────────────────
