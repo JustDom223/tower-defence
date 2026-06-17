@@ -62,28 +62,42 @@ tower); no enemy may have its *only* counter on a locked/unobtainable tower.
 ## Tasks
 
 ### Tower tree additions (`Profile.js`)
-- [ ] Add **Flamethrower** (AoE + burn DoT — swarms, splitters, regenerator)
-- [ ] Add **Laser** (sustained beam — shielded, brute shred)
-- [ ] Add **Command Post** (team buff + **camo detection** → makes phantom fair)
-- [ ] Each gets a tower node + Path-B node, defensive `??=` path guards, and
-      `defaultProfile` entries. Keep costs modest so the star economy still works.
+- [x] Add **Flamethrower** (AoE + burn DoT — swarms, splitters, regenerator)
+- [x] Add **Laser** (sustained beam — shielded, brute shred)
+- [x] Add **Command Post** (team buff + **camo detection** → makes phantom fair)
+- [x] Each gets a tower node + Path-B node, defensive `??=` path guards, and
+      `defaultProfile` entries. Costs: tower 2–3★, Path B 1★.
 
 ### Enemy staging (wave files)
-- [ ] **Map 1–2 — soften** (dart-only on-ramp): delay/cut armoured, ease the boss
+- [x] **Map 1–2 — soften** (dart-only on-ramp): delay/cut armoured, ease the boss
       escort, gentle counts.
-- [ ] **Map 3** swarmling + carrier (AoE lesson)
-- [ ] **Map 4** flyer + stutter
-- [ ] **Map 5** regenerator + cleric (priority-target / DoT lesson)
-- [ ] **Map 6** magma + insulated (don't-rely-on-one-element lesson)
-- [ ] **Map 7** aquatic + brute
-- [ ] **Map 8** juggernaut + heavier density
-- [ ] **Map 9** phantom (sparse) + carrier swarms
-- [ ] **Map 10** megaboss finale + mixed elites
-- [ ] **Map 7–10 — stiffen**: higher density / tighter intervals to match the
+- [x] **Map 3** swarmling + carrier (AoE lesson)
+- [x] **Map 4** flyer + stutter
+- [x] **Map 5** regenerator + cleric (priority-target / DoT lesson)
+- [x] **Map 6** magma + insulated (don't-rely-on-one-element lesson)
+- [x] **Map 7** aquatic + brute
+- [x] **Map 8** shielded + juggernaut + heavier density
+- [x] **Map 9** phantom (sparse) + carrier swarms
+- [x] **Map 10** megaboss finale + mixed elites
+- [x] **Map 7–10 — stiffen**: higher density / tighter intervals to match the
       full arsenal.
 
 ### Verify
-- [ ] New towers appear in the unlock tree and are buyable/placeable.
-- [ ] Map 1 plays as a gentle on-ramp with dart only.
-- [ ] A late map still pressures a full arsenal.
-- [ ] No console errors.
+- [x] New towers appear in the unlock tree and are buyable/placeable.
+- [x] Difficulty proxy (enemy HP × map hpMult) now rises monotonically across all
+      10 maps: 11k → 14.9k → 14.9k → 24k → 28k → 41k → 60k → 81k → 104k → 144k.
+- [x] All wave enemy `type` references validated against `ENEMY_TYPES` (no typos).
+- [x] Map 1 opens gently (8 runners, no early armoured) with dart only.
+- [x] Live smoke test: Map 3 ran to wave 3 (swarmling flood) with **no runtime
+      errors**; carrier/megaboss spawn paths confirmed wired in `main.js`
+      (`spawns` death-spawn + `liveSpawnInterval` live-spawn).
+- [x] No console errors on load.
+- [ ] **Full playtest pass — owner to test all 10 maps** and report feel; numbers
+      will be re-tuned from that feedback.
+
+## Notes / follow-ups
+- Star economy: all towers now cost ~29★ total (was 16★); campaign yields ~20★
+  (Normal) / ~30★ (Hard), so players must now make unlock choices — intended.
+- Numbers are a first pass tuned by the HP-proxy yardstick, not full playtests.
+  A second pass after real play sessions is expected (esp. Hard-mode megaboss,
+  which is 8000 × 2.5 × 1.9 ≈ 38k HP — may be a slog).
