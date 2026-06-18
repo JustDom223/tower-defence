@@ -15,12 +15,12 @@ const SHOT_SOUND = {
   stickycannon: 'dart-shot',
   minelayer:    'dart-shot',
   boomerang:    'dart-shot',
-  laser:        'dart-shot',
+  laser:        'laser-beam',
   engineer:     'dart-shot',
   druid:        'dart-shot',
   wizard:       'marksman-shot',
   scattergun:   'dart-shot',
-  solartower:   'marksman-shot',
+  solartower:   'laser-beam',
   trapper:      'dart-shot',
   gravitywell:  'frost-pulse',
   flamethrower: 'dart-shot',
@@ -73,51 +73,13 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
       continue;
     }
 
-    // Tesla-style hitscan — a lightning bolt strikes the target instantly and,
-    // when upgraded (Storm path), arcs to nearby enemies. No travelling projectile.
+    // Instant / hitscan towers (Tesla arc, Laser & Solar beams) — strike the
+    // instant they fire, with no travelling projectile. fireInstant() handles
+    // chain (Tesla), beam-pierce (Laser/Solar) and multi-shot.
     if (tower.instant) {
-      const baseRange = tower.range;
-      tower.range = tower.buffedRange;
-      const primary = selectTarget(tower, enemies);
-      tower.range = baseRange;
-      if (!primary) continue;
-
-      tower.angle    = Math.atan2(primary.worldY - tower.y, primary.worldX - tower.x);
-      tower.cooldown = 1 / tower.buffedFireRate;
-      AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
-
-      // Build the arc: start at the primary target, then hop to the nearest
-      // not-yet-struck enemy within chainRange of the previous link.
-      const hits   = [primary];
-      const hitIds = new Set([primary.id]);
-      const chainRangeSq = tower.chainRange * tower.chainRange;
-      let from = primary;
-      for (let j = 0; j < tower.chainTargets; j++) {
-        let next = null, nextDSq = Infinity;
-        for (const e of enemies) {
-          if (e.hp <= 0 || hitIds.has(e.id)) continue;
-          if (e.isCamo && !tower.camoVisible) continue;
-          const dx = e.worldX - from.worldX, dy = e.worldY - from.worldY;
-          const dSq = dx * dx + dy * dy;
-          if (dSq <= chainRangeSq && dSq < nextDSq) { next = e; nextDSq = dSq; }
-        }
-        if (!next) break;
-        hits.push(next); hitIds.add(next.id);
-        from = next;
-      }
-
-      // Damage falls off per arc link.
-      for (let k = 0; k < hits.length; k++) {
-        const e   = hits[k];
-        const dmg = Math.max(1, Math.round(tower.buffedDamage * Math.pow(tower.chainFalloff, k)));
-        applyDamage(e, dmg, tower.type, e.worldX, e.worldY, damageEvents);
-      }
-
-      // Emit the bolt polyline (tower → primary → arc links…) for the renderer.
-      if (boltEvents) {
-        const points = [[tower.x, tower.y]];
-        for (const e of hits) points.push([e.worldX, e.worldY]);
-        boltEvents.push({ points, t: 0 });
+      if (fireInstant(tower, enemies, damageEvents, boltEvents)) {
+        tower.cooldown = 1 / tower.buffedFireRate;
+        AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
       }
       continue;
     }
@@ -403,6 +365,131 @@ function applyDot(p, target) {
         remaining: p.dotDuration, nextTick: 1 / p.dotTickRate,
         ignoresArmour: p.dotIgnoresArmour, sourceType: p.towerType,
       });
+    }
+  }
+}
+
+/**
+ * Fire an instant/hitscan tower. Returns true if it found a target and struck.
+ * Supports multi-shot (separate beams at the top-N targets), and per-beam either
+ * a chain arc (chainTargets, Tesla) or a piercing beam (pierce, Laser/Solar).
+ * Emits a bolt event per beam for the renderer.
+ */
+function fireInstant(tower, enemies, damageEvents, boltEvents) {
+  const baseRange = tower.range;
+  tower.range = tower.buffedRange;
+  const n = tower.multiShot > 1 ? tower.multiShot : 1;
+  let targets;
+  if (n === 1) {
+    const t = selectTarget(tower, enemies);
+    targets = t ? [t] : [];
+  } else {
+    targets = selectTopNTargets(tower, enemies, n);
+  }
+  tower.range = baseRange;
+  if (targets.length === 0) return false;
+
+  tower.angle = Math.atan2(targets[0].worldY - tower.y, targets[0].worldX - tower.x);
+
+  // Lightweight descriptor so applyDot() can be reused without a real projectile.
+  const strike = {
+    towerType:        tower.type,
+    dotDamage:        tower.dotDamage,
+    dotDuration:      tower.dotDuration,
+    dotTickRate:      tower.dotTickRate,
+    dotIgnoresArmour: tower.dotIgnoresArmour,
+    dotStackCap:      tower.dotStackCap,
+  };
+
+  const aoeSq = tower.aoeRadius * tower.aoeRadius;
+
+  for (const primary of targets) {
+    const hits = collectInstantHits(tower, primary, enemies);
+
+    for (let k = 0; k < hits.length; k++) {
+      const e   = hits[k];
+      // Chain links fall off in damage; pierce/single hits land at full power.
+      const dmg = tower.chainTargets > 0
+        ? Math.max(1, Math.round(tower.buffedDamage * Math.pow(tower.chainFalloff, k)))
+        : tower.buffedDamage;
+
+      applyInstantHit(tower, strike, e, dmg, enemies, damageEvents, aoeSq);
+    }
+
+    if (boltEvents && hits.length) {
+      const points = [[tower.x, tower.y]];
+      for (const e of hits) points.push([e.worldX, e.worldY]);
+      boltEvents.push({ points, t: 0, color: tower.color, style: tower.instantStyle });
+    }
+  }
+  return true;
+}
+
+/** Resolve which enemies a single instant beam strikes (chain arc or pierce line). */
+function collectInstantHits(tower, primary, enemies) {
+  const hits   = [primary];
+  const hitIds = new Set([primary.id]);
+
+  if (tower.chainTargets > 0) {
+    // Arc: hop to the nearest not-yet-struck enemy within chainRange of the previous link.
+    const chainRangeSq = tower.chainRange * tower.chainRange;
+    let from = primary;
+    for (let j = 0; j < tower.chainTargets; j++) {
+      let next = null, nextDSq = Infinity;
+      for (const e of enemies) {
+        if (e.hp <= 0 || hitIds.has(e.id)) continue;
+        if (e.isCamo && !tower.camoVisible) continue;
+        const dx = e.worldX - from.worldX, dy = e.worldY - from.worldY;
+        const dSq = dx * dx + dy * dy;
+        if (dSq <= chainRangeSq && dSq < nextDSq) { next = e; nextDSq = dSq; }
+      }
+      if (!next) break;
+      hits.push(next); hitIds.add(next.id); from = next;
+    }
+  } else if (tower.pierce > 0) {
+    // Beam: also strike enemies along the straight line from tower through the primary.
+    const dx = primary.worldX - tower.x, dy = primary.worldY - tower.y;
+    const len = Math.hypot(dx, dy) || 1;
+    const ux = dx / len, uy = dy / len;
+    const reach = Math.max(tower.buffedRange, len) + 20;
+    const candidates = [];
+    for (const e of enemies) {
+      if (e.hp <= 0 || hitIds.has(e.id)) continue;
+      if (e.isCamo && !tower.camoVisible) continue;
+      const ex = e.worldX - tower.x, ey = e.worldY - tower.y;
+      const along = ex * ux + ey * uy;          // distance along the beam
+      if (along < 0 || along > reach) continue; // behind the tower or past its reach
+      const perp = Math.abs(ex * uy - ey * ux); // perpendicular distance to the beam line
+      if (perp <= (e.radius ?? 10) + 8) candidates.push({ e, along });
+    }
+    candidates.sort((a, b) => a.along - b.along);
+    for (let i = 0; i < candidates.length && hits.length < tower.pierce + 1; i++) {
+      hits.push(candidates[i].e); hitIds.add(candidates[i].e.id);
+    }
+  }
+  return hits;
+}
+
+/** Apply one instant hit: direct damage + DoT/debuff/slow, plus optional AoE splash. */
+function applyInstantHit(tower, strike, e, dmg, enemies, damageEvents, aoeSq) {
+  applyDamage(e, dmg, tower.type, e.worldX, e.worldY, damageEvents, tower.ignoresArmour);
+  applyDot(strike, e);
+  if (tower.debuffVulnerability > 0) {
+    e.vulnerabilityMult  = tower.debuffVulnerability;
+    e.vulnerabilityTimer = tower.debuffDuration;
+  }
+  if (tower.projSlowFactor > 0 && !e.immuneSlow) {
+    e.slowFactor = Math.min(e.slowFactor, tower.projSlowFactor);
+    e.slowTimer  = Math.max(e.slowTimer,  tower.projSlowDuration);
+  }
+  if (aoeSq > 0) {
+    for (const o of enemies) {
+      if (o === e || o.hp <= 0) continue;
+      const dx = o.worldX - e.worldX, dy = o.worldY - e.worldY;
+      if (dx * dx + dy * dy <= aoeSq) {
+        applyDamage(o, dmg, tower.type, o.worldX, o.worldY, damageEvents, tower.ignoresArmour);
+        applyDot(strike, o);
+      }
     }
   }
 }

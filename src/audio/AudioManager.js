@@ -56,6 +56,19 @@ const SOUNDS = {
     o.start(); o.stop(ctx.currentTime + 0.13); src.start();
   },
 
+  // Crisp energy-beam zap for the Laser / Solar instant beams — a quick
+  // high descending tone with a soft click. Short and modest (fires often).
+  'laser-beam'(ctx, out) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.setValueAtTime(2600, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.09);
+    g.gain.setValueAtTime(0.07, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+    o.connect(g); g.connect(out);
+    o.start(); o.stop(ctx.currentTime + 0.1);
+  },
+
   'frost-pulse'(ctx, out) {
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.connect(g); g.connect(out);
@@ -151,6 +164,7 @@ const THROTTLE = {
   'enemy-death':  0.05,
   'bomb-explode': 0.04,
   'tesla-zap':    0.05,
+  'laser-beam':   0.04,
 };
 
 class _AudioManager {
