@@ -265,13 +265,14 @@ export const TOWER_TYPES = {
     damage: 80,
     range: 350,
     fireRate: 0.7,
-    projSpeed: 500,
+    projSpeed: 1200,       // fast sniper round
     aoeRadius: 0,
     isSlow: false,
     flyOnMiss: true,       // EXPERIMENT: if the target dies mid-flight the bullet keeps
                            // flying straight (hits anything in its path). Remove to revert.
     color: 0xa855f7,
-    projColor: 0xd8b4fe,
+    projColor: 0x000000,   // black sniper round
+    projStyle: 'bullet',   // rendered as an elongated tracer, not a dot
     upgrades: {
       pathA: {
         label: 'Power',
