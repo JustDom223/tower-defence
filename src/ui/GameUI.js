@@ -258,7 +258,7 @@ export class GameUI {
           location.reload();
         }, true);
       }
-      addBtn('🌲 Unlock Tree', () => {
+      addBtn('🔓 Unlock Towers & Upgrades', () => {
         clearSave();
         sessionStorage.setItem('openTree', '1');
         location.reload();
