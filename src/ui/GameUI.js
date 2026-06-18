@@ -421,14 +421,13 @@ export class GameUI {
         ? true
         : (this.#profileUnlocks.towers?.[type] ?? false);
       const def      = TOWER_TYPES[type];
-      // P1 — apply Bulk Discount perk when checking affordability
       const costMult  = 1 - (this.#perks?.towerCostPct ?? 0);
       const effectiveCost = def ? Math.ceil(def.cost * costMult) : 0;
-      // R6 — grey out towers the player can't currently afford
       const canAfford = !def || this.#currentCash >= effectiveCost;
 
-      // Show the (discount-adjusted) cost under the icon — costs were previously
-      // only in the hover tooltip, which is invisible on touch devices.
+      btn.style.display = unlocked ? '' : 'none';
+      if (!unlocked) return;
+
       if (def) {
         let costEl = btn.querySelector('.tower-cost');
         if (!costEl) {
@@ -439,11 +438,33 @@ export class GameUI {
         costEl.textContent = `$${effectiveCost}`;
       }
 
-      btn.classList.toggle('selected',          type === this.#selectedTowerType && unlocked);
-      btn.classList.toggle('tower-locked',      !unlocked);
-      btn.classList.toggle('tower-unaffordable', unlocked && !canAfford);
-      if (!unlocked) btn.title = 'Unlock in the Upgrade Tree';
+      btn.classList.toggle('selected',           type === this.#selectedTowerType);
+      btn.classList.remove('tower-locked');
+      btn.classList.toggle('tower-unaffordable', !canAfford);
     });
+
+    // Hide category labels and separators for sections with no visible towers
+    const shop = document.getElementById('tower-shop');
+    if (!shop) return;
+    let sectionLabel = null;
+    let sectionHasVisible = false;
+    for (const child of shop.children) {
+      if (child.classList.contains('shop-cat-label')) {
+        sectionLabel = child;
+        sectionLabel.style.display = '';
+        sectionHasVisible = false;
+      } else if (child.classList.contains('shop-sep-line')) {
+        child.style.display = '';
+        if (!sectionHasVisible && sectionLabel) {
+          sectionLabel.style.display = 'none';
+          child.style.display = 'none';
+        }
+        sectionLabel = null;
+      } else if (child.dataset?.tower) {
+        if (child.style.display !== 'none') sectionHasVisible = true;
+      }
+    }
+    if (sectionLabel && !sectionHasVisible) sectionLabel.style.display = 'none';
   }
 
   #refreshTargetBtns(mode) {
