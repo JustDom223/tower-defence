@@ -161,10 +161,13 @@ const SOUNDS = {
 // end of a wave) so they don't machine-gun and overdrive the output. Sounds not
 // listed here (shots, etc.) are never throttled.
 const THROTTLE = {
-  'enemy-death':  0.05,
-  'bomb-explode': 0.04,
-  'tesla-zap':    0.05,
-  'laser-beam':   0.04,
+  'enemy-death':    0.05,
+  'bomb-explode':   0.04,
+  'tesla-zap':      0.05,
+  'laser-beam':     0.04,
+  'dart-shot':      0.03,
+  'marksman-shot':  0.08,
+  'frost-pulse':    0.08,
 };
 
 class _AudioManager {
