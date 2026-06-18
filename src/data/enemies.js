@@ -7,13 +7,13 @@ export const ENEMY_TYPES = {
 
   /** Armoured — half damage from Dart and Marksman; full damage from Bomb and Frost. */
   armoured: { hp: 200,  speed: 50,  reward: 18,  cashReward: 20,  radius: 14, color: 0x607d8b,
-              resistance: { dart: 0.5, marksman: 0.5 } },
+              resistance: { dart: 0.5, marksman: 0.5 }, sprite: 'frankenstein.jpeg' },
 
   /** Boss — appears on wave 10; massive HP, slow, huge reward. */
   boss:     { hp: 2000, speed: 22,  reward: 150, cashReward: 100, radius: 28, color: 0xcc0044, sprite: 'spiderman.png' },
 
   /** Swarmling — tiny, very fast, very weak. Sent in large groups. */
-  swarmling: { hp: 15, speed: 200, reward: 2, cashReward: 3, radius: 6, color: 0xfbbf24 },
+  swarmling: { hp: 15, speed: 200, reward: 2, cashReward: 3, radius: 6, color: 0xfbbf24, sprite: 'bug.jpeg' },
 
   /** Brute — massively tanky, resists most damage types, slow. */
   brute: { hp: 800, speed: 28, reward: 40, cashReward: 50, radius: 22, color: 0x6b7280,
@@ -21,7 +21,7 @@ export const ENEMY_TYPES = {
 
   /** Phantom — camo; invisible to towers without camo detection. Medium HP, fast. */
   phantom: { hp: 80, speed: 110, reward: 20, cashReward: 18, radius: 10, color: 0xa78bfa,
-             isCamo: true },
+             isCamo: true, sprite: 'shade.jpeg' },
 
   /** Carrier — periodically spawns Swarmlings while alive. */
   carrier: { hp: 350, speed: 45, reward: 30, cashReward: 35, radius: 18, color: 0x0ea5e9,
@@ -41,7 +41,7 @@ export const ENEMY_TYPES = {
 
   /** Magma — immune to slow and freeze; fire-natured, resists frost. */
   magma: { hp: 220, speed: 60, reward: 22, cashReward: 25, radius: 14, color: 0xf97316,
-           immuneSlow: true, resistance: { frost: 0 } },
+           immuneSlow: true, resistance: { frost: 0 }, sprite: 'inferno.jpeg' },
 
   /** Insulated — immune to lightning (Tesla); use other towers to deal with it. */
   insulated: { hp: 180, speed: 70, reward: 18, cashReward: 22, radius: 13, color: 0x4b5563,
@@ -62,7 +62,8 @@ export const ENEMY_TYPES = {
   /** Juggernaut — resists all damage types; only raw burst cuts through. */
   juggernaut: { hp: 600, speed: 32, reward: 50, cashReward: 60, radius: 22, color: 0x374151,
                 resistance: { dart: 0.5, marksman: 0.5, frost: 0.7, bomb: 0.8,
-                              flamethrower: 0.6, dot: 0.3, tesla: 0.6, laser: 0.5 } },
+                              flamethrower: 0.6, dot: 0.3, tesla: 0.6, laser: 0.5 },
+                sprite: 'demon.jpeg' },
 
   /** Mega Boss — end-game boss; extremely tanky; spawns Armoured on death. */
   megaboss: { hp: 8000, speed: 15, reward: 500, cashReward: 300, radius: 40, color: 0x7f1d1d,
