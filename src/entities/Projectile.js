@@ -10,6 +10,7 @@ function make() {
     ballistic: false, landX: 0, landY: 0,
     pierceLeft: 0, pierceHit: null, dirX: 0, dirY: 0,
     fixedDir: false,
+    flyOnMiss: false,
     dotDamage: 0, dotDuration: 0, dotTickRate: 1.0,
     dotIgnoresArmour: false, dotStackCap: 1,
     debuffVulnerability: 0, debuffDuration: 0, ignoresArmour: false,
@@ -19,7 +20,7 @@ function make() {
 }
 
 function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', ballistic = false,
-  pierce = 0, dirX = 0, dirY = 0, fixedDir = false,
+  pierce = 0, dirX = 0, dirY = 0, fixedDir = false, flyOnMiss = false,
   dotDamage = 0, dotDuration = 0, dotTickRate = 1.0, dotIgnoresArmour = false, dotStackCap = 1,
   debuffVulnerability = 0, debuffDuration = 0, ignoresArmour = false,
   leavesHazard = false, hazardDamage = 0, hazardRadius = 30, hazardDuration = 4.0, hazardTickRate = 0.5,
@@ -52,6 +53,7 @@ function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', 
   p.hazardDuration = hazardDuration;
   p.hazardTickRate = hazardTickRate;
   p.fixedDir        = fixedDir;
+  p.flyOnMiss       = flyOnMiss;
   p.projSlowFactor  = projSlowFactor;
   p.projSlowDuration = projSlowDuration;
 
