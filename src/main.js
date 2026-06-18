@@ -284,6 +284,14 @@ function awaitMapSelect(profile) {
       pickMap('map1', null, 'sandbox');
     };
 
+    // Full progress wipe from the main menu (destructive — confirm first).
+    document.getElementById('menu-reset').onclick = () => {
+      if (!confirm('Reset ALL progress?\n\nThis permanently erases your stars, tower/upgrade unlocks, and map completions, and starts you over from the beginning. This cannot be undone.')) return;
+      resetProfile(); // wipe the meta-progression profile
+      clearSave();    // and any mid-run checkpoint
+      location.reload();
+    };
+
     // C1/C3 — map buttons are generated dynamically; bind after updateMapSelectUI
     function bindMapBtns() {
       document.querySelectorAll('#map-list .map-btn:not([disabled])').forEach(btn => {
