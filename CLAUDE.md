@@ -35,6 +35,11 @@ To enter Sandbox from code: `pickMap('map1', null, 'sandbox')` — or click the 
 
 Before merging a ticket, delegate the check to the **`verifier`** subagent (defined in `.claude/agents/verifier.md`, runs on Haiku). Give it the ticket id and plan doc; it reviews the diff against the acceptance criteria, checks the build and the architecture rules, and returns PASS/FAIL. This keeps verification cheap and off your main context. See `SPEC_subagents.md` for setup. Use cheap-model subagents for other narrow checks too rather than doing them inline.
 
+**Sub-agent model matching:**
+- **Haiku** — low-judgement data work: multi-file lookups, locating symbols, structured extraction, bulk mechanical edits
+- **Sonnet** — research needing synthesis: trade-off analysis, design decisions, suitability questions
+- **Opus** — escalate (via sub-agent, not by switching chat) only when **both** apply: (1) multiple interpretations are plausible with materially different outcomes, and (2) getting it wrong has real downstream cost (broken systems, wasted effort, bad precedents). Flag it, delegate the specific question, fold the result back in.
+
 ## Tech stack
 
 - **PixiJS 8** (WebGL) for rendering, **vanilla JS** (ES modules) for all game logic, **Vite** for tooling.
