@@ -70,7 +70,7 @@ export const TOWER_TYPES = {
     cost: 75,
     damage: 0,
     range: 140,
-    fireRate: 2.0,
+    fireRate: 0.5,
     projSpeed: 0,
     aoeRadius: 0,
     isSlow: true,
