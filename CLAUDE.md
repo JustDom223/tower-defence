@@ -25,6 +25,12 @@ Work happens on branches and merges into `main`. Never develop directly on `main
 
 **First-time setup (if the repo isn't initialised yet):** `git init`; add a `.gitignore` containing `node_modules/`, `dist/`, `.DS_Store`; commit the current working tree on `main`; *then* open the first feature branch. Do this before any other ticket.
 
+## Testing (use Sandbox mode)
+
+Unless the fix or test is map-specific (e.g. a bug that only reproduces on a particular wave or map layout), always use **Sandbox mode** to spawn and test enemies, towers, and game features. Sandbox gives infinite cash and all towers unlocked, so you can test any combination without playing through waves.
+
+To enter Sandbox from code: `pickMap('map1', null, 'sandbox')` — or click the **Sandbox** button on the main menu. From the browser console you can also call game state helpers directly.
+
 ## Verification (offload to a cheap model)
 
 Before merging a ticket, delegate the check to the **`verifier`** subagent (defined in `.claude/agents/verifier.md`, runs on Haiku). Give it the ticket id and plan doc; it reviews the diff against the acceptance criteria, checks the build and the architecture rules, and returns PASS/FAIL. This keeps verification cheap and off your main context. See `SPEC_subagents.md` for setup. Use cheap-model subagents for other narrow checks too rather than doing them inline.
