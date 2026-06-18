@@ -165,6 +165,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
           towerType: tower.type,
           ballistic: tower.aoeRadius > 0,
           pierce, dirX, dirY, fixedDir,
+          flyOnMiss: tower.flyOnMiss,
           dotDamage:        tower.dotDamage,
           dotDuration:      tower.dotDuration,
           dotTickRate:      tower.dotTickRate,
@@ -316,8 +317,22 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
       if (targetLive) {
         const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
         if (dx * dx + dy * dy < HIT_DIST_SQ) remove = true;
+      } else if (p.flyOnMiss) {
+        // EXPERIMENT (marksman): the target died/left, but instead of expiring the
+        // bullet keeps flying straight in its last heading, hitting anything in its
+        // path, until it leaves the field. Gated by the per-tower `flyOnMiss` flag.
+        // To revert: remove `flyOnMiss: true` from the marksman def in towers.js.
+        for (const e of enemies) {
+          if (e.hp <= 0) continue;
+          const dx = e.worldX - p.x, dy = e.worldY - p.y;
+          if (dx * dx + dy * dy < HIT_DIST_SQ) { p.target = e; p.targetId = e.id; remove = true; break; }
+        }
+        if (!remove && (p.x < -20 || p.x > 1300 || p.y < -20 || p.y > 740)) {
+          p.target = null; // flew off the field without hitting — a clean miss
+          remove = true;
+        }
       } else {
-        // Target is gone — expire immediately rather than flying blind.
+        // ORIGINAL behaviour — target gone, expire immediately rather than flying blind.
         remove = true;
       }
     }

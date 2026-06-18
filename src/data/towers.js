@@ -268,6 +268,8 @@ export const TOWER_TYPES = {
     projSpeed: 500,
     aoeRadius: 0,
     isSlow: false,
+    flyOnMiss: true,       // EXPERIMENT: if the target dies mid-flight the bullet keeps
+                           // flying straight (hits anything in its path). Remove to revert.
     color: 0xa855f7,
     projColor: 0xd8b4fe,
     upgrades: {
