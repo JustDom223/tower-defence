@@ -246,7 +246,7 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
     const dt = 1 / 60;
     let remove = false;
 
-    if (p.pierceLeft > 0) {
+    if (p.pierceLeft >= 0 && p.pierceHit !== null) {
       // Piercing projectile — travels in fixed direction, hits multiple enemies
       p.x += p.dirX * p.speed * dt;
       p.y += p.dirY * p.speed * dt;
