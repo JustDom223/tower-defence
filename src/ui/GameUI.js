@@ -10,17 +10,22 @@ import { clearSave }               from '../core/SaveSystem.js';
  */
 function upgradeDeltaPreview(tower, tierStats) {
   const parts = [];
-  if (tierStats.damage     != null) parts.push(`DMG ${tower.damage + tierStats.damage}`);
-  if (tierStats.range      != null) parts.push(`RNG ${tower.range  + tierStats.range}`);
-  if (tierStats.fireRate   != null) parts.push(`RATE ${(tower.fireRate  + tierStats.fireRate).toFixed(1)}/s`);
-  if (tierStats.aoeRadius  != null) parts.push(`AoE ${tower.aoeRadius  + tierStats.aoeRadius}`);
-  if (tierStats.globalRange)        parts.push('RNG ∞');
+  if (tierStats.damage       != null) parts.push(`DMG ${tower.damage + tierStats.damage}`);
+  if (tierStats.range        != null) parts.push(`RNG ${tower.range  + tierStats.range}`);
+  if (tierStats.fireRate     != null) parts.push(`RATE ${(tower.fireRate + tierStats.fireRate).toFixed(1)}/s`);
+  if (tierStats.aoeRadius    != null) parts.push(`AoE ${tower.aoeRadius + tierStats.aoeRadius}`);
+  if (tierStats.globalRange)          parts.push('RNG ∞');
   if (tierStats.slowFactor   != null) {
     const newPct = Math.round((1 - (tower.slowFactor + tierStats.slowFactor)) * 100);
     parts.push(`SLOW -${newPct}%`);
   }
-  if (tierStats.slowDuration != null)
-    parts.push(`DUR ${(tower.slowDuration + tierStats.slowDuration).toFixed(1)}s`);
+  if (tierStats.slowDuration   != null) parts.push(`DUR ${(tower.slowDuration   + tierStats.slowDuration).toFixed(1)}s`);
+  if (tierStats.dotDamage      != null) parts.push(`DoT ${(tower.dotDamage ?? 0) + tierStats.dotDamage}/tick`);
+  if (tierStats.dotDuration    != null) parts.push(`BURN ${((tower.dotDuration ?? 0) + tierStats.dotDuration).toFixed(1)}s`);
+  if (tierStats.hazardDamage   != null) parts.push(`HAZ ${(tower.hazardDamage ?? 0) + tierStats.hazardDamage}`);
+  if (tierStats.hazardRadius   != null) parts.push(`HRAZ ${(tower.hazardRadius ?? 0) + tierStats.hazardRadius}`);
+  if (tierStats.buffFireRate   != null) parts.push(`BUFF +${Math.round(((tower.buffFireRate ?? 0) + tierStats.buffFireRate) * 100)}% RATE`);
+  if (tierStats.buffDamage     != null) parts.push(`BUFF +${Math.round(((tower.buffDamage   ?? 0) + tierStats.buffDamage)   * 100)}% DMG`);
   return parts.length ? `→ ${parts.join('  ')}` : '';
 }
 
@@ -311,11 +316,16 @@ export class GameUI {
         `<span>SLOW <b>-${pct}%</b></span><span>DUR <b>${tower.slowDuration.toFixed(1)}s</b></span>` +
         `<span>RNG <b>${tower.globalRange ? '∞' : tower.range}</b></span>`;
     } else {
-      const rng = tower.globalRange ? '∞' : tower.range;
+      const effDmg  = tower.buffedDamage   ?? tower.damage;
+      const effRate = tower.buffedFireRate ?? tower.fireRate;
+      const effRng  = tower.buffedRange    ?? tower.range;
+      const rng = tower.globalRange ? '∞' : Math.round(effRng);
+      const dmgStr  = effDmg  !== tower.damage   ? `${Math.round(effDmg)}<sup>↑</sup>`  : tower.damage;
+      const rateStr = effRate !== tower.fireRate  ? `${effRate.toFixed(1)}<sup>↑</sup>`  : `${tower.fireRate.toFixed(1)}`;
       this.#statsEl.innerHTML =
-        `<span>DMG <b>${tower.damage}</b></span>` +
+        `<span>DMG <b>${dmgStr}</b></span>` +
         `<span>RNG <b>${rng}</b></span>` +
-        `<span>RATE <b>${tower.fireRate.toFixed(1)}/s</b></span>` +
+        `<span>RATE <b>${rateStr}/s</b></span>` +
         (tower.aoeRadius > 0 ? `<span>AoE <b>${tower.aoeRadius}</b></span>` : '') +
         (tower.chainTargets > 0 ? `<span>CHAIN <b>+${tower.chainTargets}</b></span>` : '');
     }
@@ -354,7 +364,7 @@ export class GameUI {
               html += `<button class="upg-btn next" data-path="${pathChar}" title="${tier.desc}">${tier.name} $${tier.cost}${delta ? `<span class="upg-delta">${delta}</span>` : ''}</button>`;
             } else {
               const delta = upgradeDeltaPreview(tower, tier.stats);
-              html += `<button class="upg-btn costly" data-path="${pathChar}" title="Need $${tier.cost - cash} more">${tier.name} $${tier.cost}${delta ? `<span class="upg-delta">${delta}</span>` : ''}</button>`;
+              html += `<button class="upg-btn costly" data-path="${pathChar}" title="${tier.desc} (Need $${tier.cost - cash} more)">${tier.name} $${tier.cost}${delta ? `<span class="upg-delta">${delta}</span>` : ''}</button>`;
             }
           } else {
             html += `<button class="upg-btn locked" disabled>${tier.name}</button>`;
