@@ -697,7 +697,7 @@ async function main() {
         if (e.healsNearby <= 0) continue;
         const rSq = e.healsNearbyRadius * e.healsNearbyRadius;
         for (const target of state.enemies) {
-          if (target === e) continue;
+          if (target === e || target.hp <= 0) continue;
           const dSq = (target.worldX - e.worldX) ** 2 + (target.worldY - e.worldY) ** 2;
           if (dSq <= rSq) target.hp = Math.min(target.maxHp, target.hp + e.healsNearby * dt);
         }
