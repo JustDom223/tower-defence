@@ -2,15 +2,25 @@ import { Graphics, Sprite, Assets, Container } from 'pixi.js';
 import { positionAtDistance } from '../core/Path.js';
 
 // Vite resolves these to hashed asset URLs at build time
-import dogUrl       from '../sprites/dog.png';
-import monsterUrl   from '../sprites/monster.png';
-import spidermanUrl from '../sprites/spiderman.png';
+import dogUrl          from '../sprites/dog.png';
+import monsterUrl      from '../sprites/monster.png';
+import spidermanUrl    from '../sprites/spiderman.png';
+import bugUrl          from '../sprites/bug.jpeg';
+import demonUrl        from '../sprites/demon.jpeg';
+import frankensteinUrl from '../sprites/frankenstein.jpeg';
+import shadeUrl        from '../sprites/shade.jpeg';
+import infernoUrl      from '../sprites/inferno.jpeg';
 
 /** Maps the sprite filename (stored on the enemy) to the Vite asset URL. */
 const SPRITE_ASSET_URLS = {
-  'dog.png':       dogUrl,
-  'monster.png':   monsterUrl,
-  'spiderman.png': spidermanUrl,
+  'dog.png':          { url: dogUrl,          threshold: 240 },
+  'monster.png':      { url: monsterUrl,      threshold: 240 },
+  'spiderman.png':    { url: spidermanUrl,    threshold: 240 },
+  'bug.jpeg':         { url: bugUrl,          threshold: 200 },
+  'demon.jpeg':       { url: demonUrl,        threshold: 200 },
+  'frankenstein.jpeg':{ url: frankensteinUrl, threshold: 200 },
+  'shade.jpeg':       { url: shadeUrl,        threshold: 240 },
+  'inferno.jpeg':     { url: infernoUrl,      threshold: 240 },
 };
 
 /**
@@ -98,8 +108,8 @@ export class EnemyRenderer {
     renderer.stage.addChild(this.#g);
 
     // Pre-load all sprite textures with white background stripped
-    for (const [name, url] of Object.entries(SPRITE_ASSET_URLS)) {
-      this.#textures[name] = await loadWithTransparentBg(url);
+    for (const [name, { url, threshold }] of Object.entries(SPRITE_ASSET_URLS)) {
+      this.#textures[name] = await loadWithTransparentBg(url, threshold);
     }
   }
 
