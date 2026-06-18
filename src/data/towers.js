@@ -300,6 +300,7 @@ export const TOWER_TYPES = {
     fireRate: 1.2,
     projSpeed: 0,          // instant — no travelling projectile
     instant: true,         // hitscan: a lightning bolt strikes the target immediately
+    instantStyle: 'arc',   // renderer style: jagged lightning
     chainTargets: 0,       // extra enemies the bolt arcs to (granted by the Storm path)
     chainRange: 110,       // max jump distance between arc links
     chainFalloff: 0.78,    // damage multiplier applied per additional arc link
@@ -442,7 +443,9 @@ export const TOWER_TYPES = {
     damage: 22,
     range: 200,
     fireRate: 2.5,
-    projSpeed: 600,
+    projSpeed: 0,          // instant beam — no travelling projectile
+    instant: true,
+    instantStyle: 'beam',  // renderer style: clean straight beam
     aoeRadius: 0,
     color: 0xf43f5e,
     projColor: 0xfda4af,
@@ -610,7 +613,9 @@ export const TOWER_TYPES = {
     damage: 80,
     range: 220,
     fireRate: 1.5,
-    projSpeed: 450,
+    projSpeed: 0,          // instant beam — no travelling projectile
+    instant: true,
+    instantStyle: 'beam',  // renderer style: clean straight beam
     aoeRadius: 0,
     color: 0xfbbf24,
     projColor: 0xfef08a,
