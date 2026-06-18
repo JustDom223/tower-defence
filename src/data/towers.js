@@ -34,8 +34,8 @@ export const TOWER_TYPES = {
 
   bomb: {
     name: 'Bomb',
-    cost: 100,
-    damage: 60,
+    cost: 125,
+    damage: 30,
     range: 140,
     fireRate: 0.6,
     projSpeed: 200,
