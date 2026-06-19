@@ -731,6 +731,7 @@ async function main() {
           state.cash += interest;
           showInterestToast(interest);
         }
+        state.cash += 50;
         const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
         if (income > 0) state.cash += income;
         saveGame(state);
