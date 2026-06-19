@@ -1,6 +1,6 @@
 export const TOWER_TYPES = {
-  dart: {
-    name: 'Dart',
+  archer: {
+    name: 'Archer',
     cost: 50,
     damage: 18,
     range: 160,
@@ -10,6 +10,8 @@ export const TOWER_TYPES = {
     isSlow: false,
     color: 0x3b82f6,
     projColor: 0x93c5fd,
+    sprite: 'archer.jpeg',
+    projStyle: 'arrow',
     upgrades: {
       pathA: {
         label: 'Sharpshooter',
@@ -21,12 +23,12 @@ export const TOWER_TYPES = {
         ],
       },
       pathB: {
-        label: 'Gatling',
+        label: 'Rapid Fire',
         tiers: [
-          { name: 'Quick Shots',  desc: '+0.5 fire/sec',          cost:  90, stats: { fireRate: 0.5 } },
-          { name: 'Even Quicker', desc: '+0.8 fire/sec',          cost: 180, stats: { fireRate: 0.8 } },
-          { name: 'Triple Shot',  desc: '3-dart cone volley, +8 dmg',   cost: 420, stats: { coneShot: 3, damage: 8 } },
-          { name: 'Buzzsaw',      desc: '+3.0 fire/sec; rapid cones', cost: 1100, stats: { fireRate: 3.0 } },
+          { name: 'Quick Draw',   desc: '+0.5 fire/sec',               cost:  90, stats: { fireRate: 0.5 } },
+          { name: 'Faster Draw',  desc: '+0.8 fire/sec',               cost: 180, stats: { fireRate: 0.8 } },
+          { name: 'Triple Shot',  desc: '3-arrow cone volley, +8 dmg', cost: 420, stats: { coneShot: 3, damage: 8 } },
+          { name: 'Arrow Storm',  desc: '+3.0 fire/sec; rapid cones',  cost: 1100, stats: { fireRate: 3.0 } },
         ],
       },
     },

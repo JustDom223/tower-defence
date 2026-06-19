@@ -404,7 +404,7 @@ async function main() {
   pathRenderer.init(renderer, path);
 
   const towerRenderer = new TowerRenderer();
-  towerRenderer.init(renderer);
+  await towerRenderer.init(renderer);
 
   const enemyRenderer = new EnemyRenderer();
   await enemyRenderer.init(renderer);

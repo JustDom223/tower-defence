@@ -6,7 +6,7 @@ const HIT_DIST_SQ    = 12 * 12;
 const FLASH_DURATION = 0.12;
 
 const SHOT_SOUND = {
-  dart:         'dart-shot',
+  archer:       'dart-shot',
   bomb:         'dart-shot',
   frost:        'silent',       // frost fires constantly; its pulse was too annoying — muted for now
 
@@ -54,6 +54,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
       applyStun(tower, enemies, damageEvents);
       AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
       tower.cooldown = 1 / tower.fireRate;
+      tower.lastFiredAt = performance.now();
       continue;
     }
 
@@ -70,6 +71,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
       applySlow(tower, enemies);
       AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
       tower.cooldown = 1 / tower.buffedFireRate;
+      tower.lastFiredAt = performance.now();
       continue;
     }
 
@@ -79,6 +81,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
     if (tower.instant) {
       if (fireInstant(tower, enemies, damageEvents, boltEvents)) {
         tower.cooldown = 1 / tower.buffedFireRate;
+        tower.lastFiredAt = performance.now();
         AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
       }
       continue;
@@ -88,6 +91,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
     if (tower.mortarMode && tower.mortarTargetX !== null) {
       tower.angle = Math.atan2(tower.mortarTargetY - tower.y, tower.mortarTargetX - tower.x);
       tower.cooldown = 1 / tower.fireRate;
+      tower.lastFiredAt = performance.now();
       AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
 
       const volley = tower.mortarVolley > 1 ? tower.mortarVolley : 1;
@@ -129,10 +133,11 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
     tower.angle = Math.atan2(targets[0].worldY - tower.y, targets[0].worldX - tower.x);
 
     tower.cooldown = 1 / tower.buffedFireRate;
+    tower.lastFiredAt = performance.now();
     AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
 
-    // Dart fires in a fixed direction; with coneShot >= 3 it fans into a cone.
-    const isDart     = tower.type === 'dart';
+    // Archer fires in a fixed direction; with coneShot >= 3 it fans into a cone.
+    const isDart     = tower.type === 'archer';
     const coneCount  = isDart && tower.coneShot >= 3 ? tower.coneShot : 1;
     const CONE_SPREAD = Math.PI / 12; // 15° between each dart
 

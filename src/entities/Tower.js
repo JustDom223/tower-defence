@@ -39,6 +39,7 @@ export function createTower(type, x, y) {
     upgradesB:    0,
     upgradeSpent: 0,
     angle:        0, // radians — updated by CombatSystem; used by TowerRenderer for barrel direction
+    lastFiredAt:  0, // game time of last shot — used by renderers for fire animation
     multiShot:    def.multiShot   ?? 1,
     isSupport:    def.isSupport   ?? false,
     buffFireRate: def.buffFireRate ?? 0,

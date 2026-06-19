@@ -23,10 +23,10 @@ export function defaultProfile() {
     missions: { map1: 0, map2: 0, map3: 0, map4: 0, map5: 0,
                 map6: 0, map7: 0, map8: 0, map9: 0, map10: 0 },
     unlocks: {
-      towers: { dart: true,  bomb: false, frost: false, marksman: false, tesla: false,
+      towers: { archer: true,  bomb: false, frost: false, marksman: false, tesla: false,
                 flamethrower: false, laser: false, commandpost: false },
       paths:  {
-        dart:         { A: true,  B: false },
+        archer:       { A: true,  B: false },
         bomb:         { A: false, B: false },
         frost:        { A: false, B: false },
         marksman:     { A: false, B: false },
@@ -128,9 +128,9 @@ const INTEREST_COSTS = [1, 2, 2, 3, 3];
 export const UNLOCK_TREE = [
   // ── Towers & paths ───────────────────────────────────────────────────────
   {
-    id: 'dart-B', label: 'Dart — Path B (Quick)', group: 'towers', cost: 1, requires: null,
-    check: p => p.unlocks.paths.dart.B,
-    apply: p => { p.unlocks.paths.dart.B = true; },
+    id: 'archer-B', label: 'Archer — Path B (Rapid Fire)', group: 'towers', cost: 1, requires: null,
+    check: p => p.unlocks.paths.archer.B,
+    apply: p => { p.unlocks.paths.archer.B = true; },
   },
   {
     id: 'bomb', label: 'Bomb tower', group: 'towers', cost: 2, requires: null,

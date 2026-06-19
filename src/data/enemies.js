@@ -7,7 +7,7 @@ export const ENEMY_TYPES = {
 
   /** Armoured — half damage from Dart and Marksman; full damage from Bomb and Frost. */
   armoured: { hp: 200,  speed: 50,  reward: 18,  cashReward: 20,  radius: 14, color: 0x607d8b,
-              resistance: { dart: 0.5, marksman: 0.5 }, sprite: 'frankenstein.jpeg' },
+              resistance: { archer: 0.5, marksman: 0.5 }, sprite: 'frankenstein.jpeg' },
 
   /** Boss — appears on wave 10; massive HP, slow, huge reward. */
   boss:     { hp: 2000, speed: 22,  reward: 150, cashReward: 100, radius: 28, color: 0xcc0044, sprite: 'spiderman.png' },
@@ -61,9 +61,8 @@ export const ENEMY_TYPES = {
 
   /** Juggernaut — resists all damage types; only raw burst cuts through. */
   juggernaut: { hp: 600, speed: 32, reward: 50, cashReward: 60, radius: 22, color: 0x374151,
-                resistance: { dart: 0.5, marksman: 0.5, frost: 0.7, bomb: 0.8,
-                              flamethrower: 0.6, dot: 0.3, tesla: 0.6, laser: 0.5 },
-                sprite: 'demon.jpeg' },
+                resistance: { archer: 0.5, marksman: 0.5, frost: 0.7, bomb: 0.8,
+                              flamethrower: 0.6, dot: 0.3, tesla: 0.6, laser: 0.5 } },
 
   /** Mega Boss — end-game boss; extremely tanky; spawns Armoured on death. */
   megaboss: { hp: 8000, speed: 15, reward: 500, cashReward: 300, radius: 40, color: 0x7f1d1d,

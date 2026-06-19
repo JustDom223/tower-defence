@@ -1,5 +1,12 @@
-import { Graphics } from 'pixi.js';
+import { Graphics, Sprite, Assets, Container } from 'pixi.js';
 import { TOWER_TYPES } from '../data/towers.js';
+
+import archerFrame1Url from '../sprites/towers/archer-frame1.png';
+import archerFrame2Url from '../sprites/towers/archer-frame2.png';
+
+const SPRITE_MAP = {
+  'archer.jpeg': [archerFrame1Url, archerFrame2Url],
+};
 
 const HALF       = 16;
 const BARREL_LEN = 14;
@@ -9,19 +16,29 @@ export class TowerRenderer {
   #barrelG;
   #rangeG;
   #hazardG;
+  #spriteLayer;
+  #textures  = {};
+  #sprites   = new Map(); // tower object → Sprite
   #dirty = true;
   #selectedTower = null;
   #hoverTile = null; // { x, y, valid, type }
 
-  init(renderer) {
-    this.#hazardG = new Graphics();
-    this.#towerG  = new Graphics();
-    this.#barrelG = new Graphics();
-    this.#rangeG  = new Graphics();
+  async init(renderer) {
+    this.#hazardG    = new Graphics();
+    this.#towerG     = new Graphics();
+    this.#spriteLayer = new Container();
+    this.#barrelG    = new Graphics();
+    this.#rangeG     = new Graphics();
     renderer.stage.addChild(this.#hazardG);
     renderer.stage.addChild(this.#towerG);
+    renderer.stage.addChild(this.#spriteLayer);
     renderer.stage.addChild(this.#barrelG);
     renderer.stage.addChild(this.#rangeG);
+
+    for (const [name, urls] of Object.entries(SPRITE_MAP)) {
+      const frames = Array.isArray(urls) ? urls : [urls];
+      this.#textures[name] = await Promise.all(frames.map(u => Assets.load(u)));
+    }
   }
 
   markDirty()         { this.#dirty = true; }
@@ -29,13 +46,14 @@ export class TowerRenderer {
   setHoverTile(tile)  { this.#hoverTile = tile; }
 
   render(towers, hazards) {
-    // Ground hazards drawn below towers
     this.#drawHazards(hazards ?? []);
 
     if (this.#dirty) {
       this.#dirty = false;
       this.#drawBodies(towers);
     }
+
+    this.#syncSprites(towers);
 
     // Barrels redrawn every frame so rotation is live
     this.#drawBarrels(towers);
@@ -47,9 +65,6 @@ export class TowerRenderer {
     if (ht) {
       const def = TOWER_TYPES[ht.type];
 
-      // Range preview — drawn first (under the tile marker) and kept clearly
-      // visible so a finger-placed tower's reach reads on a phone. Shown for
-      // both valid and invalid spots so you can judge reach while dragging.
       if (def.globalRange) {
         this.#rangeG.rect(0, 0, 1280, 720);
         this.#rangeG.fill({ color: 0xa855f7, alpha: 0.06 });
@@ -81,23 +96,20 @@ export class TowerRenderer {
       }
     }
 
-    // Mortar target markers — red × cross + dashed line from tower to target
+    // Mortar target markers
     for (const t of towers) {
       if (t.mortarTargetX === null) continue;
       const tx = t.mortarTargetX, ty = t.mortarTargetY;
-      const S = 8; // half-size of the × cross arms
+      const S = 8;
 
-      // Dashed line from tower to target
       this.#rangeG.moveTo(t.x, t.y);
       this.#rangeG.lineTo(tx, ty);
       this.#rangeG.stroke({ color: 0xef4444, width: 1, alpha: 0.4 });
 
-      // Red × cross
       this.#rangeG.moveTo(tx - S, ty - S); this.#rangeG.lineTo(tx + S, ty + S);
       this.#rangeG.moveTo(tx + S, ty - S); this.#rangeG.lineTo(tx - S, ty + S);
       this.#rangeG.stroke({ color: 0xef4444, width: 2.5, alpha: 0.9 });
 
-      // AoE preview circle at target site
       if (t.aoeRadius > 0) {
         this.#rangeG.circle(tx, ty, t.aoeRadius);
         this.#rangeG.stroke({ color: 0xef4444, width: 1, alpha: 0.35 });
@@ -120,6 +132,7 @@ export class TowerRenderer {
     g.clear();
     for (const t of towers) {
       const def = TOWER_TYPES[t.type];
+      if (def.sprite) continue; // sprite towers skip the rect
       g.rect(t.x - HALF, t.y - HALF, HALF * 2, HALF * 2);
       g.fill({ color: def.color });
       g.rect(t.x - HALF, t.y - HALF, HALF * 2, HALF * 2);
@@ -129,17 +142,59 @@ export class TowerRenderer {
     }
   }
 
+  #syncSprites(towers) {
+    const towerSet = new Set(towers);
+
+    // Remove sprites for towers no longer present
+    for (const [t, sprite] of this.#sprites) {
+      if (!towerSet.has(t)) {
+        sprite.destroy();
+        this.#sprites.delete(t);
+      }
+    }
+
+    // Add/update sprites for sprite towers
+    for (const t of towers) {
+      const def = TOWER_TYPES[t.type];
+      if (!def.sprite) continue;
+
+      const frames = this.#textures[def.sprite];
+      if (!frames) continue;
+
+      if (!this.#sprites.has(t)) {
+        const sprite = new Sprite(frames[0]);
+        sprite.anchor.set(0.5, 0.75);
+        this.#spriteLayer.addChild(sprite);
+        this.#sprites.set(t, sprite);
+      }
+
+      const sprite  = this.#sprites.get(t);
+
+      // Pick frame: show release frame briefly after firing, then idle
+      const RELEASE_MS = 150;
+      const frameIdx = (t.lastFiredAt && performance.now() - t.lastFiredAt < RELEASE_MS) ? 1 : 0;
+      sprite.texture = frames[Math.min(frameIdx, frames.length - 1)];
+
+      // Flip horizontally when aiming left
+      const facing  = Math.cos(t.angle) < 0 ? -1 : 1;
+      const targetH = HALF * 3.5;
+      const scale   = targetH / sprite.texture.height;
+      sprite.x      = t.x;
+      sprite.y      = t.y;
+      sprite.scale.set(scale * facing, scale);
+    }
+  }
+
   #drawBarrels(towers) {
     const g = this.#barrelG;
     g.clear();
     for (const t of towers) {
       const def = TOWER_TYPES[t.type];
+      if (def.sprite) continue; // sprite towers don't need a barrel line
       const ex  = t.x + Math.cos(t.angle) * BARREL_LEN;
       const ey  = t.y + Math.sin(t.angle) * BARREL_LEN;
-      // Dark outline
       g.moveTo(t.x, t.y); g.lineTo(ex, ey);
       g.stroke({ color: 0x000000, width: 5, cap: 'round' });
-      // Coloured barrel
       g.moveTo(t.x, t.y); g.lineTo(ex, ey);
       g.stroke({ color: def.color, width: 3, cap: 'round' });
     }
