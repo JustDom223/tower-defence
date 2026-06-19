@@ -78,7 +78,8 @@ export class TowerRenderer {
         this.#rangeG.stroke({ color: ringColor, width: 2.5, alpha: 0.7 });
       }
 
-      this.#rangeG.circle(ht.x, ht.y, HALF);
+      const HALF_PREVIEW = 20;
+      this.#rangeG.rect(ht.x - HALF_PREVIEW, ht.y - HALF_PREVIEW, HALF_PREVIEW * 2, HALF_PREVIEW * 2);
       this.#rangeG.fill({ color: ht.valid ? 0x22c55e : 0xef4444, alpha: 0.35 });
     }
 
@@ -132,9 +133,9 @@ export class TowerRenderer {
     for (const t of towers) {
       const def = TOWER_TYPES[t.type];
       if (def.sprite) continue; // sprite towers skip the rect
-      g.circle(t.x, t.y, HALF);
+      g.rect(t.x - HALF, t.y - HALF, HALF * 2, HALF * 2);
       g.fill({ color: def.color });
-      g.circle(t.x, t.y, HALF);
+      g.rect(t.x - HALF, t.y - HALF, HALF * 2, HALF * 2);
       g.stroke({ color: 0xffffff, width: 1.5 });
       g.circle(t.x, t.y, 5);
       g.fill({ color: 0x0f172a });
