@@ -13,7 +13,7 @@
  * │ Until then, the form shows a "not set up yet" message instead of sending.│
  * └─────────────────────────────────────────────────────────────────────────┘
  */
-import { getRecentErrors } from '../diagnostics.js';
+import { getRecentErrors } from '../core/diagnostics.js';
 
 const FORMSPREE_ENDPOINT = 'https://formspree.io/f/mlgkvddk';
 

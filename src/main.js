@@ -45,7 +45,7 @@ import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
 import { GameUI }               from './ui/GameUI.js';
 import { MapBuilder }           from './ui/MapBuilder.js';
 import { initFeedback }         from './ui/Feedback.js';
-import { initDiagnostics }      from './diagnostics.js';
+import { initDiagnostics }      from './core/diagnostics.js';
 import AudioManager             from './audio/AudioManager.js';
 import { saveGame, loadGame, clearSave } from './core/SaveSystem.js';
 import { DIFFICULTIES }         from './data/difficulties.js';
