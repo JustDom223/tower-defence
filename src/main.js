@@ -914,8 +914,10 @@ async function main() {
   });
 
   document.getElementById('pause-restart').addEventListener('click', () => {
-    if (!confirm('Restart this map from wave 1? Current run will be lost.')) return;
     sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: state.mapKey, diffKey: state.diffKey }));
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      sessionStorage.setItem('wantFullscreen', '1');
+    }
     clearSave();
     location.reload();
   });
