@@ -342,6 +342,246 @@ function awaitMapSelect(profile) {
   });
 }
 
+// ── Extracted helpers ────────────────────────────────────────────────────────
+
+/** Initialise all PixiJS renderers and return them as a named object. */
+async function initRenderers(renderer, paths) {
+  const pathRenderer = new PathRenderer();
+  pathRenderer.init(renderer, paths);
+
+  const towerRenderer = new TowerRenderer();
+  await towerRenderer.init(renderer);
+
+  const enemyRenderer = new EnemyRenderer();
+  await enemyRenderer.init(renderer);
+
+  const projectileRenderer = new ProjectileRenderer();
+  projectileRenderer.init(renderer);
+
+  const damageNumberRenderer = new DamageNumberRenderer();
+  damageNumberRenderer.init(renderer);
+
+  const particleRenderer = new ParticleRenderer();
+  particleRenderer.init(renderer);
+
+  const lightningRenderer = new LightningRenderer();
+  lightningRenderer.init(renderer);
+
+  return { pathRenderer, towerRenderer, enemyRenderer, projectileRenderer,
+           damageNumberRenderer, particleRenderer, lightningRenderer };
+}
+
+/** Restore a mid-run save into state and mark towers dirty. */
+function restoreSave(savedData, state, towerRenderer) {
+  state.lives     = savedData.lives;
+  state.cash      = savedData.cash;
+  state.score     = savedData.score;
+  state.waveIndex = savedData.waveIndex;
+  for (const t of savedData.towers) {
+    const tower = createTower(t.type, t.x ?? 0, t.y ?? 0);
+    tower.targeting = t.targeting;
+    const def = TOWER_TYPES[t.type];
+    for (let i = 0; i < t.upgradesA; i++) applyTier(tower, def.upgrades.pathA.tiers[i]);
+    tower.upgradesA = t.upgradesA;
+    for (let i = 0; i < t.upgradesB; i++) applyTier(tower, def.upgrades.pathB.tiers[i]);
+    tower.upgradesB    = t.upgradesB;
+    tower.upgradeSpent = t.upgradeSpent;
+    if (tower.type === 'bomb' && tower.upgradesB >= 2) tower.mortarMode = true;
+    state.towers.push(tower);
+  }
+  towerRenderer.markDirty();
+}
+
+/** Wire the sandbox-only control panel (enemy spawner, map switcher, clear button). */
+function setupSandboxPanel(state, paths) {
+  document.body.classList.add('sandbox-active');
+  document.getElementById('hud-sandbox-badge').style.display = 'inline';
+
+  const spawnSel = document.getElementById('spawn-type');
+  for (const type of Object.keys(ENEMY_TYPES)) {
+    const opt = document.createElement('option');
+    opt.value       = type;
+    opt.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+    spawnSel.appendChild(opt);
+  }
+  document.getElementById('spawn-btn').addEventListener('click', () => {
+    const type  = spawnSel.value;
+    const count = Math.max(1, parseInt(document.getElementById('spawn-count').value) || 1);
+    for (let i = 0; i < count; i++) {
+      const dist = i * 30;
+      const e    = enemyPool.acquire({ type, distance: dist, pathIndex: 0 });
+      const pos  = positionAtDistance(paths[0], dist);
+      e.worldX = pos.x;
+      e.worldY = pos.y;
+      state.enemies.push(e);
+    }
+  });
+
+  const sandboxMapSel = document.getElementById('sandbox-map-select');
+  for (const mapKey of CAMPAIGN_ORDER) {
+    const opt = document.createElement('option');
+    opt.value       = mapKey;
+    opt.textContent = MAPS[mapKey]?.name ?? mapKey;
+    if (mapKey === state.mapKey) opt.selected = true;
+    sandboxMapSel.appendChild(opt);
+  }
+  sandboxMapSel.addEventListener('change', () => {
+    sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: sandboxMapSel.value, diffKey: 'sandbox' }));
+    location.reload();
+  });
+
+  document.getElementById('clear-enemies-btn').addEventListener('click', () => {
+    for (const e of state.enemies)     enemyPool.release(e);
+    for (const p of state.projectiles) projectilePool.release(p);
+    state.enemies.length     = 0;
+    state.projectiles.length = 0;
+  });
+}
+
+/**
+ * Wire all canvas mouse, touch, and click handlers.
+ * Touch events are forwarded to mouse events using the lift-offset trick so
+ * tower placement preview shows above the fingertip.
+ */
+function wireCanvasInput(renderer, ui, state, towerRenderer, paths, pathsWaypoints, perks, profile, isSandbox) {
+  renderer.canvas.addEventListener('mousemove', (e) => {
+    const rect = renderer.canvas.getBoundingClientRect();
+    const x    = Math.round((e.clientX - rect.left) * (renderer.width  / rect.width));
+    const y    = Math.round((e.clientY - rect.top)  * (renderer.height / rect.height));
+    const type = ui.selectedTowerType;
+    if (type) {
+      towerRenderer.setHoverTile({ x, y, valid: isPositionFree(x, y, pathsWaypoints, state.towers), type });
+    } else {
+      towerRenderer.setHoverTile(null);
+    }
+  });
+
+  renderer.canvas.addEventListener('mouseleave', () => towerRenderer.setHoverTile(null));
+
+  // MB4 — Touch input forwarded to mouse events.
+  // getBoundingClientRect() returns the post-CSS-transform rect, so the existing
+  // coordinate math works correctly regardless of the CSS scale from scaleGame().
+  // While placing a tower the fingertip hides the target tile, so lift the
+  // forwarded point up by TOUCH_PLACE_LIFT CSS px — ghost preview and placement
+  // use the same lifted point so the tower lands where the ghost shows.
+  const TOUCH_PLACE_LIFT = 48; // CSS px above the fingertip
+  function dispatchMouse(type, touch, liftY = 0) {
+    renderer.canvas.dispatchEvent(new MouseEvent(type, {
+      bubbles: true, cancelable: true, view: window,
+      clientX: touch.clientX, clientY: touch.clientY - liftY,
+    }));
+  }
+  const placeLift = () => (ui.selectedTowerType ? TOUCH_PLACE_LIFT : 0);
+  renderer.canvas.addEventListener('touchstart',  e => { e.preventDefault(); dispatchMouse('mousemove', e.changedTouches[0], placeLift()); }, { passive: false });
+  renderer.canvas.addEventListener('touchmove',   e => { e.preventDefault(); dispatchMouse('mousemove', e.changedTouches[0], placeLift()); }, { passive: false });
+  renderer.canvas.addEventListener('touchend',    e => {
+    e.preventDefault();
+    dispatchMouse('click', e.changedTouches[0], placeLift());
+    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+  }, { passive: false });
+  renderer.canvas.addEventListener('touchcancel', e => {
+    e.preventDefault();
+    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+  }, { passive: false });
+
+  renderer.canvas.addEventListener('click', (e) => {
+    const rect = renderer.canvas.getBoundingClientRect();
+    const wx   = (e.clientX - rect.left) * (renderer.width  / rect.width);
+    const wy   = (e.clientY - rect.top)  * (renderer.height / rect.height);
+
+    // Mortar targeting — intercept click to set the target coordinate
+    if (ui.mortarSetMode !== null) {
+      const mortarTower = ui.mortarSetMode;
+      ui.mortarSetMode  = null;
+      mortarTower.mortarTargetX = wx;
+      mortarTower.mortarTargetY = wy;
+      ui.showTowerPanel(mortarTower, state.cash);
+      towerRenderer.setSelectedTower(mortarTower);
+      return;
+    }
+
+    const CLICK_RADIUS_SQ = 24 ** 2;
+    const best = state.towers.reduce((b, t) => {
+      const d = (wx - t.x) ** 2 + (wy - t.y) ** 2;
+      return (!b || d < b.d) ? { t, d } : b;
+    }, null);
+    const hit = best && best.d < CLICK_RADIUS_SQ ? best.t : null;
+
+    if (hit) {
+      ui.clearTowerTypeSelection();
+      towerRenderer.setHoverTile(null);
+      ui.showTowerPanel(hit, state.cash);
+      towerRenderer.setSelectedTower(hit);
+      return;
+    }
+
+    ui.hideTowerPanel();
+    towerRenderer.setSelectedTower(null);
+
+    const type = ui.selectedTowerType;
+    if (!type) return;
+    if (!isSandbox && !isTowerUnlocked(profile, type)) return;
+    const def          = TOWER_TYPES[type];
+    const effectiveCost = Math.ceil(def.cost * (1 - (perks.towerCostPct ?? 0)));
+    const x = Math.round(wx), y = Math.round(wy);
+    if (!isSandbox && state.cash < effectiveCost) return;
+    if (!isPositionFree(x, y, pathsWaypoints, state.towers)) return;
+
+    const tower = createTower(type, x, y);
+    if (!isSandbox && (perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
+    state.towers.push(tower);
+    if (!isSandbox) state.cash -= effectiveCost;
+    towerRenderer.markDirty();
+    ui.clearTowerTypeSelection();
+    towerRenderer.setHoverTile(null);
+  });
+}
+
+/** Wire the pause overlay: open/close, mute toggle, volume slider, menu/restart buttons. */
+function setupPauseMenu(state, loop) {
+  const pauseScreen  = document.getElementById('pause-screen');
+  const hudMuteBtn   = document.getElementById('hud-mute');
+  const pauseMuteBtn = document.getElementById('pause-mute-btn');
+  const volumeSlider = document.getElementById('pause-volume');
+
+  function syncMuteIcons() {
+    const icon = AudioManager.muted ? '🔇' : '🔊';
+    if (hudMuteBtn)   hudMuteBtn.textContent   = icon;
+    if (pauseMuteBtn) pauseMuteBtn.textContent = icon;
+  }
+
+  document.getElementById('hud-pause').addEventListener('click', () => {
+    state.paused = true;
+    volumeSlider.value = Math.round(AudioManager.volume * 100);
+    syncMuteIcons();
+    pauseScreen.style.display = 'flex';
+  });
+
+  document.getElementById('pause-resume').addEventListener('click', () => {
+    state.paused = false;
+    pauseScreen.style.display = 'none';
+  });
+
+  pauseMuteBtn.addEventListener('click', () => {
+    AudioManager.toggleMute();
+    syncMuteIcons();
+  });
+
+  volumeSlider.addEventListener('input', () => {
+    AudioManager.setVolume(volumeSlider.value / 100);
+  });
+
+  document.getElementById('pause-main-menu').addEventListener('click', () => {
+    const saveIndex = state.waveActive ? state.waveIndex - 1 : state.waveIndex;
+    saveGame({ ...state, waveIndex: saveIndex });
+    location.reload();
+  });
+
+  document.getElementById('pause-restart').addEventListener('click', () => {
+    requestRestart(state.mapKey, state.diffKey);
+  });
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -425,50 +665,12 @@ async function main() {
   document.getElementById('hud-diff').textContent = isSandbox ? '' : `${difficulty.emoji} ${difficulty.label}`;
 
   // --- Renderers ---
-  const pathRenderer = new PathRenderer();
-  pathRenderer.init(renderer, paths);
-
-  const towerRenderer = new TowerRenderer();
-  await towerRenderer.init(renderer);
-
-  const enemyRenderer = new EnemyRenderer();
-  await enemyRenderer.init(renderer);
-
-  const projectileRenderer = new ProjectileRenderer();
-  projectileRenderer.init(renderer);
-
-  const damageNumberRenderer = new DamageNumberRenderer();
-  damageNumberRenderer.init(renderer);
-
-  const particleRenderer = new ParticleRenderer();
-  particleRenderer.init(renderer);
-
-  const lightningRenderer = new LightningRenderer();
-  lightningRenderer.init(renderer);
+  const { pathRenderer, towerRenderer, enemyRenderer, projectileRenderer,
+          damageNumberRenderer, particleRenderer, lightningRenderer } =
+    await initRenderers(renderer, paths);
 
   // --- Restore saved game ---
-  if (savedData) {
-    state.lives     = savedData.lives;
-    state.cash      = savedData.cash;
-    state.score     = savedData.score;
-    state.waveIndex = savedData.waveIndex;
-    for (const t of savedData.towers) {
-      const tower = createTower(t.type, t.x ?? 0, t.y ?? 0);
-      tower.targeting = t.targeting;
-      const def = TOWER_TYPES[t.type];
-      for (let i = 0; i < t.upgradesA; i++) applyTier(tower, def.upgrades.pathA.tiers[i]);
-      tower.upgradesA = t.upgradesA;
-      for (let i = 0; i < t.upgradesB; i++) applyTier(tower, def.upgrades.pathB.tiers[i]);
-      tower.upgradesB = t.upgradesB;
-      tower.upgradeSpent = t.upgradeSpent;
-      // Mortar mode — restore on load based on upgrade tier
-      if (tower.type === 'bomb' && tower.upgradesB >= 2) {
-        tower.mortarMode = true;
-      }
-      state.towers.push(tower);
-    }
-    towerRenderer.markDirty();
-  }
+  if (savedData) restoreSave(savedData, state, towerRenderer);
 
   // --- UI ---
   const ui = new GameUI();
@@ -480,54 +682,7 @@ async function main() {
   ui.update(state);
   ui.setWavePreview(fmtWavePreview(waves[0])); // R3 — show wave 1 contents before start
 
-  // Sandbox one-time setup
-  if (isSandbox) {
-    document.body.classList.add('sandbox-active');
-    document.getElementById('hud-sandbox-badge').style.display = 'inline';
-
-    // Populate enemy type selector from data
-    const spawnSel = document.getElementById('spawn-type');
-    for (const type of Object.keys(ENEMY_TYPES)) {
-      const opt = document.createElement('option');
-      opt.value = type;
-      opt.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-      spawnSel.appendChild(opt);
-    }
-
-    document.getElementById('spawn-btn').addEventListener('click', () => {
-      const type  = spawnSel.value;
-      const count = Math.max(1, parseInt(document.getElementById('spawn-count').value) || 1);
-      for (let i = 0; i < count; i++) {
-        const dist = i * 30;
-        const e    = enemyPool.acquire({ type, distance: dist, pathIndex: 0 });
-        const pos  = positionAtDistance(paths[0], dist);
-        e.worldX   = pos.x;
-        e.worldY   = pos.y;
-        state.enemies.push(e);
-      }
-    });
-
-    // Sandbox map switcher — reload onto chosen map without confirm
-    const sandboxMapSel = document.getElementById('sandbox-map-select');
-    for (const mapKey of CAMPAIGN_ORDER) {
-      const opt = document.createElement('option');
-      opt.value = mapKey;
-      opt.textContent = MAPS[mapKey]?.name ?? mapKey;
-      if (mapKey === state.mapKey) opt.selected = true;
-      sandboxMapSel.appendChild(opt);
-    }
-    sandboxMapSel.addEventListener('change', () => {
-      sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: sandboxMapSel.value, diffKey: 'sandbox' }));
-      location.reload();
-    });
-
-    document.getElementById('clear-enemies-btn').addEventListener('click', () => {
-      for (const e of state.enemies) enemyPool.release(e);
-      state.enemies.length = 0;
-      for (const p of state.projectiles) projectilePool.release(p);
-      state.projectiles.length = 0;
-    });
-  }
+  if (isSandbox) setupSandboxPanel(state, paths);
 
   ui.onStartWave = () => {
     if (state.waveActive || state.gameOver) return;
@@ -592,114 +747,7 @@ async function main() {
   };
 
   // --- Canvas input ---
-  renderer.canvas.addEventListener('mousemove', (e) => {
-    const rect = renderer.canvas.getBoundingClientRect();
-    const x    = Math.round((e.clientX - rect.left) * (renderer.width  / rect.width));
-    const y    = Math.round((e.clientY - rect.top)  * (renderer.height / rect.height));
-    const type = ui.selectedTowerType;
-    if (type) {
-      towerRenderer.setHoverTile({ x, y, valid: isPositionFree(x, y, pathsWaypoints, state.towers), type });
-    } else {
-      towerRenderer.setHoverTile(null);
-    }
-  });
-
-  renderer.canvas.addEventListener('mouseleave', () => {
-    towerRenderer.setHoverTile(null);
-  });
-
-  // MB4 — Touch input: forward touch events to the existing mouse/click handlers.
-  // getBoundingClientRect() already returns the post-CSS-transform rect, so the
-  // existing coordinate math (clientX - rect.left) * (width / rect.width) works
-  // correctly regardless of the CSS scale applied by the MB3 scaleGame() function.
-  //
-  // While placing a tower the fingertip hides the target tile, so lift the
-  // forwarded point up by TOUCH_PLACE_LIFT CSS px: the ghost preview (mousemove)
-  // and the placement itself (click) both use the same lifted point, so the
-  // tower lands where the ghost shows — just above the finger. Selection taps and
-  // mortar targeting use no lift, so they still register exactly under the finger.
-  const TOUCH_PLACE_LIFT = 48; // CSS px above the fingertip
-  function dispatchMouse(type, touch, liftY = 0) {
-    renderer.canvas.dispatchEvent(new MouseEvent(type, {
-      bubbles: true, cancelable: true, view: window,
-      clientX: touch.clientX, clientY: touch.clientY - liftY,
-    }));
-  }
-  const placeLift = () => (ui.selectedTowerType ? TOUCH_PLACE_LIFT : 0);
-  renderer.canvas.addEventListener('touchstart', e => {
-    e.preventDefault();
-    dispatchMouse('mousemove', e.changedTouches[0], placeLift()); // show hover tile
-  }, { passive: false });
-  renderer.canvas.addEventListener('touchmove', e => {
-    e.preventDefault();
-    dispatchMouse('mousemove', e.changedTouches[0], placeLift()); // update hover tile while dragging
-  }, { passive: false });
-  renderer.canvas.addEventListener('touchend', e => {
-    e.preventDefault();
-    dispatchMouse('click', e.changedTouches[0], placeLift());     // place tower or select
-    // Clear hover tile after tap so ghost doesn't linger
-    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
-  }, { passive: false });
-  renderer.canvas.addEventListener('touchcancel', e => {
-    e.preventDefault();
-    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
-  }, { passive: false });
-
-  renderer.canvas.addEventListener('click', (e) => {
-    const rect   = renderer.canvas.getBoundingClientRect();
-    const wx     = (e.clientX - rect.left) * (renderer.width  / rect.width);
-    const wy     = (e.clientY - rect.top)  * (renderer.height / rect.height);
-
-    // Mortar targeting — intercept click to set the target coordinate
-    if (ui.mortarSetMode !== null) {
-      const mortarTower = ui.mortarSetMode;
-      ui.mortarSetMode = null;
-      mortarTower.mortarTargetX = wx;
-      mortarTower.mortarTargetY = wy;
-      // Re-render panel so the target coordinate display updates
-      ui.showTowerPanel(mortarTower, state.cash);
-      towerRenderer.setSelectedTower(mortarTower);
-      return;
-    }
-
-    const CLICK_RADIUS_SQ = 24 ** 2;
-    const best = state.towers.reduce((b, t) => {
-      const d = (wx - t.x) ** 2 + (wy - t.y) ** 2;
-      return (!b || d < b.d) ? { t, d } : b;
-    }, null);
-    const hit = best && best.d < CLICK_RADIUS_SQ ? best.t : null;
-
-    if (hit) {
-      ui.clearTowerTypeSelection();
-      towerRenderer.setHoverTile(null);
-      ui.showTowerPanel(hit, state.cash);
-      towerRenderer.setSelectedTower(hit);
-      return;
-    }
-
-    ui.hideTowerPanel();
-    towerRenderer.setSelectedTower(null);
-
-    const type = ui.selectedTowerType;
-    if (!type) return;
-    // M1 — placement guard: profile must have this tower unlocked (waived in sandbox)
-    if (!state.sandbox && !isTowerUnlocked(profile, type)) return;
-    const def = TOWER_TYPES[type];
-    // P1 — Bulk Discount perk reduces tower costs
-    const effectiveCost = Math.ceil(def.cost * (1 - (perks.towerCostPct ?? 0)));
-    const x = Math.round(wx), y = Math.round(wy);
-    if (!state.sandbox && state.cash < effectiveCost) return;
-    if (!isPositionFree(x, y, pathsWaypoints, state.towers)) return;
-
-    const tower = createTower(type, x, y);
-    // P1 — Power Core perk: bake global damage bonus into tower at creation
-    if (!state.sandbox && (perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
-    state.towers.push(tower);
-    if (!state.sandbox) state.cash -= effectiveCost;
-    towerRenderer.markDirty();
-    ui.clearTowerTypeSelection();
-    towerRenderer.setHoverTile(null);
-  });
+  wireCanvasInput(renderer, ui, state, towerRenderer, paths, pathsWaypoints, perks, profile, isSandbox);
 
   // --- Game loop ---
   const loop = new GameLoop({
@@ -863,51 +911,7 @@ async function main() {
   loop.start();
 
   // ── Pause menu ────────────────────────────────────────────────────────────
-  const pauseScreen  = document.getElementById('pause-screen');
-  const hudMuteBtn   = document.getElementById('hud-mute');
-  const pauseMuteBtn = document.getElementById('pause-mute-btn');
-  const volumeSlider = document.getElementById('pause-volume');
-
-  function syncMuteIcons() {
-    const icon = AudioManager.muted ? '🔇' : '🔊';
-    if (hudMuteBtn)   hudMuteBtn.textContent   = icon;
-    if (pauseMuteBtn) pauseMuteBtn.textContent = icon;
-  }
-
-  function openPause() {
-    state.paused = true;
-    volumeSlider.value = Math.round(AudioManager.volume * 100);
-    syncMuteIcons();
-    pauseScreen.style.display = 'flex';
-  }
-
-  function closePause() {
-    state.paused = false;
-    pauseScreen.style.display = 'none';
-  }
-
-  document.getElementById('hud-pause').addEventListener('click', openPause);
-  document.getElementById('pause-resume').addEventListener('click', closePause);
-
-  pauseMuteBtn.addEventListener('click', () => {
-    AudioManager.toggleMute();
-    syncMuteIcons();
-  });
-
-  volumeSlider.addEventListener('input', () => {
-    AudioManager.setVolume(volumeSlider.value / 100);
-  });
-
-  document.getElementById('pause-main-menu').addEventListener('click', () => {
-    // Save at the last completed wave; if mid-wave, step back so Continue replays it
-    const saveIndex = state.waveActive ? state.waveIndex - 1 : state.waveIndex;
-    saveGame({ ...state, waveIndex: saveIndex });
-    location.reload();
-  });
-
-  document.getElementById('pause-restart').addEventListener('click', () => {
-    requestRestart(state.mapKey, state.diffKey);
-  });
+  setupPauseMenu(state, loop);
 }
 
 // ── Fullscreen toggle ──────────────────────────────────────────────────────
