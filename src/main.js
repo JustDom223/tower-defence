@@ -183,27 +183,23 @@ function renderUnlockTree(profile) {
     list.appendChild(div);
   }
 
-  // Buy handlers — rebind after each re-render
-  list.querySelectorAll('.tree-buy-btn:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const node = UNLOCK_TREE.find(n => n.id === btn.dataset.id);
-      if (applyUnlock(profile, node)) {
-        saveProfile(profile);
-        renderUnlockTree(profile);
+  // Delegated listener — wired once; survives innerHTML rebuilds on the children
+  if (!list.dataset.listenerBound) {
+    list.dataset.listenerBound = '1';
+    list.addEventListener('click', e => {
+      const buy = e.target.closest('.tree-buy-btn');
+      if (buy && !buy.disabled) {
+        const node = UNLOCK_TREE.find(n => n.id === buy.dataset.id);
+        if (applyUnlock(profile, node)) { saveProfile(profile); renderUnlockTree(profile); }
+        return;
+      }
+      const refund = e.target.closest('.tree-refund-btn');
+      if (refund && !refund.disabled) {
+        const node = UNLOCK_TREE.find(n => n.id === refund.dataset.id);
+        if (refundUnlock(profile, node)) { saveProfile(profile); renderUnlockTree(profile); }
       }
     });
-  });
-
-  // Refund handlers
-  list.querySelectorAll('.tree-refund-btn:not([disabled])').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const node = UNLOCK_TREE.find(n => n.id === btn.dataset.id);
-      if (refundUnlock(profile, node)) {
-        saveProfile(profile);
-        renderUnlockTree(profile);
-      }
-    });
-  });
+  }
 }
 
 function updateMapSelectUI(profile) {
