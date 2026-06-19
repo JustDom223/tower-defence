@@ -19,7 +19,8 @@ export class TowerRenderer {
   #spriteLayer;
   #textures  = {};
   #sprites   = new Map(); // tower object → Sprite
-  #dirty = true;
+  #dirty      = true;
+  #rangeDirty = false; // true when #rangeG has content that needs clearing
   #selectedTower = null;
   #hoverTile = null; // { x, y, valid, type }
 
@@ -58,10 +59,18 @@ export class TowerRenderer {
     // Barrels redrawn every frame so rotation is live
     this.#drawBarrels(towers);
 
+    const ht = this.#hoverTile;
+    const sel = this.#selectedTower;
+    const hasMortar = towers.some(t => t.mortarTargetX !== null);
+
+    if (!ht && !sel && !hasMortar) {
+      if (this.#rangeDirty) { this.#rangeG.clear(); this.#rangeDirty = false; }
+      return;
+    }
+    this.#rangeDirty = true;
     this.#rangeG.clear();
 
     // Placement preview
-    const ht = this.#hoverTile;
     if (ht) {
       const def = TOWER_TYPES[ht.type];
 
@@ -84,7 +93,6 @@ export class TowerRenderer {
     }
 
     // Selected tower range + AoE ring
-    const sel = this.#selectedTower;
     if (sel) {
       if (!sel.globalRange && !sel.mortarMode) {
         this.#rangeG.circle(sel.x, sel.y, sel.range);
