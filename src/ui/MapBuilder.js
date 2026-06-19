@@ -314,7 +314,7 @@ export class MapBuilder {
     document.getElementById('builder-straight').classList.toggle('active', !curved);
     document.getElementById('builder-smooth-btn').classList.toggle('active', curved);
     document.getElementById('builder-hint').textContent = curved
-      ? '🔵 Curved — right-click point to toggle segment'
-      : '⬜ Straight — right-click point to toggle segment';
+      ? '🔵 Curved'
+      : '⬜ Straight';
   }
 }
