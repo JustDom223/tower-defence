@@ -19,9 +19,11 @@ export function defaultProfile() {
   return {
     version: 1,
     spent: 0,
-    // All 10 maps; absent keys default to 0 via ?? operator in isMapUnlocked
+    // All 20 maps; absent keys default to 0 via ?? operator in isMapUnlocked
     missions: { map1: 0, map2: 0, map3: 0, map4: 0, map5: 0,
-                map6: 0, map7: 0, map8: 0, map9: 0, map10: 0 },
+                map6: 0, map7: 0, map8: 0, map9: 0, map10: 0,
+                map11: 0, map12: 0, map13: 0, map14: 0, map15: 0,
+                map16: 0, map17: 0, map18: 0, map19: 0, map20: 0 },
     unlocks: {
       towers: { archer: true,  bomb: false, frost: false, marksman: false, tesla: false,
                 flamethrower: false, laser: false, commandpost: false },

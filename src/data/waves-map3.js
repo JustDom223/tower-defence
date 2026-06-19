@@ -19,8 +19,9 @@ export const WAVES = [
   // Wave 4 — Armoured debut (half damage from Dart & Marksman)
   [{ type: 'armoured', count:  4, interval: 1.2 }],
 
-  // Wave 5 — tanks backed by runners
-  [{ type: 'tank',     count:  3, interval: 1.8 },
+  // Wave 5 — Wraith debut (immune to physical; needs poison archer) + tanks
+  [{ type: 'wraith',   count:  2, interval: 3.0 },
+   { type: 'tank',     count:  3, interval: 1.8 },
    { type: 'runner',   count: 12, interval: 0.55 }],
 
   // Wave 6 — splitter swarm

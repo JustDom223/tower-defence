@@ -21,6 +21,16 @@ import { WAVES as WAVES_MAP7 }  from './data/waves-map7.js';
 import { WAVES as WAVES_MAP8 }  from './data/waves-map8.js';
 import { WAVES as WAVES_MAP9 }  from './data/waves-map9.js';
 import { WAVES as WAVES_MAP10 } from './data/waves-map10.js';
+import { WAVES as WAVES_MAP11 } from './data/waves-map11.js';
+import { WAVES as WAVES_MAP12 } from './data/waves-map12.js';
+import { WAVES as WAVES_MAP13 } from './data/waves-map13.js';
+import { WAVES as WAVES_MAP14 } from './data/waves-map14.js';
+import { WAVES as WAVES_MAP15 } from './data/waves-map15.js';
+import { WAVES as WAVES_MAP16 } from './data/waves-map16.js';
+import { WAVES as WAVES_MAP17 } from './data/waves-map17.js';
+import { WAVES as WAVES_MAP18 } from './data/waves-map18.js';
+import { WAVES as WAVES_MAP19 } from './data/waves-map19.js';
+import { WAVES as WAVES_MAP20 } from './data/waves-map20.js';
 import { enemyPool }            from './entities/Enemy.js';
 import { ENEMY_TYPES }          from './data/enemies.js';
 import { projectilePool }       from './entities/Projectile.js';
@@ -48,7 +58,10 @@ const WAVES_BY_MAP = {
   map1: WAVES_MAP1,  map2: WAVES_MAP2,  map3: WAVES_MAP3,
   map4: WAVES_MAP4,  map5: WAVES_MAP5,  map6: WAVES_MAP6,
   map7: WAVES_MAP7,  map8: WAVES_MAP8,  map9: WAVES_MAP9,
-  map10: WAVES_MAP10,
+  map10: WAVES_MAP10, map11: WAVES_MAP11, map12: WAVES_MAP12,
+  map13: WAVES_MAP13, map14: WAVES_MAP14, map15: WAVES_MAP15,
+  map16: WAVES_MAP16, map17: WAVES_MAP17, map18: WAVES_MAP18,
+  map19: WAVES_MAP19, map20: WAVES_MAP20,
 };
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
