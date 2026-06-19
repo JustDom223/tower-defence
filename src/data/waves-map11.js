@@ -18,17 +18,17 @@ export const WAVES = [
   [{ type: 'tank',     count:  5, interval: 1.8 },
    { type: 'splitter', count:  6, interval: 1.1 }],
 
-  // Wave 5 — Wraith debut (2 only) + runners — build that poison archer first
-  [{ type: 'wraith',  count:  2, interval: 4.0 },
-   { type: 'runner',  count: 14, interval: 0.6 }],
+  // Wave 5 — shielded + runners (wraith deferred to map 12)
+  [{ type: 'shielded', count:  6, interval: 1.1 },
+   { type: 'runner',   count: 14, interval: 0.6 }],
 
   // Wave 6 — swarmling flood + armoured
   [{ type: 'swarmling', count: 22, interval: 0.25 },
    { type: 'armoured',  count:  8, interval: 1.05 }],
 
-  // Wave 7 — wraith + phantom (camo + immune)
-  [{ type: 'wraith',  count:  3, interval: 2.8 },
-   { type: 'phantom', count:  3, interval: 1.2 }],
+  // Wave 7 — phantom + armoured (camo pressure without wraith)
+  [{ type: 'phantom', count:  4, interval: 1.2 },
+   { type: 'armoured', count: 8, interval: 1.0 }],
 
   // Wave 8 — brute + sprinter surge
   [{ type: 'brute',    count:  2, interval: 2.5 },
