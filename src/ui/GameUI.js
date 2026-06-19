@@ -273,6 +273,9 @@ export class GameUI {
       addBtn('Try Again', () => {
         clearSave();
         sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: opts.mapKey, diffKey: opts.diffKey }));
+        if (document.fullscreenElement || document.webkitFullscreenElement) {
+          sessionStorage.setItem('wantFullscreen', '1');
+        }
         location.reload();
       }, true);
       addBtn('Main Menu', () => { clearSave(); location.reload(); });

@@ -926,6 +926,16 @@ async function main() {
 // until a map is picked, so deferring this left the menu's #map-fs button with no
 // click handler while the menu was up — it did nothing until a game had started.
 function setupFullscreen() {
+  // After a retry reload, attempt to re-enter fullscreen immediately while Chrome's
+  // cross-navigation user-activation window is still open.
+  if (sessionStorage.getItem('wantFullscreen')) {
+    sessionStorage.removeItem('wantFullscreen');
+    const el = document.documentElement;
+    try {
+      (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el).catch(() => {});
+    } catch (_) {}
+  }
+
   const fsElement = () => document.fullscreenElement || document.webkitFullscreenElement || null;
   const fsApi     = !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
   const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
