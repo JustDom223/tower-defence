@@ -206,7 +206,7 @@ export const MAPS = {
   map11: {
     name: 'The Hook',
     order: 11,
-    hpMult: 2.25,
+    hpMult: 2.15,
     paths: [
       [
         { x:    0, y: 130 },
