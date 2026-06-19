@@ -64,9 +64,8 @@ export const ENEMY_TYPES = {
                 resistance: { archer: 0.5, marksman: 0.5, frost: 0.7, bomb: 0.8,
                               flamethrower: 0.6, dot: 0.3, tesla: 0.6, laser: 0.5 } },
 
-  /** Wraith — immune to all physical damage; can only be killed by poison DoT from a venom archer. */
+  /** Wraith — ground enemy immune to all direct damage; only poison DoT can kill it. */
   wraith: { hp: 120, speed: 85, reward: 35, cashReward: 40, radius: 11, color: 0x7c3aed,
-            isFlying: true, isCamo: true,
             resistance: { archer: 0, bomb: 0, frost: 0, marksman: 0, tesla: 0,
                           flamethrower: 0, laser: 0, dot: 1 } },
 
