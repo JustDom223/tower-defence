@@ -6,6 +6,16 @@ import { TOWER_TYPES } from '../data/towers.js';
 const HIT_DIST_SQ    = 12 * 12;
 const FLASH_DURATION = 0.12;
 
+/** Return the nearest enemy within rangeSq, or null. */
+function nearestInRange(enemies, x, y, rangeSq) {
+  let nearest = null, nearestDSq = rangeSq;
+  for (const e of enemies) {
+    const dSq = (e.worldX - x) ** 2 + (e.worldY - y) ** 2;
+    if (dSq <= nearestDSq) { nearest = e; nearestDSq = dSq; }
+  }
+  return nearest;
+}
+
 /**
  * Predict where a target will be when a projectile of the given speed reaches it.
  * Solves the quadratic intercept equation. Falls back to current position if no
@@ -76,13 +86,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
 
     if (tower.isStun) {
       // Rotate toward nearest in-range enemy (mirrors isSlow behaviour)
-      let nearest = null, nearestDSq = Infinity;
-      const rSq = tower.range * tower.range;
-      for (const e of enemies) {
-        const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
-        const dSq = dx * dx + dy * dy;
-        if (dSq < nearestDSq && dSq <= rSq) { nearest = e; nearestDSq = dSq; }
-      }
+      const nearest = nearestInRange(enemies, tower.x, tower.y, tower.range * tower.range);
       if (nearest) tower.angle = Math.atan2(nearest.worldY - tower.y, nearest.worldX - tower.x);
       applyStun(tower, enemies, damageEvents);
       AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
@@ -93,13 +97,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
 
     if (tower.isSlow) {
       // R3 — rotate slow towers toward nearest in-range enemy
-      let nearest = null, nearestDSq = Infinity;
-      const rSq = tower.buffedRange * tower.buffedRange;
-      for (const e of enemies) {
-        const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
-        const dSq = dx * dx + dy * dy;
-        if (dSq < nearestDSq && dSq <= rSq) { nearest = e; nearestDSq = dSq; }
-      }
+      const nearest = nearestInRange(enemies, tower.x, tower.y, tower.buffedRange * tower.buffedRange);
       if (nearest) tower.angle = Math.atan2(nearest.worldY - tower.y, nearest.worldX - tower.x);
       applySlow(tower, enemies);
       AudioManager.play(SHOT_SOUND[tower.type] ?? 'dart-shot');
