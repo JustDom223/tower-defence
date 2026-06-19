@@ -14,16 +14,6 @@ export const TOWER_TYPES = {
     projStyle: 'arrow',
     upgrades: {
       pathA: {
-        label: 'Arcane Poison',
-        tiers: [
-          { name: 'Arcane Tip',      desc: 'Arrows curse targets with arcane poison (2 dmg/s permanent); -50% fire rate', cost:  90, stats: { dotDamage: 2, dotDuration: 9999, dotTickRate: 1.0, dotStackCap: 1, fireRate: -0.75 } },
-          { name: 'Mystic Range',    desc: '+50 range',                                          cost: 160, stats: { range: 50 } },
-          { name: 'Deep Curse',      desc: 'Curse strengthened to 5 dmg/s',                     cost: 340, stats: { dotDamage: 3 } },
-          { name: 'Spreading Curse', desc: 'Curse spreads to nearby enemies on kill',            cost: 800, stats: { dotDuration: 1, range: 20 } },
-          { name: 'Plague of Ruin',  desc: 'Curse stacks up to 3×; +3 dmg/s per stack',         cost: 2000, stats: { dotDamage: 3, dotStackCap: 2 } },
-        ],
-      },
-      pathB: {
         label: 'Multishot',
         tiers: [
           { name: 'Double Shot',  desc: 'Fires 2 arrows simultaneously',              cost:  90, stats: { multiShot: 1 } },
@@ -31,6 +21,16 @@ export const TOWER_TYPES = {
           { name: 'Quick Draw',   desc: '+1.0 fire/sec',                              cost: 340, stats: { fireRate: 1.0 } },
           { name: 'Triple Shot',  desc: '3-arrow cone volley',                        cost: 800, stats: { coneShot: 3 } },
           { name: 'Arrow Storm',  desc: '+2.0 fire/sec; rapid cone volleys',          cost: 2000, stats: { fireRate: 2.0 } },
+        ],
+      },
+      pathB: {
+        label: 'Arcane Poison',
+        tiers: [
+          { name: 'Arcane Tip',      desc: 'Arrows curse targets with arcane poison (2 dmg/s permanent); -50% fire rate', cost:  90, stats: { dotDamage: 2, dotDuration: 9999, dotTickRate: 1.0, dotStackCap: 1, fireRate: -0.75 } },
+          { name: 'Mystic Range',    desc: '+50 range',                                          cost: 160, stats: { range: 50 } },
+          { name: 'Deep Curse',      desc: 'Curse strengthened to 5 dmg/s',                     cost: 340, stats: { dotDamage: 3 } },
+          { name: 'Spreading Curse', desc: 'Curse spreads to nearby enemies on kill',            cost: 800, stats: { dotDuration: 1, range: 20 } },
+          { name: 'Plague of Ruin',  desc: 'Curse stacks up to 3×; +3 dmg/s per stack',         cost: 2000, stats: { dotDamage: 3, dotStackCap: 2 } },
         ],
       },
     },

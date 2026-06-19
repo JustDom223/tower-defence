@@ -128,7 +128,7 @@ const INTEREST_COSTS = [1, 2, 2, 3, 3];
 export const UNLOCK_TREE = [
   // ── Towers & paths ───────────────────────────────────────────────────────
   {
-    id: 'archer-B', label: 'Archer — Path B (Rapid Fire)', group: 'towers', cost: 1, requires: null,
+    id: 'archer-B', label: 'Archer — Path B (Arcane Poison)', group: 'towers', cost: 1, requires: null,
     check: p => p.unlocks.paths.archer.B,
     apply: p => { p.unlocks.paths.archer.B = true; },
   },
