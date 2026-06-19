@@ -6,6 +6,33 @@ import { TOWER_TYPES } from '../data/towers.js';
 const HIT_DIST_SQ    = 12 * 12;
 const FLASH_DURATION = 0.12;
 
+/** Base projectile properties shared by all tower fire types. */
+function projectilePropsFrom(tower) {
+  return {
+    x: tower.x, y: tower.y,
+    speed:               tower.projSpeed,
+    aoeRadius:           tower.aoeRadius,
+    towerType:           tower.type,
+    flyOnMiss:           tower.flyOnMiss,
+    reTargetOnDeath:     tower.reTargetOnDeath,
+    dotDamage:           tower.dotDamage,
+    dotDuration:         tower.dotDuration,
+    dotTickRate:         tower.dotTickRate,
+    dotIgnoresArmour:    tower.dotIgnoresArmour,
+    dotStackCap:         tower.dotStackCap,
+    debuffVulnerability: tower.debuffVulnerability,
+    debuffDuration:      tower.debuffDuration,
+    ignoresArmour:       tower.ignoresArmour,
+    leavesHazard:        tower.leavesHazard,
+    hazardDamage:        tower.hazardDamage,
+    hazardRadius:        tower.hazardRadius,
+    hazardDuration:      tower.hazardDuration,
+    hazardTickRate:      tower.hazardTickRate,
+    projSlowFactor:      tower.projSlowFactor,
+    projSlowDuration:    tower.projSlowDuration,
+  };
+}
+
 /** Return the nearest enemy within rangeSq, or null. */
 function nearestInRange(enemies, x, y, rangeSq) {
   let nearest = null, nearestDSq = rangeSq;
@@ -134,12 +161,9 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
         const landY = tower.mortarTargetY + perpY;
         const syntheticTarget = { worldX: landX, worldY: landY, id: 0 };
         projectiles.push(projectilePool.acquire({
-          x: tower.x, y: tower.y,
-          target:    syntheticTarget,
-          speed:     tower.projSpeed,
-          damage:    tower.damage,
-          aoeRadius: tower.aoeRadius,
-          towerType: tower.type,
+          ...projectilePropsFrom(tower),
+          target: syntheticTarget,
+          damage: tower.damage,
           ballistic: true,
         }));
       }
@@ -219,30 +243,11 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
         }
 
         projectiles.push(projectilePool.acquire({
-          x: tower.x, y: tower.y, target,
-          speed:     tower.projSpeed,
+          ...projectilePropsFrom(tower),
+          target,
           damage:    tower.buffedDamage,
-          aoeRadius: tower.aoeRadius,
-          towerType: tower.type,
           ballistic: tower.aoeRadius > 0,
           pierce, dirX, dirY, fixedDir,
-          flyOnMiss:       tower.flyOnMiss,
-          reTargetOnDeath: tower.reTargetOnDeath,
-          dotDamage:        tower.dotDamage,
-          dotDuration:      tower.dotDuration,
-          dotTickRate:      tower.dotTickRate,
-          dotIgnoresArmour: tower.dotIgnoresArmour,
-          dotStackCap:      tower.dotStackCap,
-          debuffVulnerability: tower.debuffVulnerability,
-          debuffDuration:      tower.debuffDuration,
-          ignoresArmour:       tower.ignoresArmour,
-          leavesHazard:   tower.leavesHazard,
-          hazardDamage:   tower.hazardDamage,
-          hazardRadius:   tower.hazardRadius,
-          hazardDuration: tower.hazardDuration,
-          hazardTickRate: tower.hazardTickRate,
-          projSlowFactor:   tower.projSlowFactor,
-          projSlowDuration: tower.projSlowDuration,
         }));
       }
     }
