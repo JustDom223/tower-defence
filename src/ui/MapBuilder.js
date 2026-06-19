@@ -193,31 +193,24 @@ export class MapBuilder {
     ].filter(p => p.waypoints.length >= 2);
     if (allPaths.length === 0) return;
 
-    const roundedWps = (wp) => wp.map(p => ({ x: Math.round(p.x), y: Math.round(p.y) }));
-    const fmtWps = (pts, indent = '      ') =>
-      pts.map(p => `${indent}{ x: ${p.x}, y: ${p.y} }`).join(',\n');
+    // Format one waypoint: add smooth:true only when the outgoing segment is curved
+    const fmtPt = (p, curved, indent) => {
+      const x = Math.round(p.x), y = Math.round(p.y);
+      return curved
+        ? `${indent}{ x: ${x}, y: ${y}, smooth: true }`
+        : `${indent}{ x: ${x}, y: ${y} }`;
+    };
+
+    const fmtPath = ({ waypoints: wp, segSmooth: ss }, indent = '      ') =>
+      wp.map((p, i) => fmtPt(p, i < ss.length && ss[i], indent)).join(',\n');
 
     let text;
     if (allPaths.length === 1) {
-      const { waypoints: wp, segSmooth: ss } = allPaths[0];
-      const allCurved   = ss.every(s =>  s);
-      const allStraight = ss.every(s => !s);
-
-      if (allStraight) {
-        text = `waypoints: [\n${fmtWps(roundedWps(wp))}\n    ],`;
-      } else if (allCurved) {
-        text = `smooth: true,\n    waypoints: [\n${fmtWps(roundedWps(wp))}\n    ],`;
-      } else {
-        // Mixed segments: pre-expand so the game plays them correctly
-        const expanded = roundedWps(expandMixed(wp, ss));
-        text = `waypoints: [\n${fmtWps(expanded)}\n    ],`;
-      }
+      text = `waypoints: [\n${fmtPath(allPaths[0])}\n    ],`;
     } else {
-      // Multi-path: expand smooth segments then emit paths: [...] format
-      const bodies = allPaths.map(({ waypoints: wp, segSmooth: ss }) => {
-        const expanded = roundedWps(expandMixed(wp, ss));
-        return `      [\n${fmtWps(expanded, '        ')}\n      ]`;
-      });
+      const bodies = allPaths.map(path =>
+        `      [\n${fmtPath(path, '        ')}\n      ]`
+      );
       text = `paths: [\n${bodies.join(',\n')}\n    ],`;
     }
 

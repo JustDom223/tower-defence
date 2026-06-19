@@ -27,6 +27,25 @@ function smoothWaypoints(pts) {
   return result;
 }
 
+// Per-waypoint smooth: pts[i].smooth === true means segment i→i+1 is Catmull-Rom
+function mixedSmoothWaypoints(pts) {
+  const result = [pts[0]];
+  for (let i = 0; i < pts.length - 1; i++) {
+    if (pts[i].smooth) {
+      const p0 = pts[Math.max(0, i - 1)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(pts.length - 1, i + 2)];
+      for (let s = 1; s <= SMOOTH_SAMPLES; s++) {
+        result.push(catmullRomPoint(p0, p1, p2, p3, s / SMOOTH_SAMPLES));
+      }
+    } else {
+      result.push(pts[i + 1]);
+    }
+  }
+  return result;
+}
+
 /**
  * Normalise a map definition into an array of ComputedPaths.
  * Maps with a `paths` array get one ComputedPath per route;
@@ -50,7 +69,10 @@ export function buildPaths(mapDef) {
  * @returns {ComputedPath}
  */
 export function buildPath(waypoints, smooth = false) {
-  const pts = smooth ? smoothWaypoints(waypoints) : waypoints;
+  const hasMixed = waypoints.some(p => 'smooth' in p);
+  const pts = hasMixed ? mixedSmoothWaypoints(waypoints)
+            : smooth   ? smoothWaypoints(waypoints)
+            : waypoints;
   const segmentLengths = [];
   let totalLength = 0;
   for (let i = 0; i < pts.length - 1; i++) {
