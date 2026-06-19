@@ -444,6 +444,7 @@ export const MAPS = {
     name: 'Helix',
     order: 21,
     hpMult: 3.50, cashRewardMult: 1.65,
+    smooth: true,
     waypoints: [
       { x:    0, y:  90 },   // entry from left
       { x: 1200, y:  90 },   // right along outer top
