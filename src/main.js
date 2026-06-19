@@ -132,7 +132,7 @@ function renderUnlockTree(profile) {
         ? `Rank ${node.maxRank}/${node.maxRank} — Maxed!`
         : `Rank ${rank}/${node.maxRank}${node.nextDesc ? ` · ${node.nextDesc(rank)}` : ''}`;
       const right = maxed
-        ? `<span class="tree-node-cost" style="color:#86efac">Maxed</span>
+        ? `<span class="tree-node-cost tree-cost-done">Maxed</span>
            <button class="tree-refund-btn" data-id="${node.id}" title="Refund last rank (+${refundCost}★)">↩</button>`
         : `<span class="tree-node-cost">${nextCost} ★</span>
            <button class="tree-buy-btn" data-id="${node.id}" ${buyable ? '' : 'disabled'}>
@@ -163,7 +163,7 @@ function renderUnlockTree(profile) {
         ? `Requires: ${reqNode.label}`
         : (node.desc ?? (node.cost === 1 ? '1 star' : `${node.cost} stars`));
       const right = owned
-        ? `<span class="tree-node-cost" style="color:#86efac">Owned</span>
+        ? `<span class="tree-node-cost tree-cost-done">Owned</span>
            <button class="tree-refund-btn" data-id="${node.id}" ${refundable ? '' : 'disabled'} title="${refundable ? `Refund (+${node.cost}★)` : 'Required by another unlock'}">↩</button>`
         : `<span class="tree-node-cost">${node.cost} ★</span>
            <button class="tree-buy-btn" data-id="${node.id}" ${buyable ? '' : 'disabled'}>
@@ -228,7 +228,7 @@ function updateMapSelectUI(profile) {
         btn.dataset.map = mapKey;
         btn.disabled    = locked;
         btn.innerHTML   = locked
-          ? `<span>🔒 ${mapDef.name}</span><span class="map-stars" style="color:#4b5563;font-size:11px">Clear prev. map to unlock</span>`
+          ? `<span>🔒 ${mapDef.name}</span><span class="map-stars locked">Clear prev. map to unlock</span>`
           : `<span>🗺 ${mapDef.name}</span><span class="map-stars">${starStr}</span>`;
         list.appendChild(btn);
       }

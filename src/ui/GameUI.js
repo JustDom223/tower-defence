@@ -384,8 +384,8 @@ export class GameUI {
       let html = `<div class="upgrade-col"><div class="path-label">${pathDef.label}</div>`;
 
       if (profileLocked) {
-        html += `<button class="upg-btn locked" disabled style="white-space:normal;height:auto;padding:6px;">
-          🔒 Locked<br><span style="font-size:9px;color:#475569">Unlock in upgrade tree</span>
+        html += `<button class="upg-btn locked upg-profile-locked" disabled>
+          🔒 Locked<br><span class="upg-lock-hint">Unlock in upgrade tree</span>
         </button>`;
       } else if (pathExclusive) {
         html += `<button class="upg-btn locked" disabled>🔒 Path locked</button>`;
@@ -423,17 +423,15 @@ export class GameUI {
 
     const section = document.createElement('div');
     section.id = 'mortar-controls';
-    section.style.cssText = 'padding:6px 8px;border-top:1px solid #334155;margin-top:4px';
+    // Styling via #mortar-controls in styles.css
 
     const targetInfo = (tower.mortarTargetX !== null)
-      ? `<span style="font-size:10px;color:#94a3b8">Target: (${Math.round(tower.mortarTargetX)}, ${Math.round(tower.mortarTargetY)})</span>`
-      : `<span style="font-size:10px;color:#94a3b8">No target set</span>`;
+      ? `<span class="mortar-info">Target: (${Math.round(tower.mortarTargetX)}, ${Math.round(tower.mortarTargetY)})</span>`
+      : `<span class="mortar-info">No target set</span>`;
 
     section.innerHTML = `
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
-        <button id="mortar-set-target" style="flex:1;padding:5px 8px;background:#dc2626;color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:11px;">
-          📍 Set Target
-        </button>
+      <div class="mortar-row">
+        <button id="mortar-set-target">📍 Set Target</button>
         ${targetInfo}
       </div>
     `;
@@ -445,7 +443,7 @@ export class GameUI {
       this.mortarSetMode = tower;
       // Visual feedback: button text changes while waiting
       const btn = document.getElementById('mortar-set-target');
-      if (btn) { btn.textContent = '🎯 Click map…'; btn.style.background = '#f59e0b'; }
+      if (btn) { btn.textContent = '🎯 Click map…'; btn.classList.add('targeting'); }
     });
   }
 
