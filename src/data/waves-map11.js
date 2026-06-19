@@ -42,5 +42,5 @@ export const WAVES = [
   // Wave 10 — BOSS + brute escort + wraith
   [{ type: 'boss',   count:  1, interval: 1.0 },
    { type: 'brute',  count:  2, interval: 2.5 },
-   { type: 'wraith', count:  3, interval: 2.5 }],
+   { type: 'phantom', count:  3, interval: 2.5 }],
 ];
