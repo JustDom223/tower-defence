@@ -736,13 +736,15 @@ async function main() {
       updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
 
       // Cleric healing aura — heals nearby enemies
-      for (const e of state.enemies) {
-        if (e.healsNearby <= 0) continue;
-        const rSq = e.healsNearbyRadius * e.healsNearbyRadius;
-        for (const target of state.enemies) {
-          if (target === e || target.hp <= 0) continue;
-          const dSq = (target.worldX - e.worldX) ** 2 + (target.worldY - e.worldY) ** 2;
-          if (dSq <= rSq) target.hp = Math.min(target.maxHp, target.hp + e.healsNearby * dt);
+      const healers = state.enemies.filter(e => e.healsNearby > 0);
+      if (healers.length > 0) {
+        for (const e of healers) {
+          const rSq = e.healsNearbyRadius * e.healsNearbyRadius;
+          for (const target of state.enemies) {
+            if (target === e || target.hp <= 0) continue;
+            const dSq = (target.worldX - e.worldX) ** 2 + (target.worldY - e.worldY) ** 2;
+            if (dSq <= rSq) target.hp = Math.min(target.maxHp, target.hp + e.healsNearby * dt);
+          }
         }
       }
 
@@ -765,6 +767,7 @@ async function main() {
         if (p.t >= 0.5) state.deathParticles.splice(i, 1);
       }
 
+      const cashBoosters = state.towers.filter(t => t.killCashBoostRange > 0);
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const e = state.enemies[i];
         if (e.distance >= paths[e.pathIndex].totalLength) {
@@ -773,8 +776,7 @@ async function main() {
           state.enemies.splice(i, 1);
         } else if (e.hp <= 0) {
           const baseReward = e.cashReward ?? 10;
-          const totalBoost = state.towers
-            .filter(t => t.killCashBoostRange > 0)
+          const totalBoost = cashBoosters
             .reduce((total, gen) => {
               const dSq = (gen.x - e.worldX)**2 + (gen.y - e.worldY)**2;
               return dSq <= gen.killCashBoostRange**2 ? total + gen.killCashBoostMult : total;
