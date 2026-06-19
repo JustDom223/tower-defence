@@ -51,7 +51,7 @@ import {
   loadProfile, saveProfile, resetProfile, defaultProfile,
   availableStars, isTowerUnlocked, isPathUnlocked,
   recordMissionResult, isMapUnlocked,
-  UNLOCK_TREE, isNodeOwned, canUnlock, applyUnlock, respec,
+  UNLOCK_TREE, isNodeOwned, canUnlock, applyUnlock, canRefund, refundUnlock, respec,
 } from './core/Profile.js';
 
 const WAVES_BY_MAP = {
@@ -137,24 +137,27 @@ function renderUnlockTree(profile) {
     const div = document.createElement('div');
 
     if (node.ranked) {
-      // P4 — ranked node rendering
-      const rank    = node.getRank(profile) ?? 0;
-      const maxed   = rank >= node.maxRank;
+      const rank     = node.getRank(profile) ?? 0;
+      const maxed    = rank >= node.maxRank;
       const nextCost = maxed ? 0 : node.costAt(rank);
       const affordable = avail >= nextCost;
       const buyable  = !maxed && affordable;
+      const refundable = canRefund(profile, node);
+      const refundCost = rank > 0 ? node.costAt(rank - 1) : 0;
 
       div.className = `tree-node${maxed ? ' owned' : ''}`;
       const icon    = maxed ? '★' : rank > 0 ? '◆' : '◇';
       const subText = maxed
         ? `Rank ${node.maxRank}/${node.maxRank} — Maxed!`
         : `Rank ${rank}/${node.maxRank}${node.nextDesc ? ` · ${node.nextDesc(rank)}` : ''}`;
-      const right   = maxed
-        ? `<span class="tree-node-cost" style="color:#86efac">Maxed</span>`
+      const right = maxed
+        ? `<span class="tree-node-cost" style="color:#86efac">Maxed</span>
+           <button class="tree-refund-btn" data-id="${node.id}" title="Refund last rank (+${refundCost}★)">↩</button>`
         : `<span class="tree-node-cost">${nextCost} ★</span>
            <button class="tree-buy-btn" data-id="${node.id}" ${buyable ? '' : 'disabled'}>
              ${affordable ? 'Buy' : 'Need ★'}
-           </button>`;
+           </button>
+           ${rank > 0 ? `<button class="tree-refund-btn" data-id="${node.id}" title="Refund last rank (+${refundCost}★)">↩</button>` : ''}`;
 
       div.innerHTML = `
         <span class="tree-node-icon">${icon}</span>
@@ -165,22 +168,22 @@ function renderUnlockTree(profile) {
         ${right}
       `;
     } else {
-      // Existing one-time node rendering
       const owned      = isNodeOwned(profile, node);
       const reqNode    = node.requires ? UNLOCK_TREE.find(n => n.id === node.requires) : null;
       const prereqMet  = !reqNode || isNodeOwned(profile, reqNode);
       const affordable = avail >= node.cost;
       const buyable    = !owned && prereqMet && affordable;
+      const refundable = owned && canRefund(profile, node);
 
       div.className = `tree-node${owned ? ' owned' : prereqMet ? '' : ' prereq-locked'}`;
 
       const icon  = owned ? '✓' : prereqMet ? '◆' : '🔒';
-      // Show desc for perk nodes, requirement info for locked tower nodes
       const sub   = reqNode && !prereqMet
         ? `Requires: ${reqNode.label}`
         : (node.desc ?? (node.cost === 1 ? '1 star' : `${node.cost} stars`));
       const right = owned
-        ? `<span class="tree-node-cost" style="color:#86efac">Owned</span>`
+        ? `<span class="tree-node-cost" style="color:#86efac">Owned</span>
+           <button class="tree-refund-btn" data-id="${node.id}" ${refundable ? '' : 'disabled'} title="${refundable ? `Refund (+${node.cost}★)` : 'Required by another unlock'}">↩</button>`
         : `<span class="tree-node-cost">${node.cost} ★</span>
            <button class="tree-buy-btn" data-id="${node.id}" ${buyable ? '' : 'disabled'}>
              ${prereqMet ? (affordable ? 'Buy' : 'Need ★') : '🔒'}
@@ -204,6 +207,17 @@ function renderUnlockTree(profile) {
     btn.addEventListener('click', () => {
       const node = UNLOCK_TREE.find(n => n.id === btn.dataset.id);
       if (applyUnlock(profile, node)) {
+        saveProfile(profile);
+        renderUnlockTree(profile);
+      }
+    });
+  });
+
+  // Refund handlers
+  list.querySelectorAll('.tree-refund-btn:not([disabled])').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const node = UNLOCK_TREE.find(n => n.id === btn.dataset.id);
+      if (refundUnlock(profile, node)) {
         saveProfile(profile);
         renderUnlockTree(profile);
       }
