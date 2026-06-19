@@ -63,6 +63,7 @@ export class MapBuilder {
   #moveHandler;
   #leaveHandler;
   #ctxHandler;
+  #escHandler;
 
   init(renderer) {
     this.#renderer = renderer;
@@ -71,7 +72,8 @@ export class MapBuilder {
     this.#g.visible = false;
   }
 
-  enter() {
+  // onExit: called after cleanup — caller should hide builder UI and restore map-select
+  enter(onExit) {
     this.#paths     = [];
     this.#waypoints = [];
     this.#segSmooth = [];
@@ -90,12 +92,17 @@ export class MapBuilder {
     canvas.addEventListener('mouseleave',  this.#leaveHandler);
     canvas.addEventListener('contextmenu', this.#ctxHandler);
 
+    const doExit = () => { this.exit(); onExit?.(); };
+    document.getElementById('builder-exit').onclick       = doExit;
     document.getElementById('builder-undo').onclick       = () => this.#undo();
     document.getElementById('builder-clear').onclick      = () => this.#clear();
     document.getElementById('builder-copy').onclick       = () => this.#copyJSON();
     document.getElementById('builder-new-path').onclick   = () => this.#newPath();
     document.getElementById('builder-straight').onclick   = () => this.#setSmooth(false);
     document.getElementById('builder-smooth-btn').onclick = () => this.#setSmooth(true);
+
+    this.#escHandler = e => { if (e.key === 'Escape') doExit(); };
+    document.addEventListener('keydown', this.#escHandler);
 
     this.#syncModeButtons();
     this.#syncCount();
@@ -113,6 +120,11 @@ export class MapBuilder {
     canvas.removeEventListener('mousemove',   this.#moveHandler);
     canvas.removeEventListener('mouseleave',  this.#leaveHandler);
     canvas.removeEventListener('contextmenu', this.#ctxHandler);
+
+    if (this.#escHandler) {
+      document.removeEventListener('keydown', this.#escHandler);
+      this.#escHandler = null;
+    }
   }
 
   // ── Private ────────────────────────────────────────────────────────────────

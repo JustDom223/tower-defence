@@ -385,12 +385,10 @@ async function main() {
   document.getElementById('map-builder-btn').onclick = () => {
     document.getElementById('map-select').style.display = 'none';
     document.body.classList.add('builder-active');
-    mapBuilder.enter();
-  };
-  document.getElementById('builder-exit').onclick = () => {
-    mapBuilder.exit();
-    document.body.classList.remove('builder-active');
-    document.getElementById('map-select').style.display = 'flex';
+    mapBuilder.enter(() => {
+      document.body.classList.remove('builder-active');
+      document.getElementById('map-select').style.display = 'flex';
+    });
   };
 
   const { mapKey, savedData, diffKey } = await awaitMapSelect(profile);
