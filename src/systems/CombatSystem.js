@@ -413,9 +413,10 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
 function applyDamage(e, rawDamage, towerType, hitX, hitY, damageEvents, ignoresArmour = false) {
   const resistMult = ignoresArmour ? 1 : (e.resistance?.[towerType] ?? 1);
   const vulnMult   = e.vulnerabilityMult ?? 1.0;
-  let damage = resistMult < 1
-    ? Math.ceil(rawDamage * resistMult * vulnMult)
-    : Math.round(rawDamage * vulnMult);
+  const finalMult  = resistMult * vulnMult;
+  // ceil when < 1 so fractional resists never round down to 0 damage
+  const damage0 = finalMult < 1 ? Math.ceil(rawDamage * finalMult) : Math.round(rawDamage * finalMult);
+  let damage = damage0;
 
   // Shield absorbs damage first; DoT bypasses shield (checked in DoTSystem)
   if (e.shield > 0) {
@@ -427,10 +428,7 @@ function applyDamage(e, rawDamage, towerType, hitX, hitY, damageEvents, ignoresA
   e.hp = Math.max(0, e.hp - damage);
   e.flashTimer = FLASH_DURATION;
   if (damageEvents) {
-    const shownDamage = resistMult < 1
-      ? Math.ceil(rawDamage * resistMult * vulnMult)
-      : Math.round(rawDamage * vulnMult);
-    damageEvents.push({ x: hitX, y: hitY - e.radius, amount: shownDamage, full: rawDamage, t: 0 });
+    damageEvents.push({ x: hitX, y: hitY - e.radius, amount: damage0, full: rawDamage, t: 0 });
   }
 }
 
