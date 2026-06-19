@@ -17,7 +17,7 @@ export const ENEMY_TYPES = {
 
   /** Brute — massively tanky, resists most damage types, slow. */
   brute: { hp: 800, speed: 28, reward: 40, cashReward: 50, radius: 22, color: 0x6b7280,
-           resistance: { dart: 0.5, marksman: 0.5, bomb: 0.6, frost: 0.8 } },
+           resistance: { archer: 0.5, marksman: 0.5, bomb: 0.6, frost: 0.8 } },
 
   /** Phantom — camo; invisible to towers without camo detection. Medium HP, fast. */
   phantom: { hp: 80, speed: 110, reward: 20, cashReward: 18, radius: 10, color: 0xa78bfa,
