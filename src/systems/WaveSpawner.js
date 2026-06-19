@@ -2,6 +2,7 @@ export class WaveSpawner {
   #pool;
   #difficulty;
   #mapHpMult;
+  #cashRewardMult;
   #waves;
   #pathCount;
   #wave = null;
@@ -13,15 +14,18 @@ export class WaveSpawner {
   /**
    * @param {ObjectPool} enemyPool
    * @param {{ hpMult: number, speedMult: number }} difficulty  – from DIFFICULTIES
-   * @param {Array}  waves      – per-map wave definition array
-   * @param {number} mapHpMult  – C2 per-map HP curve multiplier (from maps.js)
+   * @param {Array}  waves           – per-map wave definition array
+   * @param {number} mapHpMult       – C2 per-map HP curve multiplier (from maps.js)
+   * @param {number} pathCount
+   * @param {number} cashRewardMult  – per-map kill-gold multiplier (from maps.js)
    */
-  constructor(enemyPool, difficulty = { hpMult: 1, speedMult: 1 }, waves = [], mapHpMult = 1, pathCount = 1) {
-    this.#pool       = enemyPool;
-    this.#difficulty = difficulty;
-    this.#mapHpMult  = mapHpMult;
-    this.#waves      = waves;
-    this.#pathCount  = pathCount;
+  constructor(enemyPool, difficulty = { hpMult: 1, speedMult: 1 }, waves = [], mapHpMult = 1, pathCount = 1, cashRewardMult = 1) {
+    this.#pool            = enemyPool;
+    this.#difficulty      = difficulty;
+    this.#mapHpMult       = mapHpMult;
+    this.#cashRewardMult  = cashRewardMult;
+    this.#waves           = waves;
+    this.#pathCount       = pathCount;
   }
 
   startWave(waveIndex) {
@@ -49,9 +53,10 @@ export class WaveSpawner {
         const enemy = this.#pool.acquire({ type: group.type, pathIndex });
         // M4/C2 — scale HP by difficulty × per-map curve; speed by difficulty only
         const hpScale = this.#difficulty.hpMult * this.#mapHpMult;
-        enemy.hp    = Math.ceil(enemy.hp    * hpScale);
-        enemy.maxHp = Math.ceil(enemy.maxHp * hpScale);
-        enemy.speed = enemy.speed * this.#difficulty.speedMult;
+        enemy.hp          = Math.ceil(enemy.hp    * hpScale);
+        enemy.maxHp       = Math.ceil(enemy.maxHp * hpScale);
+        enemy.speed       = enemy.speed * this.#difficulty.speedMult;
+        enemy.cashReward  = Math.round(enemy.cashReward * this.#cashRewardMult);
         enemies.push(enemy);
         this.#spawnedInGroup++;
         this.#timer += group.interval;

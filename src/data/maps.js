@@ -1,7 +1,8 @@
 /**
  * Campaign map definitions.
  * order  — campaign position (1 = first, unlocked immediately; later maps gate on prev)
- * hpMult — per-map HP scaling stacked on top of the difficulty multiplier (C2)
+ * hpMult          — per-map HP scaling stacked on top of the difficulty multiplier (C2)
+ * cashRewardMult  — kill-gold multiplier for harder maps (Mountains tier, optional; defaults to 1)
  * waypoints — single-path maps (Forest)
  * paths  — dual-path maps (Mountains): array of two waypoint arrays
  */
@@ -206,7 +207,7 @@ export const MAPS = {
   map11: {
     name: 'The Hook',
     order: 11,
-    hpMult: 2.15,
+    hpMult: 2.15, cashRewardMult: 1.10,
     paths: [
       [
         { x:    0, y: 130 },
@@ -226,7 +227,7 @@ export const MAPS = {
   map12: {
     name: 'Double Loop',
     order: 12,
-    hpMult: 2.25,
+    hpMult: 2.30, cashRewardMult: 1.15,
     paths: [
       [
         { x:    0, y: 100 },
@@ -250,7 +251,7 @@ export const MAPS = {
   map13: {
     name: 'The Spine',
     order: 13,
-    hpMult: 2.5,
+    hpMult: 2.45, cashRewardMult: 1.20,
     paths: [
       [
         { x:    0, y:  80 },
@@ -278,7 +279,7 @@ export const MAPS = {
   map14: {
     name: 'Crosswind',
     order: 14,
-    hpMult: 2.75,
+    hpMult: 2.60, cashRewardMult: 1.25,
     paths: [
       [
         { x:    0, y: 100 },
@@ -302,7 +303,7 @@ export const MAPS = {
   map15: {
     name: 'The Maze',
     order: 15,
-    hpMult: 3.05,
+    hpMult: 2.75, cashRewardMult: 1.30,
     paths: [
       [
         { x:    0, y:  80 },
@@ -330,7 +331,7 @@ export const MAPS = {
   map16: {
     name: 'Vortex',
     order: 16,
-    hpMult: 3.35,
+    hpMult: 2.88, cashRewardMult: 1.35,
     paths: [
       [
         { x:    0, y: 100 },
@@ -354,7 +355,7 @@ export const MAPS = {
   map17: {
     name: 'The Descent',
     order: 17,
-    hpMult: 3.65,
+    hpMult: 3.00, cashRewardMult: 1.40,
     paths: [
       [
         { x:    0, y:  70 },
@@ -376,7 +377,7 @@ export const MAPS = {
   map18: {
     name: 'Omega',
     order: 18,
-    hpMult: 4.00,
+    hpMult: 3.12, cashRewardMult: 1.45,
     paths: [
       [
         { x:    0, y: 100 },
@@ -404,7 +405,7 @@ export const MAPS = {
   map19: {
     name: 'Purgatory',
     order: 19,
-    hpMult: 4.50,
+    hpMult: 3.24, cashRewardMult: 1.52,
     paths: [
       [
         { x:    0, y:  60 },
@@ -434,7 +435,7 @@ export const MAPS = {
   map20: {
     name: 'The Abyss',
     order: 20,
-    hpMult: 5.00,
+    hpMult: 3.35, cashRewardMult: 1.60,
     paths: [
       [
         { x:    0, y:  80 },

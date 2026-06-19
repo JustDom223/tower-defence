@@ -427,9 +427,10 @@ async function main() {
   // Expose the live state to the bug-report system so reports auto-attach run context.
   currentState = state;
 
-  // C2 — pass per-map HP curve multiplier to WaveSpawner
-  const mapHpMult   = mapDef.hpMult ?? 1;
-  const waveSpawner = new WaveSpawner(enemyPool, difficulty, waves, mapHpMult, paths.length);
+  // C2 — pass per-map HP curve and cash-reward multipliers to WaveSpawner
+  const mapHpMult         = mapDef.hpMult ?? 1;
+  const mapCashRewardMult = mapDef.cashRewardMult ?? 1;
+  const waveSpawner = new WaveSpawner(enemyPool, difficulty, waves, mapHpMult, paths.length, mapCashRewardMult);
 
   // M4 — show difficulty badge in HUD (hidden in sandbox; badge replaced by sandbox badge)
   document.getElementById('hud-diff').textContent = isSandbox ? '' : `${difficulty.emoji} ${difficulty.label}`;
