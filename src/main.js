@@ -545,7 +545,7 @@ async function main() {
   };
 
   ui.onToggleFF = () => {
-    const speeds = state.sandbox ? [1, 2, 4, 8] : [1, 2];
+    const speeds = state.sandbox ? [1, 2, 4, 8] : [1, 2, 4];
     const idx    = speeds.indexOf(loop.speed);
     loop.speed   = speeds[(idx + 1) % speeds.length];
     state.loopSpeed = loop.speed;
