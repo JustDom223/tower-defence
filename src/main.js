@@ -838,7 +838,7 @@ async function main() {
         state.gameOver = true;
         clearSave();
         AudioManager.play('lose');
-        ui.showEndScreen(false, state.score, 0, availableStars(profile));
+        ui.showEndScreen(false, state.score, 0, availableStars(profile), false, { mapKey: state.mapKey, diffKey: state.diffKey });
       }
     },
 

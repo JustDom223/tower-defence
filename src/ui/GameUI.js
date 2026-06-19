@@ -270,7 +270,12 @@ export class GameUI {
       }, !opts.nextMapKey); // make it the primary action when there's no next map
       addBtn('Maps', () => { clearSave(); location.reload(); });
     } else {
-      addBtn('Try Again', () => { clearSave(); location.reload(); }, true);
+      addBtn('Try Again', () => {
+        clearSave();
+        sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: opts.mapKey, diffKey: opts.diffKey }));
+        location.reload();
+      }, true);
+      addBtn('Main Menu', () => { clearSave(); location.reload(); });
     }
   }
 
