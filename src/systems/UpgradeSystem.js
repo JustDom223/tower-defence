@@ -1,4 +1,4 @@
-export const MAX_TIER = 4;
+export const MAX_TIER = 5;
 
 /**
  * Returns whether the next tier on `path` ('A'|'B') can be purchased.

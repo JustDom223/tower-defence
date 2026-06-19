@@ -20,6 +20,13 @@ export function selectTarget(tower, enemies) {
         if (dSq < bx * bx + by * by) best = e;
       } break;
       case 'strong': if (e.hp > best.hp) best = e; break;
+      case 'flying': {
+        const bestIsFlying = best.isFlying ?? false;
+        const eIsFlying    = e.isFlying    ?? false;
+        if (eIsFlying && !bestIsFlying) { best = e; break; }
+        if (!eIsFlying && bestIsFlying) break;
+        if (e.distance > best.distance) best = e;
+      } break;
     }
   }
 
@@ -65,6 +72,14 @@ export function selectTopNTargets(tower, enemies, n) {
       break;
     case 'strong':
       inRange.sort((a, b) => b.enemy.hp - a.enemy.hp);
+      break;
+    case 'flying':
+      inRange.sort((a, b) => {
+        const af = a.enemy.isFlying ? 1 : 0;
+        const bf = b.enemy.isFlying ? 1 : 0;
+        if (bf !== af) return bf - af;
+        return b.enemy.distance - a.enemy.distance;
+      });
       break;
     default:
       inRange.sort((a, b) => b.enemy.distance - a.enemy.distance);

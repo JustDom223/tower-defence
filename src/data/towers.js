@@ -14,21 +14,23 @@ export const TOWER_TYPES = {
     projStyle: 'arrow',
     upgrades: {
       pathA: {
-        label: 'Sharpshooter',
+        label: 'Poison',
         tiers: [
-          { name: 'Sharp Tips',    desc: '+8 damage',                  cost:  80, stats: { damage: 8 } },
-          { name: 'Long Range',    desc: '+40 range',                   cost: 130, stats: { range: 40 } },
-          { name: 'Piercing Shot', desc: '+10 dmg; pierce 1 enemy',    cost: 320, stats: { damage: 10, pierce: 1 } },
-          { name: 'Spike Storm',   desc: '+20 dmg; pierce 2 enemies',  cost: 950, stats: { damage: 20, pierce: 1 } },
+          { name: 'Venom Tip',     desc: 'Poison arrows (2 dmg/s permanent); -50% fire rate', cost:  90, stats: { dotDamage: 2, dotDuration: 9999, dotTickRate: 1.0, dotStackCap: 1, fireRate: -0.75 } },
+          { name: 'Eagle Eye',     desc: '+50 range',                                   cost: 160, stats: { range: 50 } },
+          { name: 'Potent Venom',  desc: 'Poison strengthened to 5 dmg/s',             cost: 340, stats: { dotDamage: 3 } },
+          { name: 'Virulent',      desc: 'Poison spreads to nearby enemies on kill',   cost: 800, stats: { dotDuration: 1, range: 20 } },
+          { name: 'Plague Arrow',  desc: 'Poison stacks up to 3×; +3 dmg/s per stack',cost: 2000, stats: { dotDamage: 3, dotStackCap: 2 } },
         ],
       },
       pathB: {
-        label: 'Rapid Fire',
+        label: 'Multishot',
         tiers: [
-          { name: 'Quick Draw',   desc: '+0.5 fire/sec',               cost:  90, stats: { fireRate: 0.5 } },
-          { name: 'Faster Draw',  desc: '+0.8 fire/sec',               cost: 180, stats: { fireRate: 0.8 } },
-          { name: 'Triple Shot',  desc: '3-arrow cone volley, +8 dmg', cost: 420, stats: { coneShot: 3, damage: 8 } },
-          { name: 'Arrow Storm',  desc: '+3.0 fire/sec; rapid cones',  cost: 1100, stats: { fireRate: 3.0 } },
+          { name: 'Double Shot',  desc: 'Fires 2 arrows simultaneously',              cost:  90, stats: { multiShot: 1 } },
+          { name: 'Hawk Eye',     desc: '+50 range',                                  cost: 160, stats: { range: 50 } },
+          { name: 'Quick Draw',   desc: '+1.0 fire/sec',                              cost: 340, stats: { fireRate: 1.0 } },
+          { name: 'Triple Shot',  desc: '3-arrow cone volley',                        cost: 800, stats: { coneShot: 3 } },
+          { name: 'Arrow Storm',  desc: '+2.0 fire/sec; rapid cone volleys',          cost: 2000, stats: { fireRate: 2.0 } },
         ],
       },
     },

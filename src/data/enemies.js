@@ -64,6 +64,12 @@ export const ENEMY_TYPES = {
                 resistance: { archer: 0.5, marksman: 0.5, frost: 0.7, bomb: 0.8,
                               flamethrower: 0.6, dot: 0.3, tesla: 0.6, laser: 0.5 } },
 
+  /** Wraith — immune to all physical damage; can only be killed by poison DoT from a venom archer. */
+  wraith: { hp: 120, speed: 85, reward: 35, cashReward: 40, radius: 11, color: 0x7c3aed,
+            isFlying: true, isCamo: true,
+            resistance: { archer: 0, bomb: 0, frost: 0, marksman: 0, tesla: 0,
+                          flamethrower: 0, laser: 0, dot: 1 } },
+
   /** Mega Boss — end-game boss; extremely tanky; spawns Armoured on death. */
   megaboss: { hp: 8000, speed: 15, reward: 500, cashReward: 300, radius: 40, color: 0x7f1d1d,
               spawns: { type: 'armoured', count: 4 } },
