@@ -68,8 +68,26 @@ export function loadProfile() {
       console.warn('[Profile] Incompatible or corrupt profile (version mismatch) — resetting to default.');
       return defaultProfile();
     }
+    // Migrate dart → archer rename (profiles saved before the rename have 'dart' keys)
+    if (p.unlocks?.towers?.dart !== undefined && p.unlocks?.towers?.archer === undefined) {
+      p.unlocks.towers.archer = p.unlocks.towers.dart;
+      delete p.unlocks.towers.dart;
+    }
+    if (p.unlocks?.paths?.dart !== undefined && p.unlocks?.paths?.archer === undefined) {
+      p.unlocks.paths.archer = p.unlocks.paths.dart;
+      delete p.unlocks.paths.dart;
+    }
+    // Backfill any tower/path keys added after this profile was first saved
+    const def = defaultProfile();
+    if (!p.unlocks) p.unlocks = def.unlocks;
+    for (const [k, v] of Object.entries(def.unlocks.towers)) {
+      if (p.unlocks.towers[k] === undefined) p.unlocks.towers[k] = v;
+    }
+    for (const [k, v] of Object.entries(def.unlocks.paths)) {
+      if (!p.unlocks.paths[k]) p.unlocks.paths[k] = { ...v };
+    }
     // P1 — backfill perks for profiles created before this feature
-    if (!p.perks) p.perks = defaultProfile().perks;
+    if (!p.perks) p.perks = def.perks;
     return p;
   } catch { return defaultProfile(); }
 }
