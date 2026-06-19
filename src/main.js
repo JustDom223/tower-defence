@@ -1,7 +1,7 @@
 import { Renderer }           from './render/Renderer.js';
 import { GameLoop }            from './core/GameLoop.js';
 import { buildPaths, positionAtDistance } from './core/Path.js';
-import { snapToGrid, isPositionFree } from './core/Grid.js';
+import { isPositionFree } from './core/Grid.js';
 import { PathRenderer }        from './render/PathRenderer.js';
 import { EnemyRenderer }       from './render/EnemyRenderer.js';
 import { TowerRenderer }       from './render/TowerRenderer.js';
@@ -607,9 +607,8 @@ async function main() {
   // --- Canvas input ---
   renderer.canvas.addEventListener('mousemove', (e) => {
     const rect = renderer.canvas.getBoundingClientRect();
-    const wx   = (e.clientX - rect.left) * (renderer.width  / rect.width);
-    const wy   = (e.clientY - rect.top)  * (renderer.height / rect.height);
-    const { x, y } = snapToGrid(wx, wy);
+    const x    = Math.round((e.clientX - rect.left) * (renderer.width  / rect.width));
+    const y    = Math.round((e.clientY - rect.top)  * (renderer.height / rect.height));
     const type = ui.selectedTowerType;
     if (type) {
       towerRenderer.setHoverTile({ x, y, valid: isPositionFree(x, y, pathsWaypoints, state.towers), type });
@@ -701,7 +700,7 @@ async function main() {
     const def = TOWER_TYPES[type];
     // P1 — Bulk Discount perk reduces tower costs
     const effectiveCost = Math.ceil(def.cost * (1 - (perks.towerCostPct ?? 0)));
-    const { x, y } = snapToGrid(wx, wy);
+    const x = Math.round(wx), y = Math.round(wy);
     if (!state.sandbox && state.cash < effectiveCost) return;
     if (!isPositionFree(x, y, pathsWaypoints, state.towers)) return;
 

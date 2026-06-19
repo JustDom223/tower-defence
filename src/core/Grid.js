@@ -1,14 +1,6 @@
-export const SNAP           = 36;
 export const TOWER_RADIUS   = 20;
-export const TOWER_MIN_GAP  = 36; // Chebyshev — matches SNAP so adjacent cells are always exactly clear
+export const TOWER_MIN_GAP  = 36; // Euclidean — 32px tower + 4px clearance
 export const PATH_CLEARANCE = 40;
-
-export function snapToGrid(wx, wy) {
-  return {
-    x: Math.round(wx / SNAP) * SNAP,
-    y: Math.round(wy / SNAP) * SNAP,
-  };
-}
 
 function distToSegSq(px, py, ax, ay, bx, by) {
   const dx = bx - ax, dy = by - ay;
@@ -30,8 +22,9 @@ export function isPositionFree(x, y, pathsWaypoints, towers, canvasW = 1280, can
     }
   }
 
+  const gapSq = TOWER_MIN_GAP ** 2;
   for (const t of towers) {
-    if (Math.max(Math.abs(x - t.x), Math.abs(y - t.y)) < TOWER_MIN_GAP) return false;
+    if ((x - t.x) ** 2 + (y - t.y) ** 2 < gapSq) return false;
   }
 
   return true;
