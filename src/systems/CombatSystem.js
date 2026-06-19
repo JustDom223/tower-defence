@@ -258,7 +258,7 @@ function applyBuffAuras(towers) {
     t.buffedFireRate = t.fireRate;
     t.buffedDamage   = t.damage;
     t.buffedRange    = t.range;
-    t.camoVisible    = false;
+    t.camoVisible    = t.camoDetect ?? false;
   }
   // Apply support tower auras
   for (const src of towers) {
