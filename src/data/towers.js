@@ -12,6 +12,7 @@ export const TOWER_TYPES = {
     projColor: 0x93c5fd,
     sprite: 'archer.jpeg',
     projStyle: 'arrow',
+    leadsTarget: true,
     upgrades: {
       pathA: {
         label: 'Multishot',

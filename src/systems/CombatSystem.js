@@ -1,9 +1,42 @@
 import { selectTarget, selectTopNTargets } from './TargetingSystem.js';
 import { projectilePool } from '../entities/Projectile.js';
 import AudioManager from '../audio/AudioManager.js';
+import { TOWER_TYPES } from '../data/towers.js';
 
 const HIT_DIST_SQ    = 12 * 12;
 const FLASH_DURATION = 0.12;
+
+/**
+ * Predict where a target will be when a projectile of the given speed reaches it.
+ * Solves the quadratic intercept equation. Falls back to current position if no
+ * solution exists (e.g. target is faster than the projectile).
+ */
+function interceptPoint(tower, target, projSpeed) {
+  const dx = target.worldX - tower.x;
+  const dy = target.worldY - tower.y;
+  const vx = target.vx ?? 0;
+  const vy = target.vy ?? 0;
+
+  const a = vx * vx + vy * vy - projSpeed * projSpeed;
+  const b = 2 * (dx * vx + dy * vy);
+  const c = dx * dx + dy * dy;
+
+  let t = 0;
+  if (Math.abs(a) < 0.001) {
+    // Target is stationary or nearly so
+    t = c / (-b || 1);
+  } else {
+    const disc = b * b - 4 * a * c;
+    if (disc < 0) return { x: target.worldX, y: target.worldY }; // no solution
+    const sqrtDisc = Math.sqrt(disc);
+    const t1 = (-b - sqrtDisc) / (2 * a);
+    const t2 = (-b + sqrtDisc) / (2 * a);
+    t = t1 > 0 ? t1 : t2;
+  }
+
+  if (t < 0) return { x: target.worldX, y: target.worldY };
+  return { x: target.worldX + vx * t, y: target.worldY + vy * t };
+}
 
 const SHOT_SOUND = {
   archer:       'dart-shot',
@@ -141,8 +174,12 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
     const coneCount  = isDart && tower.coneShot >= 3 ? tower.coneShot : 1;
     const CONE_SPREAD = Math.PI / 12; // 15° between each dart
 
+    const def = TOWER_TYPES[tower.type];
     for (const target of targets) {
-      const baseAngle = Math.atan2(target.worldY - tower.y, target.worldX - tower.x);
+      const aimPt    = def.leadsTarget
+        ? interceptPoint(tower, target, tower.projSpeed)
+        : { x: target.worldX, y: target.worldY };
+      const baseAngle = Math.atan2(aimPt.y - tower.y, aimPt.x - tower.x);
 
       for (let c = 0; c < coneCount; c++) {
         let pierce = 0, dirX = 0, dirY = 0, fixedDir = false;

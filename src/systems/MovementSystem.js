@@ -39,8 +39,11 @@ export function updateMovement(enemies, path, dt) {
       e.hp = Math.min(e.maxHp, e.hp + e.regenRate * dt);
     }
 
+    const prevX = e.worldX, prevY = e.worldY;
     const pos = positionAtDistance(path, e.distance);
     e.worldX = pos.x;
     e.worldY = pos.y;
+    e.vx = dt > 0 ? (e.worldX - prevX) / dt : 0;
+    e.vy = dt > 0 ? (e.worldY - prevY) / dt : 0;
   }
 }
