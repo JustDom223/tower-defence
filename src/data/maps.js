@@ -24,7 +24,7 @@ export const WORLDS = [
     key: 'ruins',
     name: 'Ruins',
     flavour: 'Ancient stone corridors — one long spiral, no escape.',
-    maps: ['map21'],
+    maps: ['map21', 'map22'],
   },
 ];
 
@@ -456,6 +456,23 @@ export const MAPS = {
       { x:  200, y: 500 },   // left along inner bottom
       { x:  200, y: 360 },   // up to center level
       { x: 1280, y: 360 },   // exit right
+    ],
+  },
+
+  map22: {
+    name: 'Test',
+    order: 1,
+    hpMult: 1.00,
+    smooth: true,
+    waypoints: [
+      { x:    4, y: 110 },
+      { x:  603, y:  69 },
+      { x:  966, y: 240 },
+      { x:  613, y: 347 },
+      { x:  584, y: 153 },
+      { x:   21, y: 198 },
+      { x:  620, y: 602 },
+      { x: 1277, y: 433 },
     ],
   },
 

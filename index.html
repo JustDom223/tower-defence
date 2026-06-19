@@ -844,6 +844,12 @@
       #builder-undo:hover, #builder-clear:hover, #builder-exit:hover {
         border-color: #6b7280; color: #e5e7eb;
       }
+      #builder-new-path {
+        background: #0f1f35; color: #93c5fd;
+        border: 1px solid #1e3a5f; border-radius: 4px;
+        padding: 4px 10px; cursor: pointer; font-size: 11px;
+      }
+      #builder-new-path:hover { background: #1e3a5f; }
       #builder-copy {
         background: #0f2620; color: #6ee7b7;
         border: 1px solid #065f46; border-radius: 4px;
@@ -1020,6 +1026,8 @@
         <span class="builder-sep">│</span>
         <button id="builder-undo">↩ Undo</button>
         <button id="builder-clear">✕ Clear</button>
+        <span class="builder-sep">│</span>
+        <button id="builder-new-path">+ New Path</button>
         <span class="builder-sep">│</span>
         <button id="builder-copy">📋 Copy JSON</button>
         <button id="builder-exit">← Exit</button>
