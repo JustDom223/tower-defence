@@ -20,6 +20,12 @@ export const WORLDS = [
     flavour: 'Twisting passes — enemies split across two routes.',
     maps: ['map11','map12','map13','map14','map15','map16','map17','map18','map19','map20'],
   },
+  {
+    key: 'ruins',
+    name: 'Ruins',
+    flavour: 'Ancient stone corridors — one long spiral, no escape.',
+    maps: ['map21'],
+  },
 ];
 
 export const CAMPAIGN_ORDER = [
@@ -27,6 +33,7 @@ export const CAMPAIGN_ORDER = [
   'map6','map7','map8','map9','map10',
   'map11','map12','map13','map14','map15',
   'map16','map17','map18','map19','map20',
+  'map21',
 ];
 
 export const MAPS = {
@@ -429,6 +436,25 @@ export const MAPS = {
         { x:  980, y: 390 },
         { x: 1280, y: 390 },
       ],
+    ],
+  },
+
+  // ── Ruins world ──────────────────────────────────────────────────────────────
+  map21: {
+    name: 'Helix',
+    order: 21,
+    hpMult: 3.50, cashRewardMult: 1.65,
+    waypoints: [
+      { x:    0, y:  90 },   // entry from left
+      { x: 1200, y:  90 },   // right along outer top
+      { x: 1200, y: 630 },   // down outer right
+      { x:   80, y: 630 },   // left along outer bottom
+      { x:   80, y: 220 },   // up outer left (into inner ring)
+      { x: 1060, y: 220 },   // right along inner top
+      { x: 1060, y: 500 },   // down inner right
+      { x:  200, y: 500 },   // left along inner bottom
+      { x:  200, y: 360 },   // up to center level
+      { x: 1280, y: 360 },   // exit right
     ],
   },
 
