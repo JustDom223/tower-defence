@@ -227,7 +227,7 @@ export const MAPS = {
   map12: {
     name: 'Double Loop',
     order: 12,
-    hpMult: 2.30, cashRewardMult: 1.15,
+    hpMult: 2.25, cashRewardMult: 1.15,
     paths: [
       [
         { x:    0, y: 100 },
