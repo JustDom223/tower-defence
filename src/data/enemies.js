@@ -7,7 +7,7 @@ export const ENEMY_TYPES = {
 
   /** Armoured — half damage from archer/marksman; bombs deal 1.5× (weak to explosions). */
   armoured: { hp: 200,  speed: 50,  reward: 18,  cashReward: 20,  radius: 14, color: 0x607d8b,
-              resistance: { archer: 0.5, marksman: 0.5, bomb: 1.5 }, sprite: 'frankenstein.jpeg' },
+              resistance: { archer: 0.5, marksman: 0.5, bomb: 1.5, laser: 2.0 }, sprite: 'frankenstein.jpeg' },
 
   /** Boss — appears on wave 10; massive HP, slow, huge reward. */
   boss:     { hp: 2000, speed: 22,  reward: 150, cashReward: 100, radius: 28, color: 0xcc0044, sprite: 'spiderman.png' },
