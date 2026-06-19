@@ -28,26 +28,26 @@ function expandMixed(waypoints, segSmooth) {
   return out;
 }
 
-// Draw per-segment path onto a Graphics context
+// Draw per-segment path onto a Graphics context as one continuous stroke
 function drawSegments(g, waypoints, segSmooth, color, width, alpha) {
   const wp = waypoints;
+  if (wp.length < 2) return;
+  g.moveTo(wp[0].x, wp[0].y);
   for (let i = 0; i < wp.length - 1; i++) {
     if (segSmooth[i]) {
       const p0 = wp[Math.max(0, i - 1)];
       const p1 = wp[i];
       const p2 = wp[i + 1];
       const p3 = wp[Math.min(wp.length - 1, i + 2)];
-      g.moveTo(p1.x, p1.y);
       for (let s = 1; s <= SAMPLES; s++) {
         const pt = catmullRom(p0, p1, p2, p3, s / SAMPLES);
         g.lineTo(pt.x, pt.y);
       }
     } else {
-      g.moveTo(wp[i].x, wp[i].y);
       g.lineTo(wp[i + 1].x, wp[i + 1].y);
     }
-    g.stroke({ color, width, alpha });
   }
+  g.stroke({ color, width, alpha });
 }
 
 export class MapBuilder {
