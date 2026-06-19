@@ -14,7 +14,7 @@ export const DIFFICULTIES = {
     hpMult:       1.0,
     speedMult:    1.0,
     starCap:      2,
-    startingCash: 150,
+    startingCash: 100,
   },
   hard: {
     key:          'hard',
@@ -23,6 +23,6 @@ export const DIFFICULTIES = {
     hpMult:       1.9,
     speedMult:    1.25,
     starCap:      3,
-    startingCash: 125,
+    startingCash: 75,
   },
 };
