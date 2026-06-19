@@ -27,7 +27,7 @@ import { MapBuilder }           from './ui/MapBuilder.js';
 import { initFeedback }         from './ui/Feedback.js';
 import { initDiagnostics }      from './core/diagnostics.js';
 import AudioManager             from './audio/AudioManager.js';
-import { saveGame, loadGame, clearSave } from './core/SaveSystem.js';
+import { saveGame, loadGame, clearSave, requestRestart } from './core/SaveSystem.js';
 import { DIFFICULTIES }         from './data/difficulties.js';
 import {
   loadProfile, saveProfile, resetProfile, defaultProfile,
@@ -910,12 +910,7 @@ async function main() {
   });
 
   document.getElementById('pause-restart').addEventListener('click', () => {
-    sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: state.mapKey, diffKey: state.diffKey }));
-    if (document.fullscreenElement || document.webkitFullscreenElement) {
-      sessionStorage.setItem('wantFullscreen', '1');
-    }
-    clearSave();
-    location.reload();
+    requestRestart(state.mapKey, state.diffKey);
   });
 }
 

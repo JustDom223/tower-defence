@@ -1,7 +1,7 @@
 import { TOWER_TYPES }             from '../data/towers.js';
 import { MAX_TIER } from '../systems/UpgradeSystem.js';
 import AudioManager                from '../audio/AudioManager.js';
-import { clearSave }               from '../core/SaveSystem.js';
+import { clearSave, requestRestart } from '../core/SaveSystem.js';
 
 /**
  * R6 — Upgrade delta preview.
@@ -281,12 +281,7 @@ export class GameUI {
       addBtn('Maps', () => { clearSave(); location.reload(); });
     } else {
       addBtn('Try Again', () => {
-        clearSave();
-        sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: opts.mapKey, diffKey: opts.diffKey }));
-        if (document.fullscreenElement || document.webkitFullscreenElement) {
-          sessionStorage.setItem('wantFullscreen', '1');
-        }
-        location.reload();
+        requestRestart(opts.mapKey, opts.diffKey);
       }, true);
       addBtn('Main Menu', () => { clearSave(); location.reload(); });
     }

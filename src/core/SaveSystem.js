@@ -41,3 +41,13 @@ export function loadGame() {
 export function clearSave() {
   try { localStorage.removeItem(SAVE_KEY); } catch (_) {}
 }
+
+/** Restart the current map: preserve fullscreen state, clear save, reload. */
+export function requestRestart(mapKey, diffKey) {
+  sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey, diffKey }));
+  if (document.fullscreenElement || document.webkitFullscreenElement) {
+    sessionStorage.setItem('wantFullscreen', '1');
+  }
+  clearSave();
+  location.reload();
+}
