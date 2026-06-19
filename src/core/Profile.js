@@ -41,7 +41,6 @@ export function defaultProfile() {
     // P1 — global perks applied at run start. All zero = no effect.
     perks: {
       // one-time boolean flags (drive check functions below)
-      warChest1: false, warChest2: false,
       reinforced: false, salvage: false, bulkDiscount: false,
       // numeric effects read during run startup
       startCash: 0,     // extra starting gold
@@ -51,6 +50,7 @@ export function defaultProfile() {
       damagePct: 0,     // fractional global damage bonus (Power Core)
       interestBonus: 0, // extra interest fraction per wave (base 0.05)
       // ranked track counters
+      warChestRank: 0,
       powerCoreRank: 0,
       interestRank: 0,
     },
@@ -88,6 +88,14 @@ export function loadProfile() {
     }
     // P1 — backfill perks for profiles created before this feature
     if (!p.perks) p.perks = def.perks;
+    // Migrate old boolean war-chest nodes to the ranked war chest track
+    if ('warChest1' in p.perks) {
+      const oldGold = (p.perks.warChest2 ? 150 : p.perks.warChest1 ? 50 : 0);
+      p.perks.warChestRank = oldGold / 50;
+      delete p.perks.warChest1;
+      delete p.perks.warChest2;
+    }
+    if (p.perks.warChestRank === undefined) p.perks.warChestRank = 0;
     return p;
   } catch { return defaultProfile(); }
 }
@@ -240,18 +248,14 @@ export const UNLOCK_TREE = [
 
   // ── P2 — One-time global perks ───────────────────────────────────────────
   {
-    id: 'war-chest-1', label: 'War Chest I', group: 'perks', cost: 2, requires: null,
-    desc: '+50 starting gold each run',
-    check:   p => p.perks?.warChest1 ?? false,
-    apply:   p => { p.perks.warChest1 = true;  p.perks.startCash += 50; },
-    unapply: p => { p.perks.warChest1 = false; p.perks.startCash -= 50; },
-  },
-  {
-    id: 'war-chest-2', label: 'War Chest II', group: 'perks', cost: 3, requires: 'war-chest-1',
-    desc: '+100 more starting gold (total +150)',
-    check:   p => p.perks?.warChest2 ?? false,
-    apply:   p => { p.perks.warChest2 = true;  p.perks.startCash += 100; },
-    unapply: p => { p.perks.warChest2 = false; p.perks.startCash -= 100; },
+    id: 'war-chest', label: 'War Chest', group: 'perks',
+    ranked: true,
+    desc: '+50 starting gold per rank — unlimited',
+    getRank:  p => p.perks?.warChestRank ?? 0,
+    costAt:   rank => rank + 2,
+    nextDesc: rank => `+50 gold (→ $${(rank + 1) * 50} total)`,
+    apply:   p => { p.perks.warChestRank++;  p.perks.startCash += 50; },
+    unapply: p => { p.perks.warChestRank--;  p.perks.startCash -= 50; },
   },
   {
     id: 'reinforced', label: 'Reinforced', group: 'perks', cost: 2, requires: null,
