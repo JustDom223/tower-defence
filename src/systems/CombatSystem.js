@@ -228,7 +228,8 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
           towerType: tower.type,
           ballistic: tower.aoeRadius > 0,
           pierce, dirX, dirY, fixedDir,
-          flyOnMiss: tower.flyOnMiss,
+          flyOnMiss:       tower.flyOnMiss,
+          reTargetOnDeath: tower.reTargetOnDeath,
           dotDamage:        tower.dotDamage,
           dotDuration:      tower.dotDuration,
           dotTickRate:      tower.dotTickRate,
@@ -380,6 +381,16 @@ function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
       if (targetLive) {
         const dx = p.target.worldX - p.x, dy = p.target.worldY - p.y;
         if (dx * dx + dy * dy < HIT_DIST_SQ) remove = true;
+      } else if (p.reTargetOnDeath) {
+        let nearest = null, nearestDSq = Infinity;
+        for (const e of enemies) {
+          if (e.hp <= 0) continue;
+          const dx = e.worldX - p.x, dy = e.worldY - p.y;
+          const dSq = dx * dx + dy * dy;
+          if (dSq < nearestDSq) { nearest = e; nearestDSq = dSq; }
+        }
+        if (nearest) { p.target = nearest; p.targetId = nearest.id; }
+        else remove = true;
       } else if (p.flyOnMiss) {
         // EXPERIMENT (marksman): the target died/left, but instead of expiring the
         // bullet keeps flying straight in its last heading, hitting anything in its

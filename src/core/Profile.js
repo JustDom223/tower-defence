@@ -26,7 +26,7 @@ export function defaultProfile() {
                 map16: 0, map17: 0, map18: 0, map19: 0, map20: 0 },
     unlocks: {
       towers: { archer: true,  bomb: false, frost: false, marksman: false, tesla: false,
-                flamethrower: false, laser: false, commandpost: false },
+                flamethrower: false, laser: false, commandpost: false, wizard: false },
       paths:  {
         archer:       { A: true,  B: false },
         bomb:         { A: false, B: false },
@@ -36,6 +36,7 @@ export function defaultProfile() {
         flamethrower: { A: false, B: false },
         laser:        { A: false, B: false },
         commandpost:  { A: false, B: false },
+        wizard:       { A: false, B: false },
       },
     },
     // P1 — global perks applied at run start. All zero = no effect.
@@ -244,6 +245,18 @@ export const UNLOCK_TREE = [
     check:   p => p.unlocks.paths.commandpost?.B ?? false,
     apply:   p => { (p.unlocks.paths.commandpost ??= { A: false, B: false }).B = true; },
     unapply: p => { (p.unlocks.paths.commandpost ??= { A: false, B: false }).B = false; },
+  },
+  {
+    id: 'wizard', label: 'Wizard tower (ignores armour)', group: 'towers', cost: 3, requires: null,
+    check:   p => p.unlocks.towers.wizard ?? false,
+    apply:   p => { p.unlocks.towers.wizard = true; (p.unlocks.paths.wizard ??= { A: false, B: false }).A = true; },
+    unapply: p => { p.unlocks.towers.wizard = false; (p.unlocks.paths.wizard ??= { A: false, B: false }).A = false; },
+  },
+  {
+    id: 'wizard-B', label: 'Wizard — Path B (Necro)', group: 'towers', cost: 1, requires: 'wizard',
+    check:   p => p.unlocks.paths.wizard?.B ?? false,
+    apply:   p => { (p.unlocks.paths.wizard ??= { A: false, B: false }).B = true; },
+    unapply: p => { (p.unlocks.paths.wizard ??= { A: false, B: false }).B = false; },
   },
 
   // ── P2 — One-time global perks ───────────────────────────────────────────

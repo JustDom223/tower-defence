@@ -283,12 +283,13 @@ export const TOWER_TYPES = {
     color: 0xa855f7,
     projColor: 0x000000,   // black sniper round
     projStyle: 'bullet',   // rendered as an elongated tracer, not a dot
+    ignoresArmour: false,
     upgrades: {
       pathA: {
         label: 'Power',
         tiers: [
           { name: 'High Velocity',   desc: '+30 damage',               cost: 160, stats: { damage: 30 } },
-          { name: 'Armor Piercing',  desc: '+50 damage',               cost: 320, stats: { damage: 50 } },
+          { name: 'Armor Piercing',  desc: '+50 dmg; shots ignore armour', cost: 320, stats: { damage: 50, ignoresArmour: true } },
           { name: 'Critical Rounds', desc: '+90 damage',               cost: 750, stats: { damage: 90 } },
           { name: 'Headshot',        desc: '+160 damage',              cost: 1600, stats: { damage: 160 } },
         ],
@@ -562,14 +563,15 @@ export const TOWER_TYPES = {
     fireRate: 0.9,
     projSpeed: 320,
     aoeRadius: 0,
-    ignoresArmour: false,
+    ignoresArmour:    true,  // arcane magic bypasses physical armour from base
+    reTargetOnDeath:  true,  // bolt re-targets nearest enemy if original target dies
     color: 0x7c3aed,
     projColor: 0xc4b5fd,
     upgrades: {
       pathA: {
         label: 'Arcane',
         tiers: [
-          { name: 'Magic Bolt',    desc: '+30 dmg; pierce 1; ignores arm',cost: 200, stats: { damage: 30, pierce: 1, ignoresArmour: true } },
+          { name: 'Magic Bolt',    desc: '+30 dmg; pierce 1',             cost: 200, stats: { damage: 30, pierce: 1 } },
           { name: 'Arcane Blast',  desc: '+50 dmg; pierce 2',            cost: 400, stats: { damage: 50, pierce: 1 } },
           { name: 'Sorcery',       desc: '+80 dmg; pierce 3',            cost: 850, stats: { damage: 80, pierce: 1 } },
           { name: 'Grand Arcane',  desc: '+140 dmg; pierce 5; AoE 45',   cost: 1900, stats: { damage: 140, pierce: 2, aoeRadius: 45 } },
