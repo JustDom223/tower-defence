@@ -503,6 +503,20 @@ async function main() {
       }
     });
 
+    // Sandbox map switcher — reload onto chosen map without confirm
+    const sandboxMapSel = document.getElementById('sandbox-map-select');
+    for (const mapKey of CAMPAIGN_ORDER) {
+      const opt = document.createElement('option');
+      opt.value = mapKey;
+      opt.textContent = MAPS[mapKey]?.name ?? mapKey;
+      if (mapKey === state.mapKey) opt.selected = true;
+      sandboxMapSel.appendChild(opt);
+    }
+    sandboxMapSel.addEventListener('change', () => {
+      sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: sandboxMapSel.value, diffKey: 'sandbox' }));
+      location.reload();
+    });
+
     document.getElementById('clear-enemies-btn').addEventListener('click', () => {
       for (const e of state.enemies) enemyPool.release(e);
       state.enemies.length = 0;
