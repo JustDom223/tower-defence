@@ -152,15 +152,36 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
     tower.range = tower.buffedRange;
     const n = tower.multiShot > 1 ? tower.multiShot : 1;
     let targets;
-    if (n === 1) {
-      const t = selectTarget(tower, enemies);
-      targets = t ? [t] : [];
-    } else {
-      targets = selectTopNTargets(tower, enemies, n);
+
+    // Unpoisoned mode + stacking: stay on the current target until all stacks land.
+    if (tower.targeting === 'unpoisoned' && tower.dotStackCap > 1 && tower.stickyTargetId != null) {
+      const sticky = enemies.find(e => e.id === tower.stickyTargetId);
+      const stickyStacks = sticky?.dotStacks?.filter(s => s.sourceType === tower.type).length ?? 0;
+      const rSq = tower.buffedRange * tower.buffedRange;
+      const sdx = (sticky?.worldX ?? 0) - tower.x, sdy = (sticky?.worldY ?? 0) - tower.y;
+      if (sticky && sticky.hp > 0 && sticky.active && stickyStacks < tower.dotStackCap && sdx * sdx + sdy * sdy <= rSq) {
+        targets = [sticky];
+      } else {
+        tower.stickyTargetId = null;
+      }
+    }
+
+    if (!targets) {
+      if (n === 1) {
+        const t = selectTarget(tower, enemies);
+        targets = t ? [t] : [];
+      } else {
+        targets = selectTopNTargets(tower, enemies, n);
+      }
     }
     tower.range = baseRange;
 
-    if (targets.length === 0) continue;
+    if (targets.length === 0) { tower.stickyTargetId = null; continue; }
+
+    // Update sticky target after selection (only for unpoisoned + stacking mode)
+    if (tower.targeting === 'unpoisoned' && tower.dotStackCap > 1 && targets.length > 0) {
+      tower.stickyTargetId = targets[0].id;
+    }
 
     // R3 — point the tower barrel toward the primary (highest-priority) target
     tower.angle = Math.atan2(targets[0].worldY - tower.y, targets[0].worldX - tower.x);

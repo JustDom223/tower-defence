@@ -194,6 +194,8 @@ export class GameUI {
     this.#towerPanel.style.display = 'block';
     this.#switchTab('upgrades');
     this.#refreshTargetBtns(tower.targeting);
+    const dotRow = document.getElementById('target-row-dot');
+    if (dotRow) dotRow.style.display = def.dotDamage > 0 ? '' : 'none';
     // P1 — sell value uses the Salvage perk bonus if active
     const sellMult = 0.6 + (this.#perks?.sellBonus ?? 0);
     const sellValue = Math.floor((def.cost + tower.upgradeSpent) * sellMult);

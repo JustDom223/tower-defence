@@ -61,6 +61,7 @@ export function createTower(type, x, y) {
     projSlowFactor:   def.projSlowFactor   ?? 0,
     projSlowDuration: def.projSlowDuration ?? 0,
     flyOnMiss:        def.flyOnMiss        ?? false, // bullet keeps flying when its target dies
+    stickyTargetId:   null, // unpoisoned mode: locked onto this enemy until all stacks applied
 
     // Instant/hitscan towers (Tesla arc, Laser/Solar beams) — strike immediately.
     instant:      def.instant      ?? false,

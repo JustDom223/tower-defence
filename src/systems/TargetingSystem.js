@@ -27,6 +27,20 @@ export function selectTarget(tower, enemies) {
         if (!eIsFlying && bestIsFlying) break;
         if (e.distance > best.distance) best = e;
       } break;
+      case 'unpoisoned': {
+        const cap    = tower.dotStackCap ?? 1;
+        const src    = tower.type;
+        const eStacks = e.dotStacks?.filter(s => s.sourceType === src).length ?? 0;
+        const bStacks = best.dotStacks?.filter(s => s.sourceType === src).length ?? 0;
+        // group 0 = none, 1 = partial, 2 = at cap
+        const eGroup  = eStacks === 0 ? 0 : eStacks < cap ? 1 : 2;
+        const bGroup  = bStacks === 0 ? 0 : bStacks < cap ? 1 : 2;
+        if (eGroup < bGroup) { best = e; break; }
+        if (eGroup > bGroup) break;
+        // same group — prefer closest
+        const bx = best.worldX - tower.x, by = best.worldY - tower.y;
+        if (dSq < bx * bx + by * by) best = e;
+      } break;
     }
   }
 
@@ -81,6 +95,19 @@ export function selectTopNTargets(tower, enemies, n) {
         return b.enemy.distance - a.enemy.distance;
       });
       break;
+    case 'unpoisoned': {
+      const cap = tower.dotStackCap ?? 1;
+      const src = tower.type;
+      inRange.sort((a, b) => {
+        const aStacks = a.enemy.dotStacks?.filter(s => s.sourceType === src).length ?? 0;
+        const bStacks = b.enemy.dotStacks?.filter(s => s.sourceType === src).length ?? 0;
+        const aGroup  = aStacks === 0 ? 0 : aStacks < cap ? 1 : 2;
+        const bGroup  = bStacks === 0 ? 0 : bStacks < cap ? 1 : 2;
+        if (aGroup !== bGroup) return aGroup - bGroup;
+        return a.dSq - b.dSq;
+      });
+      break;
+    }
     default:
       inRange.sort((a, b) => b.enemy.distance - a.enemy.distance);
       break;
