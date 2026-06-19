@@ -226,7 +226,7 @@ export const MAPS = {
   map12: {
     name: 'Double Loop',
     order: 12,
-    hpMult: 3.00,
+    hpMult: 2.25,
     paths: [
       [
         { x:    0, y: 100 },
@@ -250,7 +250,7 @@ export const MAPS = {
   map13: {
     name: 'The Spine',
     order: 13,
-    hpMult: 3.30,
+    hpMult: 2.5,
     paths: [
       [
         { x:    0, y:  80 },
@@ -278,7 +278,7 @@ export const MAPS = {
   map14: {
     name: 'Crosswind',
     order: 14,
-    hpMult: 3.60,
+    hpMult: 2.75,
     paths: [
       [
         { x:    0, y: 100 },
@@ -302,7 +302,7 @@ export const MAPS = {
   map15: {
     name: 'The Maze',
     order: 15,
-    hpMult: 3.90,
+    hpMult: 3.05,
     paths: [
       [
         { x:    0, y:  80 },
@@ -330,7 +330,7 @@ export const MAPS = {
   map16: {
     name: 'Vortex',
     order: 16,
-    hpMult: 4.25,
+    hpMult: 3.35,
     paths: [
       [
         { x:    0, y: 100 },
@@ -354,7 +354,7 @@ export const MAPS = {
   map17: {
     name: 'The Descent',
     order: 17,
-    hpMult: 4.60,
+    hpMult: 3.65,
     paths: [
       [
         { x:    0, y:  70 },
@@ -376,7 +376,7 @@ export const MAPS = {
   map18: {
     name: 'Omega',
     order: 18,
-    hpMult: 5.00,
+    hpMult: 4.00,
     paths: [
       [
         { x:    0, y: 100 },
@@ -404,7 +404,7 @@ export const MAPS = {
   map19: {
     name: 'Purgatory',
     order: 19,
-    hpMult: 5.50,
+    hpMult: 4.50,
     paths: [
       [
         { x:    0, y:  60 },
@@ -434,7 +434,7 @@ export const MAPS = {
   map20: {
     name: 'The Abyss',
     order: 20,
-    hpMult: 6.00,
+    hpMult: 5.00,
     paths: [
       [
         { x:    0, y:  80 },
