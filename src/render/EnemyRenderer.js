@@ -111,7 +111,7 @@ export class EnemyRenderer {
     }
   }
 
-  render(enemies, path, alpha) {
+  render(enemies, paths, alpha) {
     // ── 1. Sync sprite objects with current enemy list ────────────────────────
     const activeSet = new Set(enemies);
 
@@ -135,7 +135,7 @@ export class EnemyRenderer {
 
       const sprite = this.#sprites.get(e);
       const d   = e.prevDistance + (e.distance - e.prevDistance) * alpha;
-      const pos = positionAtDistance(path, d);
+      const pos = positionAtDistance(paths[e.pathIndex], d);
       sprite.x = pos.x;
       sprite.y = pos.y;
       // Scale to radius * 2 so all three types match their hitbox footprint
@@ -150,7 +150,7 @@ export class EnemyRenderer {
 
     for (const e of enemies) {
       const d   = e.prevDistance + (e.distance - e.prevDistance) * alpha;
-      const pos = positionAtDistance(path, d);
+      const pos = positionAtDistance(paths[e.pathIndex], d);
 
       // Body circle only for types without a sprite
       if (!e.sprite) {

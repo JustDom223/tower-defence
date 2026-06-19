@@ -18,14 +18,16 @@ function distToSegSq(px, py, ax, ay, bx, by) {
   return (px - (ax + t * dx)) ** 2 + (py - (ay + t * dy)) ** 2;
 }
 
-export function isPositionFree(x, y, waypoints, towers, canvasW = 1280, canvasH = 720) {
+export function isPositionFree(x, y, pathsWaypoints, towers, canvasW = 1280, canvasH = 720) {
   if (x < TOWER_RADIUS || x > canvasW - TOWER_RADIUS ||
       y < TOWER_RADIUS || y > canvasH - TOWER_RADIUS) return false;
 
   const clearSq = PATH_CLEARANCE ** 2;
-  for (let i = 0; i < waypoints.length - 1; i++) {
-    const a = waypoints[i], b = waypoints[i + 1];
-    if (distToSegSq(x, y, a.x, a.y, b.x, b.y) < clearSq) return false;
+  for (const waypoints of pathsWaypoints) {
+    for (let i = 0; i < waypoints.length - 1; i++) {
+      const a = waypoints[i], b = waypoints[i + 1];
+      if (distToSegSq(x, y, a.x, a.y, b.x, b.y) < clearSq) return false;
+    }
   }
 
   const gapSq = TOWER_MIN_GAP ** 2;

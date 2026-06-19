@@ -4,6 +4,18 @@
  */
 
 /**
+ * Normalise a map definition into an array of ComputedPaths.
+ * Maps with a `paths` array get one ComputedPath per route;
+ * legacy maps with a single `waypoints` array become a length-1 array.
+ * @param {{ waypoints?: Point[], paths?: Point[][] }} mapDef
+ * @returns {ComputedPath[]}
+ */
+export function buildPaths(mapDef) {
+  if (mapDef.paths) return mapDef.paths.map(buildPath);
+  return [buildPath(mapDef.waypoints)];
+}
+
+/**
  * Pre-compute segment lengths from raw waypoints.
  * The returned ComputedPath is the single source of truth for path math;
  * enemies store "distance travelled" as their position key.

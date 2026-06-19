@@ -1,6 +1,6 @@
 import { Renderer }           from './render/Renderer.js';
 import { GameLoop }            from './core/GameLoop.js';
-import { buildPath, positionAtDistance } from './core/Path.js';
+import { buildPaths, positionAtDistance } from './core/Path.js';
 import { snapToGrid, isPositionFree } from './core/Grid.js';
 import { PathRenderer }        from './render/PathRenderer.js';
 import { EnemyRenderer }       from './render/EnemyRenderer.js';
@@ -9,7 +9,7 @@ import { ProjectileRenderer }  from './render/ProjectileRenderer.js';
 import { DamageNumberRenderer } from './render/DamageNumberRenderer.js';
 import { ParticleRenderer }     from './render/ParticleRenderer.js';
 import { LightningRenderer }    from './render/LightningRenderer.js';
-import { MAPS, CAMPAIGN_ORDER } from './data/maps.js';
+import { MAPS, CAMPAIGN_ORDER, WORLDS } from './data/maps.js';
 import { TOWER_TYPES }          from './data/towers.js';
 import { WAVES as WAVES_MAP1 }  from './data/waves-map1.js';
 import { WAVES as WAVES_MAP2 }  from './data/waves-map2.js';
@@ -215,25 +215,32 @@ function updateMapSelectUI(profile) {
   // Available stars
   document.getElementById('map-avail-stars').textContent = availableStars(profile);
 
-  // C3 — regenerate the map list from CAMPAIGN_ORDER
+  // Regenerate map list grouped by world
   const list = document.getElementById('map-list');
   if (list) {
     list.innerHTML = '';
-    for (const mapKey of CAMPAIGN_ORDER) {
-      const mapDef  = MAPS[mapKey];
-      if (!mapDef) continue;
-      const stars   = profile.missions[mapKey] ?? 0;
-      const locked  = !isMapUnlocked(profile, mapKey, CAMPAIGN_ORDER);
-      const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+    for (const world of WORLDS) {
+      const header = document.createElement('div');
+      header.className = 'map-section-header';
+      header.innerHTML = `<span class="map-section-name">${world.name}</span><span class="map-section-flavour">${world.flavour}</span>`;
+      list.appendChild(header);
 
-      const btn = document.createElement('button');
-      btn.className   = 'map-btn' + (locked ? ' map-btn-locked' : '');
-      btn.dataset.map = mapKey;
-      btn.disabled    = locked;
-      btn.innerHTML   = locked
-        ? `<span>🔒 ${mapDef.name}</span><span class="map-stars" style="color:#4b5563;font-size:11px">Clear prev. map to unlock</span>`
-        : `<span>🗺 ${mapDef.name}</span><span class="map-stars">${starStr}</span>`;
-      list.appendChild(btn);
+      for (const mapKey of world.maps) {
+        const mapDef  = MAPS[mapKey];
+        if (!mapDef) continue;
+        const stars   = profile.missions[mapKey] ?? 0;
+        const locked  = !isMapUnlocked(profile, mapKey, CAMPAIGN_ORDER);
+        const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+
+        const btn = document.createElement('button');
+        btn.className   = 'map-btn' + (locked ? ' map-btn-locked' : '');
+        btn.dataset.map = mapKey;
+        btn.disabled    = locked;
+        btn.innerHTML   = locked
+          ? `<span>🔒 ${mapDef.name}</span><span class="map-stars" style="color:#4b5563;font-size:11px">Clear prev. map to unlock</span>`
+          : `<span>🗺 ${mapDef.name}</span><span class="map-stars">${starStr}</span>`;
+        list.appendChild(btn);
+      }
     }
   }
 
@@ -370,7 +377,8 @@ async function main() {
   await renderer.init(container);
 
   const mapDef = MAPS[mapKey];
-  const path   = buildPath(mapDef.waypoints);
+  const paths  = buildPaths(mapDef);
+  const pathsWaypoints = paths.map(p => p.waypoints);
 
   // R1 — per-map wave set (10 waves each)
   const waves = WAVES_BY_MAP[mapKey] ?? WAVES_MAP1;
@@ -407,14 +415,14 @@ async function main() {
 
   // C2 — pass per-map HP curve multiplier to WaveSpawner
   const mapHpMult   = mapDef.hpMult ?? 1;
-  const waveSpawner = new WaveSpawner(enemyPool, difficulty, waves, mapHpMult);
+  const waveSpawner = new WaveSpawner(enemyPool, difficulty, waves, mapHpMult, paths.length);
 
   // M4 — show difficulty badge in HUD (hidden in sandbox; badge replaced by sandbox badge)
   document.getElementById('hud-diff').textContent = isSandbox ? '' : `${difficulty.emoji} ${difficulty.label}`;
 
   // --- Renderers ---
   const pathRenderer = new PathRenderer();
-  pathRenderer.init(renderer, path);
+  pathRenderer.init(renderer, paths);
 
   const towerRenderer = new TowerRenderer();
   await towerRenderer.init(renderer);
@@ -487,8 +495,8 @@ async function main() {
       const count = Math.max(1, parseInt(document.getElementById('spawn-count').value) || 1);
       for (let i = 0; i < count; i++) {
         const dist = i * 30;
-        const e    = enemyPool.acquire({ type, distance: dist });
-        const pos  = positionAtDistance(path, dist);
+        const e    = enemyPool.acquire({ type, distance: dist, pathIndex: 0 });
+        const pos  = positionAtDistance(paths[0], dist);
         e.worldX   = pos.x;
         e.worldY   = pos.y;
         state.enemies.push(e);
@@ -573,7 +581,7 @@ async function main() {
     const { x, y } = snapToGrid(wx, wy);
     const type = ui.selectedTowerType;
     if (type) {
-      towerRenderer.setHoverTile({ x, y, valid: isPositionFree(x, y, path.waypoints, state.towers), type });
+      towerRenderer.setHoverTile({ x, y, valid: isPositionFree(x, y, pathsWaypoints, state.towers), type });
     } else {
       towerRenderer.setHoverTile(null);
     }
@@ -664,7 +672,7 @@ async function main() {
     const effectiveCost = Math.ceil(def.cost * (1 - (perks.towerCostPct ?? 0)));
     const { x, y } = snapToGrid(wx, wy);
     if (!state.sandbox && state.cash < effectiveCost) return;
-    if (!isPositionFree(x, y, path.waypoints, state.towers)) return;
+    if (!isPositionFree(x, y, pathsWaypoints, state.towers)) return;
 
     const tower = createTower(type, x, y);
     // P1 — Power Core perk: bake global damage bonus into tower at creation
@@ -700,7 +708,7 @@ async function main() {
         saveGame(state);
       }
 
-      updateMovement(state.enemies, path, dt);
+      updateMovement(state.enemies, paths, dt);
       updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents, state.groundHazards, state.boltEvents);
       updateDoT(state.enemies, dt, state.damageEvents);
       updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
@@ -737,7 +745,7 @@ async function main() {
 
       for (let i = state.enemies.length - 1; i >= 0; i--) {
         const e = state.enemies[i];
-        if (e.distance >= path.totalLength) {
+        if (e.distance >= paths[e.pathIndex].totalLength) {
           if (!state.sandbox) state.lives = Math.max(0, state.lives - 1);
           enemyPool.release(e);
           state.enemies.splice(i, 1);
@@ -765,8 +773,8 @@ async function main() {
           }
           if (e.spawns) {
             for (let j = 0; j < e.spawns.count; j++) {
-              const child = enemyPool.acquire({ type: e.spawns.type, distance: e.distance });
-              const cpos  = positionAtDistance(path, child.distance);
+              const child = enemyPool.acquire({ type: e.spawns.type, distance: e.distance, pathIndex: e.pathIndex });
+              const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
               child.worldX = cpos.x;
               child.worldY = cpos.y;
               state.enemies.push(child);
@@ -780,8 +788,8 @@ async function main() {
           if (e.liveSpawnTimer <= 0) {
             e.liveSpawnTimer = e.liveSpawnInterval;
             for (let j = 0; j < e.liveSpawnCount; j++) {
-              const child = enemyPool.acquire({ type: e.liveSpawnType, distance: e.distance });
-              const cpos  = positionAtDistance(path, child.distance);
+              const child = enemyPool.acquire({ type: e.liveSpawnType, distance: e.distance, pathIndex: e.pathIndex });
+              const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
               child.worldX = cpos.x;
               child.worldY = cpos.y;
               state.enemies.push(child);
@@ -821,7 +829,7 @@ async function main() {
     },
 
     render(alpha) {
-      enemyRenderer.render(state.enemies, path, alpha);
+      enemyRenderer.render(state.enemies, paths, alpha);
       towerRenderer.render(state.towers, state.groundHazards);
       projectileRenderer.render(state.projectiles, alpha);
       lightningRenderer.render(state.boltEvents);

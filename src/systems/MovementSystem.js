@@ -1,6 +1,6 @@
 import { positionAtDistance } from '../core/Path.js';
 
-export function updateMovement(enemies, path, dt) {
+export function updateMovement(enemies, paths, dt) {
   for (const e of enemies) {
     if (e.stunTimer > 0) { e.stunTimer -= dt; continue; }
 
@@ -40,7 +40,7 @@ export function updateMovement(enemies, path, dt) {
     }
 
     const prevX = e.worldX, prevY = e.worldY;
-    const pos = positionAtDistance(path, e.distance);
+    const pos = positionAtDistance(paths[e.pathIndex], e.distance);
     e.worldX = pos.x;
     e.worldY = pos.y;
     e.vx = dt > 0 ? (e.worldX - prevX) / dt : 0;

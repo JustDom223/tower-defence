@@ -11,6 +11,7 @@ function make() {
     isCamo: false,
     liveSpawnInterval: 0, liveSpawnTimer: 0, liveSpawnType: null, liveSpawnCount: 0,
     distance: 0, prevDistance: 0,
+    pathIndex: 0,
     worldX: 0, worldY: 0,
     slowFactor: 1, slowTimer: 0,
     stunTimer: 0,
@@ -27,7 +28,7 @@ function make() {
   };
 }
 
-function reset(e, { type, distance = 0 }) {
+function reset(e, { type, distance = 0, pathIndex = 0 }) {
   const def = ENEMY_TYPES[type];
   e.id = ++nextId;
   e.active = true;
@@ -49,6 +50,7 @@ function reset(e, { type, distance = 0 }) {
   e.liveSpawnCount = def.liveSpawnCount ?? 0;
   e.distance = distance;
   e.prevDistance = distance;
+  e.pathIndex = pathIndex;
   e.worldX = 0;
   e.worldY = 0;
   e.slowFactor = 1;
