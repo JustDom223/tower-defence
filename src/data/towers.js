@@ -452,7 +452,7 @@ export const TOWER_TYPES = {
 
   laser: {
     name: 'Laser',
-    cost: 175,
+    cost: 150,
     damage: 22,
     range: 200,
     fireRate: 2.5,
