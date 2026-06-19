@@ -27,6 +27,11 @@ export function selectTarget(tower, enemies) {
         if (!eIsFlying && bestIsFlying) break;
         if (e.distance > best.distance) best = e;
       } break;
+      case 'fastest': {
+        const eSpd = e.speed * (e.slowFactor ?? 1);
+        const bSpd = best.speed * (best.slowFactor ?? 1);
+        if (eSpd > bSpd) best = e;
+      } break;
       case 'unpoisoned': {
         const cap    = tower.dotStackCap ?? 1;
         const src    = tower.type;
@@ -93,6 +98,13 @@ export function selectTopNTargets(tower, enemies, n) {
         const bf = b.enemy.isFlying ? 1 : 0;
         if (bf !== af) return bf - af;
         return b.enemy.distance - a.enemy.distance;
+      });
+      break;
+    case 'fastest':
+      inRange.sort((a, b) => {
+        const as = a.enemy.speed * (a.enemy.slowFactor ?? 1);
+        const bs = b.enemy.speed * (b.enemy.slowFactor ?? 1);
+        return bs - as;
       });
       break;
     case 'unpoisoned': {
