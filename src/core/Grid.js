@@ -1,6 +1,6 @@
-export const SNAP           = 40;
+export const SNAP           = 36;
 export const TOWER_RADIUS   = 20;
-export const TOWER_MIN_GAP  = 40; // Chebyshev — matches SNAP so adjacent cells are always exactly clear
+export const TOWER_MIN_GAP  = 36; // Chebyshev — matches SNAP so adjacent cells are always exactly clear
 export const PATH_CLEARANCE = 40;
 
 export function snapToGrid(wx, wy) {
