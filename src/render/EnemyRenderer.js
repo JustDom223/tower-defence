@@ -12,83 +12,14 @@ import infernoUrl      from '../sprites/enemies/inferno.png';
 
 /** Maps the sprite filename (stored on the enemy) to the Vite asset URL. */
 const SPRITE_ASSET_URLS = {
-  'dog.png':          { url: dogUrl,          threshold: 240 },
-  'monster.png':      { url: monsterUrl,      threshold: 240 },
-  'spiderman.png':    { url: spidermanUrl,    threshold: 240 },
-  'bug.jpeg':         { url: bugUrl,          threshold: 200 },
-  'frankenstein.jpeg':{ url: frankensteinUrl, threshold: 200 },
-  'shade.jpeg':       { url: shadeUrl,        threshold: 240 },
-  'inferno.jpeg':     { url: infernoUrl,      threshold: 240 },
+  'dog.png':           dogUrl,
+  'monster.png':       monsterUrl,
+  'spiderman.png':     spidermanUrl,
+  'bug.jpeg':          bugUrl,
+  'frankenstein.jpeg': frankensteinUrl,
+  'shade.jpeg':        shadeUrl,
+  'inferno.jpeg':      infernoUrl,
 };
-
-/**
- * Load an image URL, flood-fill the white background from all four corners to
- * make it transparent, then return a PixiJS Texture with true alpha.
- * Threshold 240 catches off-white anti-alias fringe; interior whites
- * (e.g. highlights) that aren't connected to the border are preserved.
- */
-async function loadWithTransparentBg(url, threshold = 240) {
-  // 1. Load the image into a canvas
-  const img = await new Promise((resolve, reject) => {
-    const i = new Image();
-    i.onload  = () => resolve(i);
-    i.onerror = reject;
-    i.src = url;
-  });
-
-  const canvas = document.createElement('canvas');
-  canvas.width  = img.width;
-  canvas.height = img.height;
-  const ctx = canvas.getContext('2d');
-  ctx.drawImage(img, 0, 0);
-
-  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const d = imageData.data; // flat Uint8ClampedArray: R,G,B,A per pixel
-  const w = canvas.width, h = canvas.height;
-
-  // 2. Flood-fill from the four corners to find all background pixels.
-  //    We use a simple BFS/queue starting at the border pixels that are
-  //    near-white, then propagate to connected near-white neighbours.
-  const visited = new Uint8Array(w * h); // 0 = unvisited
-
-  function isNearWhite(idx) {
-    return d[idx] >= threshold && d[idx + 1] >= threshold && d[idx + 2] >= threshold;
-  }
-
-  const queue = [];
-  function enqueue(x, y) {
-    const i = y * w + x;
-    if (!visited[i] && isNearWhite(i * 4)) {
-      visited[i] = 1;
-      queue.push(i);
-    }
-  }
-
-  // Seed from all border pixels
-  for (let x = 0; x < w; x++) { enqueue(x, 0); enqueue(x, h - 1); }
-  for (let y = 0; y < h; y++) { enqueue(0, y); enqueue(w - 1, y); }
-
-  // BFS
-  while (queue.length) {
-    const idx = queue.pop();
-    const x = idx % w, y = Math.floor(idx / w);
-    // Make transparent
-    d[idx * 4 + 3] = 0;
-    // Check 4-connected neighbours
-    if (x > 0)     enqueue(x - 1, y);
-    if (x < w - 1) enqueue(x + 1, y);
-    if (y > 0)     enqueue(x, y - 1);
-    if (y < h - 1) enqueue(x, y + 1);
-  }
-
-  ctx.putImageData(imageData, 0, 0);
-
-  // 3. Snapshot pixels into a data URL then load as a PixiJS texture.
-  //    Texture.from(canvas) can read a stale canvas in PixiJS 8; the data URL
-  //    captures the pixel data at this exact moment before anything else runs.
-  const dataUrl = canvas.toDataURL('image/png');
-  return Assets.load(dataUrl);
-}
 
 export class EnemyRenderer {
   #spriteLayer;          // Container — sprite enemies, rendered below overlays
@@ -105,9 +36,8 @@ export class EnemyRenderer {
     this.#g = new Graphics();
     renderer.stage.addChild(this.#g);
 
-    // Pre-load all sprite textures with white background stripped
-    for (const [name, { url, threshold }] of Object.entries(SPRITE_ASSET_URLS)) {
-      this.#textures[name] = await loadWithTransparentBg(url, threshold);
+    for (const [name, url] of Object.entries(SPRITE_ASSET_URLS)) {
+      this.#textures[name] = await Assets.load(url);
     }
   }
 
