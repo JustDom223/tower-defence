@@ -46,13 +46,21 @@ export class GameUI {
   #endScreen;
   #selectedTowerType = null;
   #selectedTower     = null;
-  #currentCash       = 0;
 
   /** profile.unlocks snapshot — set via setProfileUnlocks() */
   #profileUnlocks = null;
 
   /** profile.perks snapshot — set via setPerks() */
   #perks = null;
+
+  // Cached HUD values — only write DOM when these change
+  #currentCash       = 0;
+  #lastLives         = -1;
+  #lastScore         = -1;
+  #lastWave          = '';
+  #lastKills         = -1;
+  #lastStartText     = '';
+  #lastStartDisabled = false;
 
   onStartWave       = null; // () => void
   onTargetingChange = null; // (tower, mode) => void
@@ -299,19 +307,41 @@ export class GameUI {
   }
 
   update(state) {
-    this.#livesEl.textContent = state.lives;
-    this.#cashEl.textContent  = state.cash;
-    this.#scoreEl.textContent = state.score;
-    this.#waveEl.textContent  = `${Math.max(1, state.waveIndex + 1)} / ${state.totalWaves}`;
-    if (this.#killsEl) this.#killsEl.textContent = state.kills ?? 0;
+    if (state.lives !== this.#lastLives) {
+      this.#lastLives = state.lives;
+      this.#livesEl.textContent = state.lives;
+    }
     if (state.cash !== this.#currentCash) {
       this.#currentCash = state.cash;
+      this.#cashEl.textContent = state.cash;
       this.#refreshShop();
     }
-    this.#startBtn.disabled = this.#sandbox
+    if (state.score !== this.#lastScore) {
+      this.#lastScore = state.score;
+      this.#scoreEl.textContent = state.score;
+    }
+    const waveText = `${Math.max(1, state.waveIndex + 1)} / ${state.totalWaves}`;
+    if (waveText !== this.#lastWave) {
+      this.#lastWave = waveText;
+      this.#waveEl.textContent = waveText;
+    }
+    const kills = state.kills ?? 0;
+    if (this.#killsEl && kills !== this.#lastKills) {
+      this.#lastKills = kills;
+      this.#killsEl.textContent = kills;
+    }
+    const startDisabled = this.#sandbox
       ? (state.waveActive || state.gameOver)
       : (state.waveActive || state.waveIndex >= state.totalWaves - 1 || state.gameOver);
-    this.#startBtn.textContent = state.waveActive ? 'Wave Active…' : 'Start Wave';
+    const startText = state.waveActive ? 'Wave Active…' : 'Start Wave';
+    if (startDisabled !== this.#lastStartDisabled) {
+      this.#lastStartDisabled = startDisabled;
+      this.#startBtn.disabled = startDisabled;
+    }
+    if (startText !== this.#lastStartText) {
+      this.#lastStartText = startText;
+      this.#startBtn.textContent = startText;
+    }
   }
 
   // ── private ─────────────────────────────────────────────────────────────────
