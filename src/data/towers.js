@@ -14,13 +14,13 @@ export const TOWER_TYPES = {
     projStyle: 'arrow',
     upgrades: {
       pathA: {
-        label: 'Poison',
+        label: 'Arcane Poison',
         tiers: [
-          { name: 'Venom Tip',     desc: 'Poison arrows (2 dmg/s permanent); -50% fire rate', cost:  90, stats: { dotDamage: 2, dotDuration: 9999, dotTickRate: 1.0, dotStackCap: 1, fireRate: -0.75 } },
-          { name: 'Eagle Eye',     desc: '+50 range',                                   cost: 160, stats: { range: 50 } },
-          { name: 'Potent Venom',  desc: 'Poison strengthened to 5 dmg/s',             cost: 340, stats: { dotDamage: 3 } },
-          { name: 'Virulent',      desc: 'Poison spreads to nearby enemies on kill',   cost: 800, stats: { dotDuration: 1, range: 20 } },
-          { name: 'Plague Arrow',  desc: 'Poison stacks up to 3×; +3 dmg/s per stack',cost: 2000, stats: { dotDamage: 3, dotStackCap: 2 } },
+          { name: 'Arcane Tip',      desc: 'Arrows curse targets with arcane poison (2 dmg/s permanent); -50% fire rate', cost:  90, stats: { dotDamage: 2, dotDuration: 9999, dotTickRate: 1.0, dotStackCap: 1, fireRate: -0.75 } },
+          { name: 'Mystic Range',    desc: '+50 range',                                          cost: 160, stats: { range: 50 } },
+          { name: 'Deep Curse',      desc: 'Curse strengthened to 5 dmg/s',                     cost: 340, stats: { dotDamage: 3 } },
+          { name: 'Spreading Curse', desc: 'Curse spreads to nearby enemies on kill',            cost: 800, stats: { dotDuration: 1, range: 20 } },
+          { name: 'Plague of Ruin',  desc: 'Curse stacks up to 3×; +3 dmg/s per stack',         cost: 2000, stats: { dotDamage: 3, dotStackCap: 2 } },
         ],
       },
       pathB: {
