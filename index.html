@@ -792,6 +792,66 @@
         background: #854d0e; color: #fde68a; border-color: #a16207;
       }
 
+      /* ── Map Builder ────────────────────────────────────────────── */
+      #map-builder-btn {
+        display: flex; align-items: center; justify-content: center;
+        width: 100%; margin-top: 8px;
+        background: #0a1f1a; border: 1px solid #065f46; color: #6ee7b7;
+        padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+        transition: border-color .1s, color .1s;
+      }
+      #map-builder-btn:hover { border-color: #10b981; color: #a7f3d0; background: #0d2b22; }
+
+      #builder-bar {
+        position: absolute; bottom: 0; left: 0; right: 0;
+        display: none; gap: 8px; align-items: center;
+        background: rgba(0,10,20,.93); border-top: 1px solid #065f46;
+        padding: 7px 14px; pointer-events: all; font-size: 12px; z-index: 25;
+      }
+      body.builder-active #builder-bar { display: flex; }
+
+      #builder-labels {
+        position: absolute; inset: 0; pointer-events: none;
+        display: none; z-index: 24;
+      }
+      body.builder-active #builder-labels { display: block; }
+
+      .builder-label {
+        position: absolute; font-size: 11px; font-weight: 800;
+        color: #fff; background: rgba(0,0,0,.72);
+        border-radius: 3px; padding: 1px 5px;
+        transform: translate(12px, -22px);
+      }
+      #builder-label-txt {
+        color: #34d399; font-size: 11px; font-weight: 700;
+        letter-spacing: .05em; white-space: nowrap;
+      }
+      #builder-count {
+        color: #6ee7b7; font-size: 12px; font-weight: 600; min-width: 42px;
+      }
+      .builder-sep { color: #374151; margin: 0 2px; }
+      .builder-mode {
+        background: #0f2620; color: #6b7280;
+        border: 1px solid #374151; border-radius: 4px;
+        padding: 4px 10px; cursor: pointer; font-size: 11px;
+      }
+      .builder-mode.active { background: #065f46; color: #6ee7b7; border-color: #10b981; }
+      #builder-undo, #builder-clear, #builder-exit {
+        background: #1f2937; color: #9ca3af;
+        border: 1px solid #374151; border-radius: 4px;
+        padding: 4px 10px; cursor: pointer; font-size: 11px;
+      }
+      #builder-undo:hover, #builder-clear:hover, #builder-exit:hover {
+        border-color: #6b7280; color: #e5e7eb;
+      }
+      #builder-copy {
+        background: #0f2620; color: #6ee7b7;
+        border: 1px solid #065f46; border-radius: 4px;
+        padding: 4px 10px; cursor: pointer; font-size: 11px;
+      }
+      #builder-copy:hover { background: #065f46; }
+      #builder-hint { margin-left: auto; font-size: 11px; color: #4b5563; white-space: nowrap; }
+
       /* ── MB6 — Remove sticky hover states on touch devices ────── */
       @media (hover: none) {
         .tower-btn:hover         { border-color: #374151 !important; }
@@ -893,6 +953,7 @@
               <button id="map-continue">↩ Continue saved game</button>
               <button id="map-upgrades">🔓 Unlock Towers & Upgrades <span id="upgrades-badge"></span></button>
               <button id="map-sandbox">⚗️ Sandbox Mode</button>
+              <button id="map-builder-btn">🗺 Map Builder</button>
               <button id="map-fs">⛶ Fullscreen</button>
               <button id="menu-reset">⟲ Reset all progress</button>
             </div>
@@ -948,6 +1009,25 @@
           </div>
         </div>
       </div>
+
+      <!-- Map builder controls bar (visible only in builder-active mode) -->
+      <div id="builder-bar">
+        <span id="builder-label-txt">🗺 MAP BUILDER</span>
+        <span id="builder-count">0 pts</span>
+        <span class="builder-sep">│</span>
+        <button id="builder-straight" class="builder-mode active">Straight</button>
+        <button id="builder-smooth-btn" class="builder-mode">Smooth</button>
+        <span class="builder-sep">│</span>
+        <button id="builder-undo">↩ Undo</button>
+        <button id="builder-clear">✕ Clear</button>
+        <span class="builder-sep">│</span>
+        <button id="builder-copy">📋 Copy JSON</button>
+        <button id="builder-exit">← Exit</button>
+        <span id="builder-hint">Click to place waypoints · 🟢 start · 🔴 end · 🟡 middle</span>
+      </div>
+
+      <!-- Waypoint number labels (pointer-events: none overlay) -->
+      <div id="builder-labels"></div>
 
       <!-- HUD — three-zone layout: left / center / right -->
       <div id="hud">

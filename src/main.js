@@ -43,6 +43,7 @@ import { updateDoT }            from './systems/DoTSystem.js';
 import { updateGroundHazards }  from './systems/GroundHazardSystem.js';
 import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
 import { GameUI }               from './ui/GameUI.js';
+import { MapBuilder }           from './ui/MapBuilder.js';
 import { initFeedback }         from './ui/Feedback.js';
 import { initDiagnostics }      from './diagnostics.js';
 import AudioManager             from './audio/AudioManager.js';
@@ -374,6 +375,24 @@ async function main() {
   const profile = loadProfile();
   window.__profile = profile; // dev convenience: flip unlocks in the console
 
+  // Create renderer early so the map builder can use it from the main menu
+  const container = document.getElementById('game-container');
+  const renderer  = new Renderer();
+  await renderer.init(container);
+
+  const mapBuilder = new MapBuilder();
+  mapBuilder.init(renderer);
+  document.getElementById('map-builder-btn').onclick = () => {
+    document.getElementById('map-select').style.display = 'none';
+    document.body.classList.add('builder-active');
+    mapBuilder.enter();
+  };
+  document.getElementById('builder-exit').onclick = () => {
+    mapBuilder.exit();
+    document.body.classList.remove('builder-active');
+    document.getElementById('map-select').style.display = 'flex';
+  };
+
   const { mapKey, savedData, diffKey } = await awaitMapSelect(profile);
   document.body.classList.add('game-active');
   // Always hide the map-select overlay once a run begins. The restart-intent path
@@ -387,10 +406,6 @@ async function main() {
   const difficulty = isSandbox
     ? DIFFICULTIES.normal
     : (DIFFICULTIES[diffKey] ?? DIFFICULTIES.normal);
-
-  const container = document.getElementById('game-container');
-  const renderer  = new Renderer();
-  await renderer.init(container);
 
   const mapDef = MAPS[mapKey];
   const paths  = buildPaths(mapDef);
