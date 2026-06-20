@@ -42,20 +42,14 @@
       <!-- Map selection (shown before game starts) -->
       <div id="map-select">
         <div id="map-panel">
-          <!-- Left column: title, difficulty, secondary actions -->
+          <!-- Left column: title + secondary actions -->
           <div id="map-panel-left">
             <div id="map-panel-head">
               <h2>Tower Defence</h2>
               <div id="map-stars-info">★ <span id="map-avail-stars">0</span> stars available</div>
-              <!-- C0 — difficulty selector (Normal/Hard only) -->
-              <div id="diff-selector">
-                <button class="diff-btn active" data-diff="normal">🟡 Normal</button>
-                <button class="diff-btn" data-diff="hard">🔴 Hard</button>
-              </div>
             </div>
             <div id="map-actions">
               <button id="map-continue">↩ Continue saved game</button>
-              <button id="map-upgrades">🔓 Unlock Towers & Upgrades <span id="upgrades-badge"></span></button>
               <button id="map-achievements">🏆 Achievements</button>
               <button id="map-sandbox">⚗️ Sandbox Mode</button>
               <button id="map-builder-btn">🗺 Map Builder</button>
@@ -63,17 +57,37 @@
               <button id="menu-reset">⟲ Reset all progress</button>
             </div>
           </div>
-          <!-- Right column: two-stage — world select then map list -->
+          <!-- Right column: three-stage — world → maps → difficulty pick -->
           <div id="map-panel-right">
             <!-- Stage 1: world/zone cards -->
             <div id="world-list"></div>
             <!-- Stage 2: maps within a chosen world -->
             <div id="map-view">
               <div id="map-view-header">
-                <button id="world-back">← Back</button>
+                <button id="world-back">← Worlds</button>
                 <span id="map-view-title"></span>
+                <button id="map-upgrades">🔓 Unlocks <span id="upgrades-badge"></span></button>
               </div>
               <div id="map-list"></div>
+            </div>
+            <!-- Stage 3: difficulty picker for a chosen map -->
+            <div id="diff-pick-view">
+              <div id="diff-pick-header">
+                <button id="diff-pick-back">← Maps</button>
+                <span id="diff-pick-map-name"></span>
+              </div>
+              <div id="diff-pick-btns">
+                <button id="diff-pick-normal">
+                  <span class="diff-pick-emoji">🟡</span>
+                  <span class="diff-pick-label">Normal</span>
+                  <span class="diff-pick-desc">Standard enemies &amp; pacing</span>
+                </button>
+                <button id="diff-pick-hard">
+                  <span class="diff-pick-emoji">🔴</span>
+                  <span class="diff-pick-label">Hard</span>
+                  <span class="diff-pick-desc">More HP, fewer starting lives</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

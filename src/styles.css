@@ -261,7 +261,7 @@
         display: none; flex-direction: column; flex: 1; min-height: 0;
       }
       #map-view-header {
-        display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-shrink: 0;
+        display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-shrink: 0;
       }
       #world-back {
         background: transparent; border: 1px solid #374151; color: #94a3b8;
@@ -271,8 +271,61 @@
       #world-back:hover { border-color: #6b7280; color: #e2e8f0; }
       #map-view-title {
         font-size: 14px; font-weight: 700; color: #93c5fd;
-        text-transform: uppercase; letter-spacing: .06em;
+        text-transform: uppercase; letter-spacing: .06em; flex: 1;
       }
+      /* Unlock button lives in Stage 2 header */
+      #map-upgrades {
+        display: flex; align-items: center; gap: 5px; white-space: nowrap;
+        background: transparent; border: 1px solid #4b5563; color: #9ca3af;
+        padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+        transition: border-color .1s, color .1s;
+      }
+      #map-upgrades:hover { border-color: #facc15; color: #facc15; }
+      #upgrades-badge {
+        display: none; background: #facc15; color: #000;
+        border-radius: 9999px; font-size: 9px; font-weight: 800;
+        padding: 1px 5px; line-height: 1.4;
+      }
+
+      /* ── Stage 3: difficulty picker ─────────────────────────── */
+      #diff-pick-view {
+        display: none; flex-direction: column; flex: 1; gap: 16px;
+      }
+      #diff-pick-header {
+        display: flex; align-items: center; gap: 10px;
+      }
+      #diff-pick-back {
+        background: transparent; border: 1px solid #374151; color: #94a3b8;
+        padding: 5px 10px; border-radius: 6px; cursor: pointer; font-size: 12px;
+        transition: border-color .1s, color .1s; white-space: nowrap;
+      }
+      #diff-pick-back:hover { border-color: #6b7280; color: #e2e8f0; }
+      #diff-pick-map-name {
+        font-size: 16px; font-weight: 700; color: #e2e8f0;
+      }
+      #diff-pick-btns {
+        display: flex; flex-direction: column; gap: 12px;
+      }
+      #diff-pick-normal, #diff-pick-hard {
+        display: flex; flex-direction: column; gap: 4px; text-align: left;
+        padding: 16px 20px; border-radius: 10px; cursor: pointer; width: 100%;
+        transition: border-color .12s, background .12s;
+      }
+      #diff-pick-normal {
+        background: #111f1a; border: 2px solid #166534; color: #86efac;
+      }
+      #diff-pick-normal:hover, #diff-pick-normal.active {
+        border-color: #22c55e; background: #14291f;
+      }
+      #diff-pick-hard {
+        background: #1f1111; border: 2px solid #7f1d1d; color: #fca5a5;
+      }
+      #diff-pick-hard:hover, #diff-pick-hard.active {
+        border-color: #ef4444; background: #2d1212;
+      }
+      .diff-pick-emoji { font-size: 24px; line-height: 1; }
+      .diff-pick-label { font-size: 16px; font-weight: 700; }
+      .diff-pick-desc  { font-size: 12px; opacity: 0.65; }
 
       /* C3 — 2-column grid map list */
       #map-list {

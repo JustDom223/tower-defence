@@ -250,26 +250,15 @@ function awaitMapSelect(profile) {
   const savedData = loadGame();
 
   return new Promise(resolve => {
-    let resolved     = false;
-    let selectedDiff = profile.lastDiff ?? 'normal';
-
-    // C0 — difficulty selector buttons (Normal/Hard only)
-    document.querySelectorAll('[data-diff]').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.diff === selectedDiff);
-      btn.onclick = () => {
-        selectedDiff = btn.dataset.diff;
-        profile.lastDiff = selectedDiff;
-        saveProfile(profile);
-        document.querySelectorAll('[data-diff]').forEach(b =>
-          b.classList.toggle('active', b.dataset.diff === selectedDiff));
-      };
-    });
+    let resolved       = false;
+    let currentWorldKey = null; // which world is open in Stage 2
+    let pendingMapKey   = null; // which map is pending in Stage 3 diff picker
 
     function pickMap(mapKey, save, diffKey) {
       if (resolved) return;
       resolved = true;
       document.getElementById('map-select').style.display = 'none';
-      resolve({ mapKey, savedData: save, diffKey: diffKey ?? selectedDiff });
+      resolve({ mapKey, savedData: save, diffKey });
     }
 
     if (savedData) {
@@ -277,9 +266,7 @@ function awaitMapSelect(profile) {
       const mapName     = MAPS[savedData.mapKey]?.name ?? savedData.mapKey;
       continueBtn.style.display = 'block';
       continueBtn.textContent   = `↩ Continue — ${mapName} (wave ${savedData.waveIndex + 2})`;
-      // Restore saved difficulty (don't let player change it mid-run)
       const savedDiff = savedData.difficulty;
-      // C0 — remap legacy 'easy' saves to 'normal'
       continueBtn.onclick = () => pickMap(
         savedData.mapKey, savedData,
         (savedDiff && DIFFICULTIES[savedDiff]) ? savedDiff : 'normal'
@@ -291,23 +278,48 @@ function awaitMapSelect(profile) {
       pickMap('map1', null, 'sandbox');
     };
 
-    // Full progress wipe from the main menu (destructive — confirm first).
     document.getElementById('menu-reset').onclick = () => {
       if (!confirm('Reset ALL progress?\n\nThis permanently erases your stars, tower/upgrade unlocks, and map completions, and starts you over from the beginning. This cannot be undone.')) return;
-      resetProfile(); // wipe the meta-progression profile
-      clearSave();    // and any mid-run checkpoint
+      resetProfile();
+      clearSave();
       location.reload();
     };
 
-    // Stage 2 — map buttons (recreated each time a world is opened)
+    // ── Stage 3: difficulty picker ───────────────────────────────
+    function showDiffPick(mapKey) {
+      pendingMapKey = mapKey;
+      const mapDef = MAPS[mapKey];
+      document.getElementById('diff-pick-map-name').textContent = mapDef?.name ?? mapKey;
+      const lastDiff = profile.lastDiff ?? 'normal';
+      document.getElementById('diff-pick-normal').classList.toggle('active', lastDiff === 'normal');
+      document.getElementById('diff-pick-hard').classList.toggle('active', lastDiff === 'hard');
+      document.getElementById('map-view').style.display = 'none';
+      document.getElementById('diff-pick-view').style.display = 'flex';
+    }
+
+    function chooseDiff(diff) {
+      profile.lastDiff = diff;
+      saveProfile(profile);
+      clearSave();
+      pickMap(pendingMapKey, null, diff);
+    }
+
+    document.getElementById('diff-pick-normal').onclick = () => chooseDiff('normal');
+    document.getElementById('diff-pick-hard').onclick   = () => chooseDiff('hard');
+    document.getElementById('diff-pick-back').onclick   = () => {
+      document.getElementById('diff-pick-view').style.display = 'none';
+      document.getElementById('map-view').style.display = 'flex';
+    };
+
+    // ── Stage 2: map list for a world ───────────────────────────
     function bindMapBtns() {
       document.querySelectorAll('#map-list .map-btn:not([disabled])').forEach(btn => {
-        btn.onclick = () => { clearSave(); pickMap(btn.dataset.map, null, selectedDiff); };
+        btn.onclick = () => showDiffPick(btn.dataset.map);
       });
     }
 
-    // Stage 2 — fill map list for the chosen world and switch views
     function showWorldMaps(worldKey) {
+      currentWorldKey = worldKey;
       const world = WORLDS.find(w => w.key === worldKey);
       if (!world) return;
       document.getElementById('map-view-title').textContent = world.name;
@@ -329,11 +341,20 @@ function awaitMapSelect(profile) {
         list.appendChild(btn);
       }
       document.getElementById('world-list').style.display = 'none';
+      document.getElementById('diff-pick-view').style.display = 'none';
       document.getElementById('map-view').style.display = 'flex';
       bindMapBtns();
     }
 
-    // Stage 1 — bind world card clicks (called after updateMapSelectUI fills #world-list)
+    document.getElementById('world-back').onclick = () => {
+      currentWorldKey = null;
+      document.getElementById('map-view').style.display = 'none';
+      document.getElementById('diff-pick-view').style.display = 'none';
+      document.getElementById('world-list').style.display = '';
+      bindWorldCards();
+    };
+
+    // ── Stage 1: world cards ─────────────────────────────────────
     function bindWorldCards() {
       document.querySelectorAll('#world-list .world-card:not([disabled])').forEach(card => {
         card.onclick = () => showWorldMaps(card.dataset.world);
@@ -341,13 +362,7 @@ function awaitMapSelect(profile) {
     }
     bindWorldCards();
 
-    document.getElementById('world-back').onclick = () => {
-      document.getElementById('map-view').style.display = 'none';
-      document.getElementById('world-list').style.display = '';
-      bindWorldCards();
-    };
-
-    // Unlock tree
+    // ── Unlock tree (accessible from Stage 2 header) ─────────────
     function openTree() {
       document.getElementById('map-select').style.display = 'none';
       document.getElementById('unlock-tree').style.display = 'flex';
@@ -355,7 +370,6 @@ function awaitMapSelect(profile) {
     }
     document.getElementById('map-upgrades').onclick = openTree;
 
-    // Jump straight to the unlock tree if requested from the victory screen.
     if (sessionStorage.getItem('openTree')) {
       sessionStorage.removeItem('openTree');
       openTree();
@@ -365,9 +379,14 @@ function awaitMapSelect(profile) {
       document.getElementById('unlock-tree').style.display = 'none';
       document.getElementById('map-select').style.display = 'flex';
       updateMapSelectUI(profile);
-      bindWorldCards();
+      if (currentWorldKey) {
+        showWorldMaps(currentWorldKey);
+      } else {
+        bindWorldCards();
+      }
     };
 
+    // ── Achievements (accessible from Stage 1 left column) ───────
     document.getElementById('map-achievements').onclick = () => {
       renderAchievements(profile);
       document.getElementById('achievement-panel').style.display = 'flex';
@@ -376,8 +395,9 @@ function awaitMapSelect(profile) {
     document.getElementById('ach-close').onclick = () => {
       document.getElementById('achievement-panel').style.display = 'none';
       document.getElementById('map-select').style.display = 'flex';
-      // Always return to stage 1 (world select)
+      currentWorldKey = null;
       document.getElementById('map-view').style.display = 'none';
+      document.getElementById('diff-pick-view').style.display = 'none';
       document.getElementById('world-list').style.display = '';
       bindWorldCards();
     };
