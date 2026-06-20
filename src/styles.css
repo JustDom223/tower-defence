@@ -599,47 +599,81 @@
 
       /* Overlays — panels appear correctly sized on screen */
       body.mobile-scaled #map-panel {
-        padding:   calc(16px * var(--ui-scale)) calc(20px * var(--ui-scale));
-        gap:        calc(18px * var(--ui-scale));
-        max-width:  none;
-        border-radius: calc(14px * var(--ui-scale));
+        /* Stack columns vertically so each gets full panel width.
+           Constrain to fit in the ~720px logical height of the canvas. */
+        flex-direction: column;
+        padding:   calc(14px * var(--ui-scale)) calc(16px * var(--ui-scale));
+        gap:        calc(12px * var(--ui-scale));
+        max-width:  calc(700px * var(--ui-scale));
+        max-height: calc(680px * var(--ui-scale));
+        overflow-y: auto;
+        border-radius: calc(12px * var(--ui-scale));
       }
-      body.mobile-scaled #map-panel-left { width: calc(160px * var(--ui-scale)); }
-      body.mobile-scaled #map-panel h2 { font-size: calc(18px * var(--ui-scale)); margin-bottom: calc(4px * var(--ui-scale)); }
-      body.mobile-scaled #map-stars-info { font-size: calc(12px * var(--ui-scale)); margin-bottom: calc(8px * var(--ui-scale)); }
-      body.mobile-scaled #diff-selector { gap: calc(6px * var(--ui-scale)); margin-bottom: calc(10px * var(--ui-scale)); }
+      /* Left column: auto width (no longer fixed), horizontal layout for head+actions */
+      body.mobile-scaled #map-panel-left {
+        width: auto;
+        flex-direction: row;
+        align-items: flex-start;
+        gap: calc(12px * var(--ui-scale));
+      }
+      /* Head (title/stars/difficulty) takes fixed share; actions flow right */
+      body.mobile-scaled #map-panel-head {
+        flex: 0 0 auto;
+        min-width: calc(160px * var(--ui-scale));
+      }
+      body.mobile-scaled #map-actions {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: calc(6px * var(--ui-scale));
+        align-content: start;
+      }
+      /* Fullscreen and Reset span full width — they're secondary/destructive actions */
+      body.mobile-scaled #map-actions #map-fs,
+      body.mobile-scaled #map-actions #menu-reset {
+        grid-column: 1 / -1;
+      }
+      body.mobile-scaled #map-panel h2 { font-size: calc(16px * var(--ui-scale)); margin-bottom: calc(3px * var(--ui-scale)); }
+      body.mobile-scaled #map-stars-info { font-size: calc(12px * var(--ui-scale)); margin-bottom: calc(6px * var(--ui-scale)); }
+      body.mobile-scaled #diff-selector { gap: calc(5px * var(--ui-scale)); margin-bottom: calc(0px * var(--ui-scale)); }
       body.mobile-scaled .diff-btn {
         font-size: calc(12px * var(--ui-scale));
         padding: calc(7px * var(--ui-scale)) calc(4px * var(--ui-scale));
         min-height: calc(40px * var(--ui-scale));
       }
-      /* Cap the map list so the horizontal panel stays inside the ~720px-tall
-         logical canvas; the list scrolls if a campaign ever outgrows it. */
-      body.mobile-scaled #map-list { max-height: calc(300px * var(--ui-scale)); }
+      /* Right column (map list): fixed height, scrollable */
+      body.mobile-scaled #map-panel-right {
+        min-width: 0;
+      }
+      /* Cap the map list height so the panel fits; the list scrolls internally */
+      body.mobile-scaled #map-list { max-height: calc(220px * var(--ui-scale)); }
       body.mobile-scaled .map-btn {
-        font-size: calc(13px * var(--ui-scale));
-        padding: calc(9px * var(--ui-scale)) calc(12px * var(--ui-scale));
-        min-height: calc(44px * var(--ui-scale));
-        margin-bottom: calc(5px * var(--ui-scale));
+        font-size: calc(12px * var(--ui-scale));
+        padding: calc(7px * var(--ui-scale)) calc(10px * var(--ui-scale));
+        min-height: calc(42px * var(--ui-scale));
+        margin-bottom: 0;
       }
       body.mobile-scaled .map-stars { font-size: calc(11px * var(--ui-scale)); }
       body.mobile-scaled #map-continue {
         font-size: calc(12px * var(--ui-scale));
-        padding: calc(9px * var(--ui-scale)) calc(12px * var(--ui-scale));
-        min-height: calc(44px * var(--ui-scale));
+        padding: calc(8px * var(--ui-scale)) calc(10px * var(--ui-scale));
+        min-height: calc(42px * var(--ui-scale));
         margin-top: calc(4px * var(--ui-scale));
       }
       body.mobile-scaled #map-upgrades {
         font-size: calc(12px * var(--ui-scale));
-        padding: calc(7px * var(--ui-scale)) calc(14px * var(--ui-scale));
-        min-height: calc(40px * var(--ui-scale));
-        margin-top: calc(10px * var(--ui-scale));
+        padding: calc(7px * var(--ui-scale)) calc(10px * var(--ui-scale));
+        min-height: calc(38px * var(--ui-scale));
+        margin-top: 0;
       }
       body.mobile-scaled #map-sandbox,
-      body.mobile-scaled #map-fs {
+      body.mobile-scaled #map-fs,
+      body.mobile-scaled #map-achievements,
+      body.mobile-scaled #map-builder-btn {
         font-size: calc(12px * var(--ui-scale));
-        padding: calc(8px * var(--ui-scale)) calc(16px * var(--ui-scale));
-        min-height: calc(44px * var(--ui-scale));
+        padding: calc(7px * var(--ui-scale)) calc(10px * var(--ui-scale));
+        min-height: calc(38px * var(--ui-scale));
+        margin-top: 0;
       }
       /* Bug-report button is fixed-position and outside the scaled flow — size it up for touch. */
       body.mobile-scaled #report-btn {
@@ -654,19 +688,21 @@
       }
 
       body.mobile-scaled #tree-panel {
-        padding:   calc(20px * var(--ui-scale)) calc(24px * var(--ui-scale));
-        min-width: calc(330px * var(--ui-scale));
-        max-height: calc(370px * var(--ui-scale));
+        padding:   calc(16px * var(--ui-scale)) calc(20px * var(--ui-scale));
+        min-width: calc(300px * var(--ui-scale));
+        max-width: calc(620px * var(--ui-scale));
+        width: 90%;
+        max-height: calc(640px * var(--ui-scale));
         overflow-y: auto;
-        border-radius: calc(14px * var(--ui-scale));
+        border-radius: calc(12px * var(--ui-scale));
       }
-      body.mobile-scaled #tree-header { margin-bottom: calc(12px * var(--ui-scale)); }
-      body.mobile-scaled #tree-header h2 { font-size: calc(16px * var(--ui-scale)); }
+      body.mobile-scaled #tree-header { margin-bottom: calc(10px * var(--ui-scale)); }
+      body.mobile-scaled #tree-header h2 { font-size: calc(15px * var(--ui-scale)); }
       body.mobile-scaled #tree-stars-count { font-size: calc(13px * var(--ui-scale)); }
       body.mobile-scaled #tree-list {
-        gap:        calc(6px * var(--ui-scale));
-        max-height: calc(200px * var(--ui-scale));
-        margin-bottom: calc(12px * var(--ui-scale));
+        gap:        calc(5px * var(--ui-scale));
+        max-height: calc(440px * var(--ui-scale));
+        margin-bottom: calc(10px * var(--ui-scale));
       }
       body.mobile-scaled .tree-node {
         padding: calc(7px * var(--ui-scale)) calc(10px * var(--ui-scale));
@@ -693,6 +729,34 @@
         padding: calc(8px * var(--ui-scale));
         min-height: calc(36px * var(--ui-scale));
         margin-top: calc(8px * var(--ui-scale));
+      }
+
+      /* Achievement panel — simpler layout on mobile */
+      body.mobile-scaled #ach-inner {
+        padding:  calc(16px * var(--ui-scale)) calc(20px * var(--ui-scale));
+        width: 92%;
+        max-height: calc(640px * var(--ui-scale));
+        border-radius: calc(12px * var(--ui-scale));
+      }
+      body.mobile-scaled #ach-header h2 { font-size: calc(15px * var(--ui-scale)); }
+      body.mobile-scaled #ach-list {
+        gap: calc(5px * var(--ui-scale));
+        margin: calc(10px * var(--ui-scale)) 0;
+      }
+      /* Collapse the 5-col grid to: icon | name+bar | kills */
+      body.mobile-scaled .ach-row {
+        grid-template-columns: calc(20px * var(--ui-scale)) 1fr calc(52px * var(--ui-scale));
+        gap: calc(6px * var(--ui-scale));
+        padding: calc(5px * var(--ui-scale)) calc(8px * var(--ui-scale));
+      }
+      /* Stars column is hidden on mobile — too narrow */
+      body.mobile-scaled .ach-stars { display: none; }
+      body.mobile-scaled .ach-name { font-size: calc(11px * var(--ui-scale)); }
+      body.mobile-scaled .ach-kills { font-size: calc(10px * var(--ui-scale)); }
+      body.mobile-scaled #ach-footer button {
+        font-size: calc(12px * var(--ui-scale));
+        padding: calc(8px * var(--ui-scale)) calc(16px * var(--ui-scale));
+        min-height: calc(38px * var(--ui-scale));
       }
 
       body.mobile-scaled #pause-panel {
