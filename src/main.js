@@ -34,6 +34,7 @@ import {
   availableStars, isTowerUnlocked, isPathUnlocked,
   recordMissionResult, isMapUnlocked,
   UNLOCK_TREE, isNodeOwned, canUnlock, applyUnlock, canRefund, refundUnlock, respec,
+  KILL_MILESTONES, getKillStars, totalAchievementStars,
 } from './core/Profile.js';
 
 // Build WAVES_BY_MAP from all waves-map*.js files automatically.
@@ -332,6 +333,16 @@ function awaitMapSelect(profile) {
       bindMapBtns();
     };
 
+    document.getElementById('map-achievements').onclick = () => {
+      renderAchievements(profile);
+      document.getElementById('achievement-panel').style.display = 'flex';
+      document.getElementById('map-select').style.display = 'none';
+    };
+    document.getElementById('ach-close').onclick = () => {
+      document.getElementById('achievement-panel').style.display = 'none';
+      document.getElementById('map-select').style.display = 'flex';
+    };
+
     document.getElementById('tree-respec').onclick = () => {
       if (!confirm('Reset all unlocks? Your earned stars are kept.')) return;
       const fresh = respec(profile);
@@ -534,8 +545,31 @@ function wireCanvasInput(renderer, ui, state, towerRenderer, paths, pathsWaypoin
     markBuffsDirty();
     if (!isSandbox) state.cash -= effectiveCost;
     towerRenderer.markDirty();
-    ui.clearTowerTypeSelection();
-    towerRenderer.setHoverTile(null);
+    if (e.shiftKey) {
+      towerRenderer.setHoverTile({ x, y, valid: false, type });
+    } else {
+      ui.clearTowerTypeSelection();
+      towerRenderer.setHoverTile(null);
+    }
+  });
+
+  // Keyboard shortcuts: letter keys select towers, Escape deselects, Shift+place keeps selection
+  const keyTowerMap = {};
+  document.querySelectorAll('[data-tower][data-key]').forEach(btn => {
+    keyTowerMap[btn.dataset.key.toLowerCase()] = btn.dataset.tower;
+  });
+  document.addEventListener('keydown', (e) => {
+    if (state.gameOver || state.paused) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+    if (e.code === 'Space') {
+      e.preventDefault();
+      const tower = ui.selectedTower;
+      if (tower) ui.onUpgrade?.(tower, e.shiftKey ? 'B' : 'A');
+      return;
+    }
+    if (e.key === 'Escape') { ui.clearTowerTypeSelection(); return; }
+    const type = keyTowerMap[e.key.toLowerCase()];
+    if (type) { e.preventDefault(); ui.selectTowerType(type); }
   });
 }
 
@@ -586,6 +620,57 @@ function setupPauseMenu(state, loop) {
 
 // ── Main ────────────────────────────────────────────────────────────────────
 
+// ── Achievements panel ────────────────────────────────────────────────────────
+
+const ENEMY_DISPLAY = [
+  { type: 'runner',      name: 'Runner',      emoji: '🐕' },
+  { type: 'sprinter',    name: 'Sprinter',    emoji: '💨' },
+  { type: 'tank',        name: 'Tank',        emoji: '🟣' },
+  { type: 'splitter',    name: 'Splitter',    emoji: '🟢' },
+  { type: 'armoured',    name: 'Armoured',    emoji: '🔩' },
+  { type: 'boss',        name: 'Boss',        emoji: '💀' },
+  { type: 'swarmling',   name: 'Swarmling',   emoji: '🐛' },
+  { type: 'brute',       name: 'Brute',       emoji: '💪' },
+  { type: 'phantom',     name: 'Phantom',     emoji: '👻' },
+  { type: 'carrier',     name: 'Carrier',     emoji: '🚚' },
+  { type: 'shielded',    name: 'Shielded',    emoji: '🛡' },
+  { type: 'regenerator', name: 'Regenerator', emoji: '💚' },
+  { type: 'flyer',       name: 'Flyer',       emoji: '🦅' },
+  { type: 'magma',       name: 'Magma',       emoji: '🌋' },
+  { type: 'insulated',   name: 'Insulated',   emoji: '🔌' },
+  { type: 'aquatic',     name: 'Aquatic',     emoji: '🌊' },
+  { type: 'cleric',      name: 'Cleric',      emoji: '✨' },
+  { type: 'stutter',     name: 'Stutter',     emoji: '🔀' },
+  { type: 'juggernaut',  name: 'Juggernaut',  emoji: '🦾' },
+  { type: 'wraith',      name: 'Wraith',      emoji: '🌑' },
+  { type: 'megaboss',    name: 'Mega Boss',   emoji: '☠️' },
+];
+
+function renderAchievements(profile) {
+  const totalStars = totalAchievementStars(profile);
+  document.getElementById('ach-bonus').textContent =
+    `${totalStars} / ${ENEMY_DISPLAY.length * 3} stars earned — spendable in the unlock tree`;
+
+  const list = document.getElementById('ach-list');
+  list.innerHTML = '';
+  for (const { type, name, emoji } of ENEMY_DISPLAY) {
+    const kills = profile.enemyKills?.[type] ?? 0;
+    const stars = getKillStars(kills);
+    const nextMs = KILL_MILESTONES[stars];
+    const pct    = nextMs ? Math.min(100, (kills / nextMs) * 100) : 100;
+    const el = document.createElement('div');
+    el.className = 'ach-row';
+    el.innerHTML =
+      `<span class="ach-icon">${emoji}</span>` +
+      `<span class="ach-name">${name}</span>` +
+      `<span class="ach-stars">${'⭐'.repeat(stars)}${'☆'.repeat(3 - stars)}</span>` +
+      `<div class="ach-bar-wrap"><div class="ach-bar" style="width:${pct}%"></div></div>` +
+      `<span class="ach-kills">${kills >= 1000 ? (kills / 1000).toFixed(1) + 'k' : kills}` +
+        `${nextMs ? ' / ' + (nextMs >= 1000 ? nextMs / 1000 + 'k' : nextMs) : ' MAX'}</span>`;
+    list.appendChild(el);
+  }
+}
+
 // ── Per-tick update helpers ───────────────────────────────────────────────────
 
 function tickWaveEnd(state, waves, perks, waveSpawner, dt) {
@@ -601,6 +686,8 @@ function tickWaveEnd(state, waves, perks, waveSpawner, dt) {
     const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
     if (income > 0) state.cash += income;
     saveGame(state);
+    const isFinalWave = !state.sandbox && state.waveIndex >= waves.length - 1;
+    if (!isFinalWave && state.waveIndex >= 0) state.autoStartTimer = 10;
   }
 }
 
@@ -633,7 +720,7 @@ function ageAndCullEvents(state, dt) {
   }
 }
 
-function processEnemies(state, paths, dt) {
+function processEnemies(state, paths, dt, profile) {
   const cashBoosters = state.towers.filter(t => t.killCashBoostRange > 0);
   for (let i = state.enemies.length - 1; i >= 0; i--) {
     const e = state.enemies[i];
@@ -650,6 +737,8 @@ function processEnemies(state, paths, dt) {
       state.cash  += Math.round(baseReward * (1 + totalBoost));
       state.score += e.reward;
       state.kills += 1;
+      if (profile?.enemyKills !== undefined)
+        profile.enemyKills[e.type] = (profile.enemyKills[e.type] ?? 0) + 1;
       AudioManager.play('enemy-death');
       for (let j = 0; j < 5; j++) {
         const angle = (Math.PI * 2 * j) / 5 + Math.random() * 0.5;
@@ -755,7 +844,7 @@ async function main() {
   const waves = WAVES_BY_MAP[mapKey] ?? WAVES_MAP1;
 
   // P1 — apply global perks at run start
-  const perks = profile.perks ?? {};
+  const perks = { ...profile.perks };
   const state = {
     mapKey,
     diffKey,
@@ -775,11 +864,12 @@ async function main() {
     deathParticles: [], // R3 — death burst particles
     boltEvents:     [], // Tesla lightning bolts (transient; aged like damageEvents)
     groundHazards:  [],
-    totalWaves:  waves.length,
-    gameOver:    false,
-    paused:      false,
-    loopSpeed:    1,                  // mirrors GameLoop speed (diagnostics)
-    runStartedAt: performance.now(),  // run duration for bug reports
+    totalWaves:      waves.length,
+    gameOver:        false,
+    paused:          false,
+    autoStartTimer:  0,               // seconds remaining before next wave auto-starts
+    loopSpeed:       1,               // mirrors GameLoop speed (diagnostics)
+    runStartedAt:    performance.now(), // run duration for bug reports
   };
   // Expose the live state to the bug-report system so reports auto-attach run context.
   currentState = state;
@@ -815,6 +905,7 @@ async function main() {
   ui.onStartWave = () => {
     if (state.waveActive || state.gameOver) return;
     if (!state.sandbox && state.waveIndex >= waves.length - 1) return;
+    state.autoStartTimer = 0;
     // Sandbox: cycle back to the first wave after the last one
     if (state.sandbox && state.waveIndex >= waves.length - 1) state.waveIndex = -1;
     state.waveIndex++;
@@ -869,7 +960,7 @@ async function main() {
   };
 
   ui.onToggleFF = () => {
-    const speeds = state.sandbox ? [1, 2, 4, 8] : [1, 2, 4];
+    const speeds = [1, 2, 4, 8];
     const idx    = speeds.indexOf(loop.speed);
     loop.speed   = speeds[(idx + 1) % speeds.length];
     state.loopSpeed = loop.speed;
@@ -883,14 +974,20 @@ async function main() {
   const loop = new GameLoop({
     update(dt) {
       if (state.gameOver || state.paused) return;
+      const wasActive = state.waveActive;
       tickWaveEnd(state, waves, perks, waveSpawner, dt);
+      if (wasActive && !state.waveActive) saveProfile(profile);
+      if (state.autoStartTimer > 0 && !state.waveActive) {
+        state.autoStartTimer -= dt;
+        if (state.autoStartTimer <= 0) { state.autoStartTimer = 0; ui.onStartWave(); }
+      }
       updateMovement(state.enemies, paths, dt);
       updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents, state.groundHazards, state.boltEvents);
       updateDoT(state.enemies, dt, state.damageEvents);
       updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
       applyHealerAuras(state.enemies, dt);
       ageAndCullEvents(state, dt);
-      processEnemies(state, paths, dt);
+      processEnemies(state, paths, dt, profile);
       checkGameOver(state, waves, profile, ui, difficulty);
     },
 

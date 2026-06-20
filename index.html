@@ -56,6 +56,7 @@
             <div id="map-actions">
               <button id="map-continue">↩ Continue saved game</button>
               <button id="map-upgrades">🔓 Unlock Towers & Upgrades <span id="upgrades-badge"></span></button>
+              <button id="map-achievements">🏆 Achievements</button>
               <button id="map-sandbox">⚗️ Sandbox Mode</button>
               <button id="map-builder-btn">🗺 Map Builder</button>
               <button id="map-fs">⛶ Fullscreen</button>
@@ -81,6 +82,20 @@
           <div id="tree-footer">
             <button id="tree-respec">↺ Respec (refund all)</button>
             <button id="tree-close">← Back</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Achievements panel -->
+      <div id="achievement-panel">
+        <div id="ach-inner">
+          <div id="ach-header">
+            <h2>🏆 Achievements</h2>
+            <span id="ach-bonus"></span>
+          </div>
+          <div id="ach-list"></div>
+          <div id="ach-footer">
+            <button id="ach-close">← Back</button>
           </div>
         </div>
       </div>
@@ -206,33 +221,33 @@
         <select id="sandbox-map-select" style="background:#1c1412;border:1px solid #4c1d95;color:#c4b5fd;border-radius:5px;padding:3px 6px;font-size:12px;cursor:pointer;"></select>
       </div>
 
-      <!-- Tower shop — icon-only with tooltip on hover, grouped by role -->
+      <!-- Tower shop — icon-only with key hints, grouped by role -->
       <div id="tower-shop">
         <span class="shop-cat-label">⚔</span>
-        <button class="tower-btn" data-tower="archer"       data-tip="Archer ($50)">🏹</button>
-        <button class="tower-btn" data-tower="bomb"         data-tip="Bomb ($100)">💣</button>
-        <button class="tower-btn" data-tower="marksman"     data-tip="Marksman ($125)">🔭</button>
-        <button class="tower-btn" data-tower="flamethrower" data-tip="Flamethrower ($175)">🔥</button>
-        <button class="tower-btn" data-tower="tesla"        data-tip="Tesla ($200)">⚡</button>
-        <button class="tower-btn" data-tower="laser"        data-tip="Laser ($175)">🔴</button>
-        <button class="tower-btn" data-tower="scattergun"   data-tip="Scatter Gun ($75)">📌</button>
-        <button class="tower-btn" data-tower="boomerang"    data-tip="Boomerang ($120)">🪃</button>
-        <button class="tower-btn" data-tower="wizard"       data-tip="Wizard ($225)">🪄</button>
-        <button class="tower-btn" data-tower="druid"        data-tip="Druid ($175)">🌿</button>
+        <button class="tower-btn" data-tower="archer"       data-key="Q">🏹</button>
+        <button class="tower-btn" data-tower="bomb"         data-key="W">💣</button>
+        <button class="tower-btn" data-tower="marksman"     data-key="E">🔭</button>
+        <button class="tower-btn" data-tower="flamethrower" data-key="R">🔥</button>
+        <button class="tower-btn" data-tower="tesla"        data-key="T">⚡</button>
+        <button class="tower-btn" data-tower="laser"        data-key="A">🔴</button>
+        <button class="tower-btn" data-tower="scattergun"   data-key="S">📌</button>
+        <button class="tower-btn" data-tower="boomerang"    data-key="D">🪃</button>
+        <button class="tower-btn" data-tower="wizard"       data-key="F">🪄</button>
+        <button class="tower-btn" data-tower="druid"        data-key="G">🌿</button>
         <span class="shop-sep-line"></span>
         <span class="shop-cat-label">🛡</span>
-        <button class="tower-btn" data-tower="frost"        data-tip="Frost ($75)">❄️</button>
-        <button class="tower-btn" data-tower="alchemist"    data-tip="Alchemist ($200)">⚗️</button>
-        <button class="tower-btn" data-tower="commandpost"  data-tip="Cmd Post ($200)">📡</button>
-        <button class="tower-btn" data-tower="stickycannon" data-tip="Sticky Cannon ($100)">🧪</button>
-        <button class="tower-btn" data-tower="minelayer"    data-tip="Mine Layer ($150)">🔩</button>
-        <button class="tower-btn" data-tower="engineer"     data-tip="Engineer ($200)">🔧</button>
-        <button class="tower-btn" data-tower="trapper"      data-tip="Trapper ($125)">🪤</button>
-        <button class="tower-btn" data-tower="gravitywell"  data-tip="Gravity Well ($175)">🌀</button>
+        <button class="tower-btn" data-tower="frost"        data-key="Z">❄️</button>
+        <button class="tower-btn" data-tower="alchemist"    data-key="X">⚗️</button>
+        <button class="tower-btn" data-tower="commandpost"  data-key="C">📡</button>
+        <button class="tower-btn" data-tower="stickycannon" data-key="V">🧪</button>
+        <button class="tower-btn" data-tower="minelayer"    data-key="B">🔩</button>
+        <button class="tower-btn" data-tower="engineer"     data-key="Y">🔧</button>
+        <button class="tower-btn" data-tower="trapper"      data-key="U">🪤</button>
+        <button class="tower-btn" data-tower="gravitywell"  data-key="I">🌀</button>
         <span class="shop-sep-line"></span>
         <span class="shop-cat-label">💰</span>
-        <button class="tower-btn" data-tower="generator"    data-tip="Generator ($225)">💰</button>
-        <button class="tower-btn" data-tower="solartower"   data-tip="Solar Tower ($500)">☀️</button>
+        <button class="tower-btn" data-tower="generator"    data-key="O">💰</button>
+        <button class="tower-btn" data-tower="solartower"   data-key="P">☀️</button>
       </div>
 
     </div>

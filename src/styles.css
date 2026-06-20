@@ -81,18 +81,12 @@
         letter-spacing: -.02em;
       }
       .tower-btn.tower-unaffordable .tower-cost { color: #f87171; }
-      /* CSS tooltip via data-tip */
-      .tower-btn[data-tip]::after {
-        content: attr(data-tip);
-        position: absolute; bottom: calc(100% + 6px); left: 50%;
-        transform: translateX(-50%);
-        background: #1e293b; color: #e2e8f0;
-        border: 1px solid #334155; border-radius: 5px;
-        padding: 3px 8px; font-size: 11px; font-weight: 600;
-        white-space: nowrap; pointer-events: none; z-index: 50;
-        opacity: 0; transition: opacity .12s;
+      .tower-btn[data-key]::before {
+        content: attr(data-key);
+        position: absolute; top: 2px; left: 3px;
+        font-size: 7px; font-weight: 700; color: rgba(148,163,184,0.55);
+        line-height: 1; pointer-events: none;
       }
-      .tower-btn[data-tip]:hover::after { opacity: 1; }
 
       .tower-btn:hover  { border-color: #6b7280; background: #243245; }
       .tower-btn.selected {
@@ -330,6 +324,44 @@
       #end-actions button:hover { border-color: #6b7280; color: #fff; }
       #end-actions .end-primary { background: #22c55e; border-color: #22c55e; color: #fff; }
       #end-actions .end-primary:hover { background: #16a34a; border-color: #16a34a; }
+
+      /* ── Achievements panel ─────────────────────────────────── */
+      #achievement-panel {
+        position: absolute; inset: 0;
+        background: rgba(0,0,0,.88);
+        display: none; flex-direction: column; align-items: center; justify-content: center;
+        z-index: 20;
+      }
+      #ach-inner {
+        background: rgba(15,23,42,.97); border: 1px solid #334155;
+        border-radius: 14px; padding: 28px 32px; width: 90%; max-width: 520px;
+        max-height: 80vh; display: flex; flex-direction: column;
+      }
+      #ach-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 6px;
+      }
+      #ach-header h2 { font-size: 18px; font-weight: 800; }
+      #ach-bonus { font-size: 12px; color: #86efac; font-weight: 700; }
+      #ach-list {
+        flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+        gap: 6px; margin: 14px 0; scrollbar-width: thin;
+      }
+      .ach-row {
+        display: grid;
+        grid-template-columns: 22px 1fr auto 120px auto;
+        align-items: center; gap: 8px;
+        background: rgba(255,255,255,.04); border-radius: 7px; padding: 6px 10px;
+      }
+      .ach-icon { font-size: 14px; text-align: center; }
+      .ach-name { font-size: 12px; font-weight: 600; color: #e2e8f0; }
+      .ach-stars { font-size: 11px; letter-spacing: 1px; }
+      .ach-bar-wrap {
+        height: 5px; background: rgba(255,255,255,.1); border-radius: 3px; overflow: hidden;
+      }
+      .ach-bar { height: 100%; background: #facc15; border-radius: 3px; transition: width .3s; }
+      .ach-kills { font-size: 10px; color: #94a3b8; text-align: right; white-space: nowrap; }
+      #ach-footer { display: flex; justify-content: flex-end; padding-top: 4px; }
 
       /* ── Unlock tree overlay (M3) ───────────────────────────── */
       #unlock-tree {
@@ -789,6 +821,16 @@
       }
       #map-builder-btn:hover { border-color: #10b981; color: #a7f3d0; background: #0d2b22; }
 
+      /* ── Achievements button ─────────────────────────────────── */
+      #map-achievements {
+        display: flex; align-items: center; justify-content: center; gap: 6px;
+        width: 100%; margin-top: 8px;
+        background: #1c1912; border: 1px solid #a16207; color: #fbbf24;
+        padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px;
+        font-weight: 600; transition: border-color .1s, color .1s, background .1s;
+      }
+      #map-achievements:hover { border-color: #facc15; color: #fef08a; background: #2d2710; }
+
       #builder-bar {
         position: absolute; bottom: 0; left: 0; right: 0;
         display: none; gap: 8px; align-items: center;
@@ -858,6 +900,7 @@
         #end-restart:hover       { background: #22c55e !important; }
         #pause-resume:hover      { background: #22c55e !important; }
         #pause-restart:hover { background: #431407 !important; color: #fb923c !important; }
+        .tower-btn[data-key]::before { display: none; }
       }
 
       /* ── Bug report — always-on-top button, fixed top-right ── */

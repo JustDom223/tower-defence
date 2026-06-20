@@ -187,6 +187,13 @@ export class GameUI {
     this.#refreshSandboxPlaceBtn();
   }
 
+  selectTowerType(type) {
+    this.#selectedTowerType = this.#selectedTowerType === type ? null : type;
+    this.#refreshShop();
+    this.hideTowerPanel();
+    this.onTowerTypeSelect?.(this.#selectedTowerType);
+  }
+
   /** R3 — set the upcoming-wave preview text. Pass '' to clear. */
   setWavePreview(text) {
     if (this.#previewEl) this.#previewEl.textContent = text;
@@ -328,7 +335,12 @@ export class GameUI {
     const startDisabled = this.#sandbox
       ? (state.waveActive || state.gameOver)
       : (state.waveActive || state.waveIndex >= state.totalWaves - 1 || state.gameOver);
-    const startText = state.waveActive ? 'Wave Active…' : 'Start Wave';
+    const countdown = state.autoStartTimer ?? 0;
+    const startText = state.waveActive
+      ? 'Wave Active…'
+      : countdown > 0
+        ? `Next in ${Math.ceil(countdown)}s`
+        : 'Start Wave';
     if (startDisabled !== this.#lastStartDisabled) {
       this.#lastStartDisabled = startDisabled;
       this.#startBtn.disabled = startDisabled;

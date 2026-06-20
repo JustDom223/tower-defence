@@ -13,4 +13,8 @@ export default defineConfig({
   define: {
     __BUILD__: JSON.stringify(build),
   },
+  server: {
+    port: parseInt(process.env.PORT) || 5173,
+    strictPort: false,
+  },
 });

@@ -15,10 +15,25 @@ const KEY = 'tower-defence-profile-v1';
 
 // ── Data shape ───────────────────────────────────────────────────────────────
 
+export const KILL_MILESTONES = [1_000, 10_000, 100_000];
+
+export function getKillStars(kills) {
+  let s = 0;
+  for (const m of KILL_MILESTONES) if (kills >= m) s++;
+  return s;
+}
+
+export function totalAchievementStars(profile) {
+  return Object.values(profile.enemyKills ?? {})
+    .reduce((sum, k) => sum + getKillStars(k), 0);
+}
+
+
 export function defaultProfile() {
   return {
     version: 1,
     spent: 0,
+    enemyKills: {},
     // All 20 maps; absent keys default to 0 via ?? operator in isMapUnlocked
     missions: { map1: 0, map2: 0, map3: 0, map4: 0, map5: 0,
                 map6: 0, map7: 0, map8: 0, map9: 0, map10: 0,
@@ -87,6 +102,7 @@ export function loadProfile() {
     for (const [k, v] of Object.entries(def.unlocks.paths)) {
       if (!p.unlocks.paths[k]) p.unlocks.paths[k] = { ...v };
     }
+    if (!p.enemyKills) p.enemyKills = {};
     // P1 — backfill perks for profiles created before this feature
     if (!p.perks) p.perks = def.perks;
     // Migrate old boolean war-chest nodes to the ranked war chest track
@@ -113,8 +129,9 @@ export function resetProfile() {
 // ── Derived values ───────────────────────────────────────────────────────────
 
 export function availableStars(p) {
-  const earned = Object.values(p.missions).reduce((s, v) => s + v, 0);
-  return Math.max(0, earned - p.spent);
+  const missionStars    = Object.values(p.missions).reduce((s, v) => s + v, 0);
+  const achievementStars = totalAchievementStars(p);
+  return Math.max(0, missionStars + achievementStars - p.spent);
 }
 
 export function isTowerUnlocked(p, type) {
