@@ -18,7 +18,7 @@ import { projectilePool }       from './entities/Projectile.js';
 import { createTower }          from './entities/Tower.js';
 import { updateMovement }       from './systems/MovementSystem.js';
 import { WaveSpawner }          from './systems/WaveSpawner.js';
-import { updateCombat }         from './systems/CombatSystem.js';
+import { updateCombat, markBuffsDirty } from './systems/CombatSystem.js';
 import { updateDoT }            from './systems/DoTSystem.js';
 import { updateGroundHazards }  from './systems/GroundHazardSystem.js';
 import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
@@ -389,6 +389,7 @@ function restoreSave(savedData, state, towerRenderer) {
     if (tower.type === 'bomb' && tower.upgradesB >= 2) tower.mortarMode = true;
     state.towers.push(tower);
   }
+  markBuffsDirty();
   towerRenderer.markDirty();
 }
 
@@ -530,6 +531,7 @@ function wireCanvasInput(renderer, ui, state, towerRenderer, paths, pathsWaypoin
     const tower = createTower(type, x, y);
     if (!isSandbox && (perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
     state.towers.push(tower);
+    markBuffsDirty();
     if (!isSandbox) state.cash -= effectiveCost;
     towerRenderer.markDirty();
     ui.clearTowerTypeSelection();
@@ -583,6 +585,132 @@ function setupPauseMenu(state, loop) {
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
+
+// ── Per-tick update helpers ───────────────────────────────────────────────────
+
+function tickWaveEnd(state, waves, perks, waveSpawner, dt) {
+  if (state.waveActive && !state.spawnerDone) {
+    state.spawnerDone = waveSpawner.update(dt, state.enemies);
+  }
+  if (state.waveActive && state.spawnerDone && state.enemies.length === 0) {
+    state.waveActive = false;
+    AudioManager.play('wave-clear');
+    const interest = Math.floor(state.cash * (0.05 + (perks.interestBonus ?? 0)));
+    if (interest > 0) { state.cash += interest; showInterestToast(interest); }
+    state.cash += 50;
+    const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
+    if (income > 0) state.cash += income;
+    saveGame(state);
+  }
+}
+
+function applyHealerAuras(enemies, dt) {
+  const healers = enemies.filter(e => e.healsNearby > 0);
+  if (healers.length === 0) return;
+  for (const e of healers) {
+    const rSq = e.healsNearbyRadius * e.healsNearbyRadius;
+    for (const target of enemies) {
+      if (target === e || target.hp <= 0) continue;
+      const dSq = (target.worldX - e.worldX) ** 2 + (target.worldY - e.worldY) ** 2;
+      if (dSq <= rSq) target.hp = Math.min(target.maxHp, target.hp + e.healsNearby * dt);
+    }
+  }
+}
+
+function ageAndCullEvents(state, dt) {
+  for (let i = state.damageEvents.length - 1; i >= 0; i--) {
+    state.damageEvents[i].t += dt;
+    if (state.damageEvents[i].t >= 0.65) state.damageEvents.splice(i, 1);
+  }
+  for (let i = state.boltEvents.length - 1; i >= 0; i--) {
+    state.boltEvents[i].t += dt;
+    if (state.boltEvents[i].t >= 0.18) state.boltEvents.splice(i, 1);
+  }
+  for (let i = state.deathParticles.length - 1; i >= 0; i--) {
+    const p = state.deathParticles[i];
+    p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.t >= 0.5) state.deathParticles.splice(i, 1);
+  }
+}
+
+function processEnemies(state, paths, dt) {
+  const cashBoosters = state.towers.filter(t => t.killCashBoostRange > 0);
+  for (let i = state.enemies.length - 1; i >= 0; i--) {
+    const e = state.enemies[i];
+    if (e.distance >= paths[e.pathIndex].totalLength) {
+      if (!state.sandbox) state.lives = Math.max(0, state.lives - 1);
+      enemyPool.release(e);
+      state.enemies.splice(i, 1);
+    } else if (e.hp <= 0) {
+      const baseReward = e.cashReward ?? 10;
+      const totalBoost = cashBoosters.reduce((total, gen) => {
+        const dSq = (gen.x - e.worldX) ** 2 + (gen.y - e.worldY) ** 2;
+        return dSq <= gen.killCashBoostRange ** 2 ? total + gen.killCashBoostMult : total;
+      }, 0);
+      state.cash  += Math.round(baseReward * (1 + totalBoost));
+      state.score += e.reward;
+      state.kills += 1;
+      AudioManager.play('enemy-death');
+      for (let j = 0; j < 5; j++) {
+        const angle = (Math.PI * 2 * j) / 5 + Math.random() * 0.5;
+        const spd   = 38 + Math.random() * 44;
+        state.deathParticles.push({
+          x: e.worldX, y: e.worldY,
+          vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
+          t: 0, color: e.color,
+        });
+      }
+      if (e.spawns) {
+        for (let j = 0; j < e.spawns.count; j++) {
+          const child = enemyPool.acquire({ type: e.spawns.type, distance: e.distance, pathIndex: e.pathIndex });
+          const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
+          child.worldX = cpos.x; child.worldY = cpos.y;
+          state.enemies.push(child);
+        }
+      }
+      enemyPool.release(e);
+      state.enemies.splice(i, 1);
+    } else if (e.liveSpawnInterval > 0) {
+      e.liveSpawnTimer -= dt;
+      if (e.liveSpawnTimer <= 0) {
+        e.liveSpawnTimer = e.liveSpawnInterval;
+        for (let j = 0; j < e.liveSpawnCount; j++) {
+          const child = enemyPool.acquire({ type: e.liveSpawnType, distance: e.distance, pathIndex: e.pathIndex });
+          const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
+          child.worldX = cpos.x; child.worldY = cpos.y;
+          state.enemies.push(child);
+        }
+      }
+    }
+  }
+}
+
+function checkGameOver(state, waves, profile, ui, difficulty) {
+  if (!state.sandbox &&
+      !state.waveActive &&
+      state.waveIndex >= waves.length - 1 &&
+      state.spawnerDone &&
+      state.enemies.length === 0) {
+    state.gameOver = true;
+    clearSave();
+    const stars   = computeStars(state.lives, 20, difficulty.starCap);
+    const newBest = recordMissionResult(profile, state.mapKey, stars);
+    saveProfile(profile);
+    AudioManager.play('win');
+    const ci         = CAMPAIGN_ORDER.indexOf(state.mapKey);
+    const nextKey    = (ci >= 0 && ci < CAMPAIGN_ORDER.length - 1) ? CAMPAIGN_ORDER[ci + 1] : null;
+    const nextMapKey = (nextKey && isMapUnlocked(profile, nextKey, CAMPAIGN_ORDER)) ? nextKey : null;
+    ui.showEndScreen(true, state.score, stars, availableStars(profile), newBest,
+      { nextMapKey, diffKey: state.diffKey });
+  }
+  if (!state.sandbox && state.lives === 0) {
+    state.gameOver = true;
+    clearSave();
+    AudioManager.play('lose');
+    ui.showEndScreen(false, state.score, 0, availableStars(profile), false,
+      { mapKey: state.mapKey, diffKey: state.diffKey });
+  }
+}
 
 async function main() {
   // M0 — load (or create) the meta-progression profile
@@ -706,6 +834,7 @@ async function main() {
     const idx = state.towers.indexOf(tower);
     if (idx === -1) return;
     state.towers.splice(idx, 1);
+    markBuffsDirty();
     // P1 — Salvage perk adds to base 0.60 sell multiplier
     const sellMult = 0.6 + (perks.sellBonus ?? 0);
     state.cash += Math.floor((TOWER_TYPES[tower.type].cost + tower.upgradeSpent) * sellMult);
@@ -724,6 +853,7 @@ async function main() {
       tower.upgradeSpent += result.tier.cost;
     }
     applyTier(tower, result.tier);
+    markBuffsDirty();
     if (path === 'A') tower.upgradesA++;
     else              tower.upgradesB++;
     // Mortar mode — bomb tower path B tier 2+ unlocks mortar manual targeting
@@ -753,147 +883,15 @@ async function main() {
   const loop = new GameLoop({
     update(dt) {
       if (state.gameOver || state.paused) return;
-
-      if (state.waveActive && !state.spawnerDone) {
-        state.spawnerDone = waveSpawner.update(dt, state.enemies);
-      }
-
-      if (state.waveActive && state.spawnerDone && state.enemies.length === 0) {
-        state.waveActive = false;
-        AudioManager.play('wave-clear');
-        // R1 — interest: earn 5% of banked cash at the end of each wave
-        // P1 — Compound Interest perk adds to the base rate
-        const interest = Math.floor(state.cash * (0.05 + (perks.interestBonus ?? 0)));
-        if (interest > 0) {
-          state.cash += interest;
-          showInterestToast(interest);
-        }
-        state.cash += 50;
-        const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
-        if (income > 0) state.cash += income;
-        saveGame(state);
-      }
-
+      tickWaveEnd(state, waves, perks, waveSpawner, dt);
       updateMovement(state.enemies, paths, dt);
       updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents, state.groundHazards, state.boltEvents);
       updateDoT(state.enemies, dt, state.damageEvents);
       updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
-
-      // Cleric healing aura — heals nearby enemies
-      const healers = state.enemies.filter(e => e.healsNearby > 0);
-      if (healers.length > 0) {
-        for (const e of healers) {
-          const rSq = e.healsNearbyRadius * e.healsNearbyRadius;
-          for (const target of state.enemies) {
-            if (target === e || target.hp <= 0) continue;
-            const dSq = (target.worldX - e.worldX) ** 2 + (target.worldY - e.worldY) ** 2;
-            if (dSq <= rSq) target.hp = Math.min(target.maxHp, target.hp + e.healsNearby * dt);
-          }
-        }
-      }
-
-      // R3 — advance and cull damage events
-      for (let i = state.damageEvents.length - 1; i >= 0; i--) {
-        state.damageEvents[i].t += dt;
-        if (state.damageEvents[i].t >= 0.65) state.damageEvents.splice(i, 1);
-      }
-
-      // Advance and cull Tesla lightning bolts (lifetime matches LightningRenderer)
-      for (let i = state.boltEvents.length - 1; i >= 0; i--) {
-        state.boltEvents[i].t += dt;
-        if (state.boltEvents[i].t >= 0.18) state.boltEvents.splice(i, 1);
-      }
-
-      // R3 — advance and cull death particles
-      for (let i = state.deathParticles.length - 1; i >= 0; i--) {
-        const p = state.deathParticles[i];
-        p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt;
-        if (p.t >= 0.5) state.deathParticles.splice(i, 1);
-      }
-
-      const cashBoosters = state.towers.filter(t => t.killCashBoostRange > 0);
-      for (let i = state.enemies.length - 1; i >= 0; i--) {
-        const e = state.enemies[i];
-        if (e.distance >= paths[e.pathIndex].totalLength) {
-          if (!state.sandbox) state.lives = Math.max(0, state.lives - 1);
-          enemyPool.release(e);
-          state.enemies.splice(i, 1);
-        } else if (e.hp <= 0) {
-          const baseReward = e.cashReward ?? 10;
-          const totalBoost = cashBoosters
-            .reduce((total, gen) => {
-              const dSq = (gen.x - e.worldX)**2 + (gen.y - e.worldY)**2;
-              return dSq <= gen.killCashBoostRange**2 ? total + gen.killCashBoostMult : total;
-            }, 0);
-          state.cash  += Math.round(baseReward * (1 + totalBoost));
-          state.score += e.reward;
-          state.kills += 1;
-          AudioManager.play('enemy-death');
-          // R3 — death burst particles
-          for (let j = 0; j < 5; j++) {
-            const angle = (Math.PI * 2 * j) / 5 + Math.random() * 0.5;
-            const spd   = 38 + Math.random() * 44;
-            state.deathParticles.push({
-              x: e.worldX, y: e.worldY,
-              vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
-              t: 0, color: e.color,
-            });
-          }
-          if (e.spawns) {
-            for (let j = 0; j < e.spawns.count; j++) {
-              const child = enemyPool.acquire({ type: e.spawns.type, distance: e.distance, pathIndex: e.pathIndex });
-              const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
-              child.worldX = cpos.x;
-              child.worldY = cpos.y;
-              state.enemies.push(child);
-            }
-          }
-          enemyPool.release(e);
-          state.enemies.splice(i, 1);
-        } else if (e.liveSpawnInterval > 0) {
-          // Carrier — periodically spawn minions while alive
-          e.liveSpawnTimer -= dt;
-          if (e.liveSpawnTimer <= 0) {
-            e.liveSpawnTimer = e.liveSpawnInterval;
-            for (let j = 0; j < e.liveSpawnCount; j++) {
-              const child = enemyPool.acquire({ type: e.liveSpawnType, distance: e.distance, pathIndex: e.pathIndex });
-              const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
-              child.worldX = cpos.x;
-              child.worldY = cpos.y;
-              state.enemies.push(child);
-            }
-          }
-        }
-      }
-
-      // Win — not triggered in sandbox
-      if (!state.sandbox &&
-          !state.waveActive &&
-          state.waveIndex >= waves.length - 1 &&
-          state.spawnerDone &&
-          state.enemies.length === 0) {
-        state.gameOver = true;
-        clearSave();
-        // M2/M4 — award stars using difficulty's star cap, persist to profile
-        const stars   = computeStars(state.lives, 20, difficulty.starCap);
-        const newBest = recordMissionResult(profile, state.mapKey, stars);
-        saveProfile(profile);
-        AudioManager.play('win');
-        // Offer "Next Map" when a following campaign map exists and is now unlocked.
-        const ci      = CAMPAIGN_ORDER.indexOf(state.mapKey);
-        const nextKey = (ci >= 0 && ci < CAMPAIGN_ORDER.length - 1) ? CAMPAIGN_ORDER[ci + 1] : null;
-        const nextMapKey = (nextKey && isMapUnlocked(profile, nextKey, CAMPAIGN_ORDER)) ? nextKey : null;
-        ui.showEndScreen(true, state.score, stars, availableStars(profile), newBest,
-          { nextMapKey, diffKey: state.diffKey });
-      }
-
-      // Lose — not triggered in sandbox
-      if (!state.sandbox && state.lives === 0) {
-        state.gameOver = true;
-        clearSave();
-        AudioManager.play('lose');
-        ui.showEndScreen(false, state.score, 0, availableStars(profile), false, { mapKey: state.mapKey, diffKey: state.diffKey });
-      }
+      applyHealerAuras(state.enemies, dt);
+      ageAndCullEvents(state, dt);
+      processEnemies(state, paths, dt);
+      checkGameOver(state, waves, profile, ui, difficulty);
     },
 
     render(alpha) {
