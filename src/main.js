@@ -18,7 +18,7 @@ import { projectilePool }       from './entities/Projectile.js';
 import { createTower }          from './entities/Tower.js';
 import { updateMovement }       from './systems/MovementSystem.js';
 import { WaveSpawner }          from './systems/WaveSpawner.js';
-import { updateCombat }         from './systems/CombatSystem.js';
+import { updateCombat, markBuffsDirty } from './systems/CombatSystem.js';
 import { updateDoT }            from './systems/DoTSystem.js';
 import { updateGroundHazards }  from './systems/GroundHazardSystem.js';
 import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
@@ -342,7 +342,375 @@ function awaitMapSelect(profile) {
   });
 }
 
+// ── Extracted helpers ────────────────────────────────────────────────────────
+
+/** Initialise all PixiJS renderers and return them as a named object. */
+async function initRenderers(renderer, paths) {
+  const pathRenderer = new PathRenderer();
+  pathRenderer.init(renderer, paths);
+
+  const towerRenderer = new TowerRenderer();
+  await towerRenderer.init(renderer);
+
+  const enemyRenderer = new EnemyRenderer();
+  await enemyRenderer.init(renderer);
+
+  const projectileRenderer = new ProjectileRenderer();
+  projectileRenderer.init(renderer);
+
+  const damageNumberRenderer = new DamageNumberRenderer();
+  damageNumberRenderer.init(renderer);
+
+  const particleRenderer = new ParticleRenderer();
+  particleRenderer.init(renderer);
+
+  const lightningRenderer = new LightningRenderer();
+  lightningRenderer.init(renderer);
+
+  return { pathRenderer, towerRenderer, enemyRenderer, projectileRenderer,
+           damageNumberRenderer, particleRenderer, lightningRenderer };
+}
+
+/** Restore a mid-run save into state and mark towers dirty. */
+function restoreSave(savedData, state, towerRenderer) {
+  state.lives     = savedData.lives;
+  state.cash      = savedData.cash;
+  state.score     = savedData.score;
+  state.waveIndex = savedData.waveIndex;
+  for (const t of savedData.towers) {
+    const tower = createTower(t.type, t.x ?? 0, t.y ?? 0);
+    tower.targeting = t.targeting;
+    const def = TOWER_TYPES[t.type];
+    for (let i = 0; i < t.upgradesA; i++) applyTier(tower, def.upgrades.pathA.tiers[i]);
+    tower.upgradesA = t.upgradesA;
+    for (let i = 0; i < t.upgradesB; i++) applyTier(tower, def.upgrades.pathB.tiers[i]);
+    tower.upgradesB    = t.upgradesB;
+    tower.upgradeSpent = t.upgradeSpent;
+    if (tower.type === 'bomb' && tower.upgradesB >= 2) tower.mortarMode = true;
+    state.towers.push(tower);
+  }
+  markBuffsDirty();
+  towerRenderer.markDirty();
+}
+
+/** Wire the sandbox-only control panel (enemy spawner, map switcher, clear button). */
+function setupSandboxPanel(state, paths) {
+  document.body.classList.add('sandbox-active');
+  document.getElementById('hud-sandbox-badge').style.display = 'inline';
+
+  const spawnSel = document.getElementById('spawn-type');
+  for (const type of Object.keys(ENEMY_TYPES)) {
+    const opt = document.createElement('option');
+    opt.value       = type;
+    opt.textContent = type.charAt(0).toUpperCase() + type.slice(1);
+    spawnSel.appendChild(opt);
+  }
+  document.getElementById('spawn-btn').addEventListener('click', () => {
+    const type  = spawnSel.value;
+    const count = Math.max(1, parseInt(document.getElementById('spawn-count').value) || 1);
+    for (let i = 0; i < count; i++) {
+      const dist = i * 30;
+      const e    = enemyPool.acquire({ type, distance: dist, pathIndex: 0 });
+      const pos  = positionAtDistance(paths[0], dist);
+      e.worldX = pos.x;
+      e.worldY = pos.y;
+      state.enemies.push(e);
+    }
+  });
+
+  const sandboxMapSel = document.getElementById('sandbox-map-select');
+  for (const mapKey of CAMPAIGN_ORDER) {
+    const opt = document.createElement('option');
+    opt.value       = mapKey;
+    opt.textContent = MAPS[mapKey]?.name ?? mapKey;
+    if (mapKey === state.mapKey) opt.selected = true;
+    sandboxMapSel.appendChild(opt);
+  }
+  sandboxMapSel.addEventListener('change', () => {
+    sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: sandboxMapSel.value, diffKey: 'sandbox' }));
+    location.reload();
+  });
+
+  document.getElementById('clear-enemies-btn').addEventListener('click', () => {
+    for (const e of state.enemies)     enemyPool.release(e);
+    for (const p of state.projectiles) projectilePool.release(p);
+    state.enemies.length     = 0;
+    state.projectiles.length = 0;
+  });
+}
+
+/**
+ * Wire all canvas mouse, touch, and click handlers.
+ * Touch events are forwarded to mouse events using the lift-offset trick so
+ * tower placement preview shows above the fingertip.
+ */
+function wireCanvasInput(renderer, ui, state, towerRenderer, paths, pathsWaypoints, perks, profile, isSandbox) {
+  renderer.canvas.addEventListener('mousemove', (e) => {
+    const rect = renderer.canvas.getBoundingClientRect();
+    const x    = Math.round((e.clientX - rect.left) * (renderer.width  / rect.width));
+    const y    = Math.round((e.clientY - rect.top)  * (renderer.height / rect.height));
+    const type = ui.selectedTowerType;
+    if (type) {
+      towerRenderer.setHoverTile({ x, y, valid: isPositionFree(x, y, pathsWaypoints, state.towers), type });
+    } else {
+      towerRenderer.setHoverTile(null);
+    }
+  });
+
+  renderer.canvas.addEventListener('mouseleave', () => towerRenderer.setHoverTile(null));
+
+  // MB4 — Touch input forwarded to mouse events.
+  // getBoundingClientRect() returns the post-CSS-transform rect, so the existing
+  // coordinate math works correctly regardless of the CSS scale from scaleGame().
+  // While placing a tower the fingertip hides the target tile, so lift the
+  // forwarded point up by TOUCH_PLACE_LIFT CSS px — ghost preview and placement
+  // use the same lifted point so the tower lands where the ghost shows.
+  const TOUCH_PLACE_LIFT = 48; // CSS px above the fingertip
+  function dispatchMouse(type, touch, liftY = 0) {
+    renderer.canvas.dispatchEvent(new MouseEvent(type, {
+      bubbles: true, cancelable: true, view: window,
+      clientX: touch.clientX, clientY: touch.clientY - liftY,
+    }));
+  }
+  const placeLift = () => (ui.selectedTowerType ? TOUCH_PLACE_LIFT : 0);
+  renderer.canvas.addEventListener('touchstart',  e => { e.preventDefault(); dispatchMouse('mousemove', e.changedTouches[0], placeLift()); }, { passive: false });
+  renderer.canvas.addEventListener('touchmove',   e => { e.preventDefault(); dispatchMouse('mousemove', e.changedTouches[0], placeLift()); }, { passive: false });
+  renderer.canvas.addEventListener('touchend',    e => {
+    e.preventDefault();
+    dispatchMouse('click', e.changedTouches[0], placeLift());
+    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+  }, { passive: false });
+  renderer.canvas.addEventListener('touchcancel', e => {
+    e.preventDefault();
+    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
+  }, { passive: false });
+
+  renderer.canvas.addEventListener('click', (e) => {
+    const rect = renderer.canvas.getBoundingClientRect();
+    const wx   = (e.clientX - rect.left) * (renderer.width  / rect.width);
+    const wy   = (e.clientY - rect.top)  * (renderer.height / rect.height);
+
+    // Mortar targeting — intercept click to set the target coordinate
+    if (ui.mortarSetMode !== null) {
+      const mortarTower = ui.mortarSetMode;
+      ui.mortarSetMode  = null;
+      mortarTower.mortarTargetX = wx;
+      mortarTower.mortarTargetY = wy;
+      ui.showTowerPanel(mortarTower, state.cash);
+      towerRenderer.setSelectedTower(mortarTower);
+      return;
+    }
+
+    const CLICK_RADIUS_SQ = 24 ** 2;
+    const best = state.towers.reduce((b, t) => {
+      const d = (wx - t.x) ** 2 + (wy - t.y) ** 2;
+      return (!b || d < b.d) ? { t, d } : b;
+    }, null);
+    const hit = best && best.d < CLICK_RADIUS_SQ ? best.t : null;
+
+    if (hit) {
+      ui.clearTowerTypeSelection();
+      towerRenderer.setHoverTile(null);
+      ui.showTowerPanel(hit, state.cash);
+      towerRenderer.setSelectedTower(hit);
+      return;
+    }
+
+    ui.hideTowerPanel();
+    towerRenderer.setSelectedTower(null);
+
+    const type = ui.selectedTowerType;
+    if (!type) return;
+    if (!isSandbox && !isTowerUnlocked(profile, type)) return;
+    const def          = TOWER_TYPES[type];
+    const effectiveCost = Math.ceil(def.cost * (1 - (perks.towerCostPct ?? 0)));
+    const x = Math.round(wx), y = Math.round(wy);
+    if (!isSandbox && state.cash < effectiveCost) return;
+    if (!isPositionFree(x, y, pathsWaypoints, state.towers)) return;
+
+    const tower = createTower(type, x, y);
+    if (!isSandbox && (perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
+    state.towers.push(tower);
+    markBuffsDirty();
+    if (!isSandbox) state.cash -= effectiveCost;
+    towerRenderer.markDirty();
+    ui.clearTowerTypeSelection();
+    towerRenderer.setHoverTile(null);
+  });
+}
+
+/** Wire the pause overlay: open/close, mute toggle, volume slider, menu/restart buttons. */
+function setupPauseMenu(state, loop) {
+  const pauseScreen  = document.getElementById('pause-screen');
+  const hudMuteBtn   = document.getElementById('hud-mute');
+  const pauseMuteBtn = document.getElementById('pause-mute-btn');
+  const volumeSlider = document.getElementById('pause-volume');
+
+  function syncMuteIcons() {
+    const icon = AudioManager.muted ? '🔇' : '🔊';
+    if (hudMuteBtn)   hudMuteBtn.textContent   = icon;
+    if (pauseMuteBtn) pauseMuteBtn.textContent = icon;
+  }
+
+  document.getElementById('hud-pause').addEventListener('click', () => {
+    state.paused = true;
+    volumeSlider.value = Math.round(AudioManager.volume * 100);
+    syncMuteIcons();
+    pauseScreen.style.display = 'flex';
+  });
+
+  document.getElementById('pause-resume').addEventListener('click', () => {
+    state.paused = false;
+    pauseScreen.style.display = 'none';
+  });
+
+  pauseMuteBtn.addEventListener('click', () => {
+    AudioManager.toggleMute();
+    syncMuteIcons();
+  });
+
+  volumeSlider.addEventListener('input', () => {
+    AudioManager.setVolume(volumeSlider.value / 100);
+  });
+
+  document.getElementById('pause-main-menu').addEventListener('click', () => {
+    const saveIndex = state.waveActive ? state.waveIndex - 1 : state.waveIndex;
+    saveGame({ ...state, waveIndex: saveIndex });
+    location.reload();
+  });
+
+  document.getElementById('pause-restart').addEventListener('click', () => {
+    requestRestart(state.mapKey, state.diffKey);
+  });
+}
+
 // ── Main ────────────────────────────────────────────────────────────────────
+
+// ── Per-tick update helpers ───────────────────────────────────────────────────
+
+function tickWaveEnd(state, waves, perks, waveSpawner, dt) {
+  if (state.waveActive && !state.spawnerDone) {
+    state.spawnerDone = waveSpawner.update(dt, state.enemies);
+  }
+  if (state.waveActive && state.spawnerDone && state.enemies.length === 0) {
+    state.waveActive = false;
+    AudioManager.play('wave-clear');
+    const interest = Math.floor(state.cash * (0.05 + (perks.interestBonus ?? 0)));
+    if (interest > 0) { state.cash += interest; showInterestToast(interest); }
+    state.cash += 50;
+    const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
+    if (income > 0) state.cash += income;
+    saveGame(state);
+  }
+}
+
+function applyHealerAuras(enemies, dt) {
+  const healers = enemies.filter(e => e.healsNearby > 0);
+  if (healers.length === 0) return;
+  for (const e of healers) {
+    const rSq = e.healsNearbyRadius * e.healsNearbyRadius;
+    for (const target of enemies) {
+      if (target === e || target.hp <= 0) continue;
+      const dSq = (target.worldX - e.worldX) ** 2 + (target.worldY - e.worldY) ** 2;
+      if (dSq <= rSq) target.hp = Math.min(target.maxHp, target.hp + e.healsNearby * dt);
+    }
+  }
+}
+
+function ageAndCullEvents(state, dt) {
+  for (let i = state.damageEvents.length - 1; i >= 0; i--) {
+    state.damageEvents[i].t += dt;
+    if (state.damageEvents[i].t >= 0.65) state.damageEvents.splice(i, 1);
+  }
+  for (let i = state.boltEvents.length - 1; i >= 0; i--) {
+    state.boltEvents[i].t += dt;
+    if (state.boltEvents[i].t >= 0.18) state.boltEvents.splice(i, 1);
+  }
+  for (let i = state.deathParticles.length - 1; i >= 0; i--) {
+    const p = state.deathParticles[i];
+    p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt;
+    if (p.t >= 0.5) state.deathParticles.splice(i, 1);
+  }
+}
+
+function processEnemies(state, paths, dt) {
+  const cashBoosters = state.towers.filter(t => t.killCashBoostRange > 0);
+  for (let i = state.enemies.length - 1; i >= 0; i--) {
+    const e = state.enemies[i];
+    if (e.distance >= paths[e.pathIndex].totalLength) {
+      if (!state.sandbox) state.lives = Math.max(0, state.lives - 1);
+      enemyPool.release(e);
+      state.enemies.splice(i, 1);
+    } else if (e.hp <= 0) {
+      const baseReward = e.cashReward ?? 10;
+      const totalBoost = cashBoosters.reduce((total, gen) => {
+        const dSq = (gen.x - e.worldX) ** 2 + (gen.y - e.worldY) ** 2;
+        return dSq <= gen.killCashBoostRange ** 2 ? total + gen.killCashBoostMult : total;
+      }, 0);
+      state.cash  += Math.round(baseReward * (1 + totalBoost));
+      state.score += e.reward;
+      state.kills += 1;
+      AudioManager.play('enemy-death');
+      for (let j = 0; j < 5; j++) {
+        const angle = (Math.PI * 2 * j) / 5 + Math.random() * 0.5;
+        const spd   = 38 + Math.random() * 44;
+        state.deathParticles.push({
+          x: e.worldX, y: e.worldY,
+          vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
+          t: 0, color: e.color,
+        });
+      }
+      if (e.spawns) {
+        for (let j = 0; j < e.spawns.count; j++) {
+          const child = enemyPool.acquire({ type: e.spawns.type, distance: e.distance, pathIndex: e.pathIndex });
+          const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
+          child.worldX = cpos.x; child.worldY = cpos.y;
+          state.enemies.push(child);
+        }
+      }
+      enemyPool.release(e);
+      state.enemies.splice(i, 1);
+    } else if (e.liveSpawnInterval > 0) {
+      e.liveSpawnTimer -= dt;
+      if (e.liveSpawnTimer <= 0) {
+        e.liveSpawnTimer = e.liveSpawnInterval;
+        for (let j = 0; j < e.liveSpawnCount; j++) {
+          const child = enemyPool.acquire({ type: e.liveSpawnType, distance: e.distance, pathIndex: e.pathIndex });
+          const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
+          child.worldX = cpos.x; child.worldY = cpos.y;
+          state.enemies.push(child);
+        }
+      }
+    }
+  }
+}
+
+function checkGameOver(state, waves, profile, ui, difficulty) {
+  if (!state.sandbox &&
+      !state.waveActive &&
+      state.waveIndex >= waves.length - 1 &&
+      state.spawnerDone &&
+      state.enemies.length === 0) {
+    state.gameOver = true;
+    clearSave();
+    const stars   = computeStars(state.lives, 20, difficulty.starCap);
+    const newBest = recordMissionResult(profile, state.mapKey, stars);
+    saveProfile(profile);
+    AudioManager.play('win');
+    const ci         = CAMPAIGN_ORDER.indexOf(state.mapKey);
+    const nextKey    = (ci >= 0 && ci < CAMPAIGN_ORDER.length - 1) ? CAMPAIGN_ORDER[ci + 1] : null;
+    const nextMapKey = (nextKey && isMapUnlocked(profile, nextKey, CAMPAIGN_ORDER)) ? nextKey : null;
+    ui.showEndScreen(true, state.score, stars, availableStars(profile), newBest,
+      { nextMapKey, diffKey: state.diffKey });
+  }
+  if (!state.sandbox && state.lives === 0) {
+    state.gameOver = true;
+    clearSave();
+    AudioManager.play('lose');
+    ui.showEndScreen(false, state.score, 0, availableStars(profile), false,
+      { mapKey: state.mapKey, diffKey: state.diffKey });
+  }
+}
 
 async function main() {
   // M0 — load (or create) the meta-progression profile
@@ -425,50 +793,12 @@ async function main() {
   document.getElementById('hud-diff').textContent = isSandbox ? '' : `${difficulty.emoji} ${difficulty.label}`;
 
   // --- Renderers ---
-  const pathRenderer = new PathRenderer();
-  pathRenderer.init(renderer, paths);
-
-  const towerRenderer = new TowerRenderer();
-  await towerRenderer.init(renderer);
-
-  const enemyRenderer = new EnemyRenderer();
-  await enemyRenderer.init(renderer);
-
-  const projectileRenderer = new ProjectileRenderer();
-  projectileRenderer.init(renderer);
-
-  const damageNumberRenderer = new DamageNumberRenderer();
-  damageNumberRenderer.init(renderer);
-
-  const particleRenderer = new ParticleRenderer();
-  particleRenderer.init(renderer);
-
-  const lightningRenderer = new LightningRenderer();
-  lightningRenderer.init(renderer);
+  const { pathRenderer, towerRenderer, enemyRenderer, projectileRenderer,
+          damageNumberRenderer, particleRenderer, lightningRenderer } =
+    await initRenderers(renderer, paths);
 
   // --- Restore saved game ---
-  if (savedData) {
-    state.lives     = savedData.lives;
-    state.cash      = savedData.cash;
-    state.score     = savedData.score;
-    state.waveIndex = savedData.waveIndex;
-    for (const t of savedData.towers) {
-      const tower = createTower(t.type, t.x ?? 0, t.y ?? 0);
-      tower.targeting = t.targeting;
-      const def = TOWER_TYPES[t.type];
-      for (let i = 0; i < t.upgradesA; i++) applyTier(tower, def.upgrades.pathA.tiers[i]);
-      tower.upgradesA = t.upgradesA;
-      for (let i = 0; i < t.upgradesB; i++) applyTier(tower, def.upgrades.pathB.tiers[i]);
-      tower.upgradesB = t.upgradesB;
-      tower.upgradeSpent = t.upgradeSpent;
-      // Mortar mode — restore on load based on upgrade tier
-      if (tower.type === 'bomb' && tower.upgradesB >= 2) {
-        tower.mortarMode = true;
-      }
-      state.towers.push(tower);
-    }
-    towerRenderer.markDirty();
-  }
+  if (savedData) restoreSave(savedData, state, towerRenderer);
 
   // --- UI ---
   const ui = new GameUI();
@@ -480,54 +810,7 @@ async function main() {
   ui.update(state);
   ui.setWavePreview(fmtWavePreview(waves[0])); // R3 — show wave 1 contents before start
 
-  // Sandbox one-time setup
-  if (isSandbox) {
-    document.body.classList.add('sandbox-active');
-    document.getElementById('hud-sandbox-badge').style.display = 'inline';
-
-    // Populate enemy type selector from data
-    const spawnSel = document.getElementById('spawn-type');
-    for (const type of Object.keys(ENEMY_TYPES)) {
-      const opt = document.createElement('option');
-      opt.value = type;
-      opt.textContent = type.charAt(0).toUpperCase() + type.slice(1);
-      spawnSel.appendChild(opt);
-    }
-
-    document.getElementById('spawn-btn').addEventListener('click', () => {
-      const type  = spawnSel.value;
-      const count = Math.max(1, parseInt(document.getElementById('spawn-count').value) || 1);
-      for (let i = 0; i < count; i++) {
-        const dist = i * 30;
-        const e    = enemyPool.acquire({ type, distance: dist, pathIndex: 0 });
-        const pos  = positionAtDistance(paths[0], dist);
-        e.worldX   = pos.x;
-        e.worldY   = pos.y;
-        state.enemies.push(e);
-      }
-    });
-
-    // Sandbox map switcher — reload onto chosen map without confirm
-    const sandboxMapSel = document.getElementById('sandbox-map-select');
-    for (const mapKey of CAMPAIGN_ORDER) {
-      const opt = document.createElement('option');
-      opt.value = mapKey;
-      opt.textContent = MAPS[mapKey]?.name ?? mapKey;
-      if (mapKey === state.mapKey) opt.selected = true;
-      sandboxMapSel.appendChild(opt);
-    }
-    sandboxMapSel.addEventListener('change', () => {
-      sessionStorage.setItem('restartIntent', JSON.stringify({ mapKey: sandboxMapSel.value, diffKey: 'sandbox' }));
-      location.reload();
-    });
-
-    document.getElementById('clear-enemies-btn').addEventListener('click', () => {
-      for (const e of state.enemies) enemyPool.release(e);
-      state.enemies.length = 0;
-      for (const p of state.projectiles) projectilePool.release(p);
-      state.projectiles.length = 0;
-    });
-  }
+  if (isSandbox) setupSandboxPanel(state, paths);
 
   ui.onStartWave = () => {
     if (state.waveActive || state.gameOver) return;
@@ -551,6 +834,7 @@ async function main() {
     const idx = state.towers.indexOf(tower);
     if (idx === -1) return;
     state.towers.splice(idx, 1);
+    markBuffsDirty();
     // P1 — Salvage perk adds to base 0.60 sell multiplier
     const sellMult = 0.6 + (perks.sellBonus ?? 0);
     state.cash += Math.floor((TOWER_TYPES[tower.type].cost + tower.upgradeSpent) * sellMult);
@@ -569,6 +853,7 @@ async function main() {
       tower.upgradeSpent += result.tier.cost;
     }
     applyTier(tower, result.tier);
+    markBuffsDirty();
     if (path === 'A') tower.upgradesA++;
     else              tower.upgradesB++;
     // Mortar mode — bomb tower path B tier 2+ unlocks mortar manual targeting
@@ -592,260 +877,21 @@ async function main() {
   };
 
   // --- Canvas input ---
-  renderer.canvas.addEventListener('mousemove', (e) => {
-    const rect = renderer.canvas.getBoundingClientRect();
-    const x    = Math.round((e.clientX - rect.left) * (renderer.width  / rect.width));
-    const y    = Math.round((e.clientY - rect.top)  * (renderer.height / rect.height));
-    const type = ui.selectedTowerType;
-    if (type) {
-      towerRenderer.setHoverTile({ x, y, valid: isPositionFree(x, y, pathsWaypoints, state.towers), type });
-    } else {
-      towerRenderer.setHoverTile(null);
-    }
-  });
-
-  renderer.canvas.addEventListener('mouseleave', () => {
-    towerRenderer.setHoverTile(null);
-  });
-
-  // MB4 — Touch input: forward touch events to the existing mouse/click handlers.
-  // getBoundingClientRect() already returns the post-CSS-transform rect, so the
-  // existing coordinate math (clientX - rect.left) * (width / rect.width) works
-  // correctly regardless of the CSS scale applied by the MB3 scaleGame() function.
-  //
-  // While placing a tower the fingertip hides the target tile, so lift the
-  // forwarded point up by TOUCH_PLACE_LIFT CSS px: the ghost preview (mousemove)
-  // and the placement itself (click) both use the same lifted point, so the
-  // tower lands where the ghost shows — just above the finger. Selection taps and
-  // mortar targeting use no lift, so they still register exactly under the finger.
-  const TOUCH_PLACE_LIFT = 48; // CSS px above the fingertip
-  function dispatchMouse(type, touch, liftY = 0) {
-    renderer.canvas.dispatchEvent(new MouseEvent(type, {
-      bubbles: true, cancelable: true, view: window,
-      clientX: touch.clientX, clientY: touch.clientY - liftY,
-    }));
-  }
-  const placeLift = () => (ui.selectedTowerType ? TOUCH_PLACE_LIFT : 0);
-  renderer.canvas.addEventListener('touchstart', e => {
-    e.preventDefault();
-    dispatchMouse('mousemove', e.changedTouches[0], placeLift()); // show hover tile
-  }, { passive: false });
-  renderer.canvas.addEventListener('touchmove', e => {
-    e.preventDefault();
-    dispatchMouse('mousemove', e.changedTouches[0], placeLift()); // update hover tile while dragging
-  }, { passive: false });
-  renderer.canvas.addEventListener('touchend', e => {
-    e.preventDefault();
-    dispatchMouse('click', e.changedTouches[0], placeLift());     // place tower or select
-    // Clear hover tile after tap so ghost doesn't linger
-    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
-  }, { passive: false });
-  renderer.canvas.addEventListener('touchcancel', e => {
-    e.preventDefault();
-    renderer.canvas.dispatchEvent(new MouseEvent('mouseleave', { bubbles: false }));
-  }, { passive: false });
-
-  renderer.canvas.addEventListener('click', (e) => {
-    const rect   = renderer.canvas.getBoundingClientRect();
-    const wx     = (e.clientX - rect.left) * (renderer.width  / rect.width);
-    const wy     = (e.clientY - rect.top)  * (renderer.height / rect.height);
-
-    // Mortar targeting — intercept click to set the target coordinate
-    if (ui.mortarSetMode !== null) {
-      const mortarTower = ui.mortarSetMode;
-      ui.mortarSetMode = null;
-      mortarTower.mortarTargetX = wx;
-      mortarTower.mortarTargetY = wy;
-      // Re-render panel so the target coordinate display updates
-      ui.showTowerPanel(mortarTower, state.cash);
-      towerRenderer.setSelectedTower(mortarTower);
-      return;
-    }
-
-    const CLICK_RADIUS_SQ = 24 ** 2;
-    const best = state.towers.reduce((b, t) => {
-      const d = (wx - t.x) ** 2 + (wy - t.y) ** 2;
-      return (!b || d < b.d) ? { t, d } : b;
-    }, null);
-    const hit = best && best.d < CLICK_RADIUS_SQ ? best.t : null;
-
-    if (hit) {
-      ui.clearTowerTypeSelection();
-      towerRenderer.setHoverTile(null);
-      ui.showTowerPanel(hit, state.cash);
-      towerRenderer.setSelectedTower(hit);
-      return;
-    }
-
-    ui.hideTowerPanel();
-    towerRenderer.setSelectedTower(null);
-
-    const type = ui.selectedTowerType;
-    if (!type) return;
-    // M1 — placement guard: profile must have this tower unlocked (waived in sandbox)
-    if (!state.sandbox && !isTowerUnlocked(profile, type)) return;
-    const def = TOWER_TYPES[type];
-    // P1 — Bulk Discount perk reduces tower costs
-    const effectiveCost = Math.ceil(def.cost * (1 - (perks.towerCostPct ?? 0)));
-    const x = Math.round(wx), y = Math.round(wy);
-    if (!state.sandbox && state.cash < effectiveCost) return;
-    if (!isPositionFree(x, y, pathsWaypoints, state.towers)) return;
-
-    const tower = createTower(type, x, y);
-    // P1 — Power Core perk: bake global damage bonus into tower at creation
-    if (!state.sandbox && (perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
-    state.towers.push(tower);
-    if (!state.sandbox) state.cash -= effectiveCost;
-    towerRenderer.markDirty();
-    ui.clearTowerTypeSelection();
-    towerRenderer.setHoverTile(null);
-  });
+  wireCanvasInput(renderer, ui, state, towerRenderer, paths, pathsWaypoints, perks, profile, isSandbox);
 
   // --- Game loop ---
   const loop = new GameLoop({
     update(dt) {
       if (state.gameOver || state.paused) return;
-
-      if (state.waveActive && !state.spawnerDone) {
-        state.spawnerDone = waveSpawner.update(dt, state.enemies);
-      }
-
-      if (state.waveActive && state.spawnerDone && state.enemies.length === 0) {
-        state.waveActive = false;
-        AudioManager.play('wave-clear');
-        // R1 — interest: earn 5% of banked cash at the end of each wave
-        // P1 — Compound Interest perk adds to the base rate
-        const interest = Math.floor(state.cash * (0.05 + (perks.interestBonus ?? 0)));
-        if (interest > 0) {
-          state.cash += interest;
-          showInterestToast(interest);
-        }
-        state.cash += 50;
-        const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
-        if (income > 0) state.cash += income;
-        saveGame(state);
-      }
-
+      tickWaveEnd(state, waves, perks, waveSpawner, dt);
       updateMovement(state.enemies, paths, dt);
       updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents, state.groundHazards, state.boltEvents);
       updateDoT(state.enemies, dt, state.damageEvents);
       updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
-
-      // Cleric healing aura — heals nearby enemies
-      const healers = state.enemies.filter(e => e.healsNearby > 0);
-      if (healers.length > 0) {
-        for (const e of healers) {
-          const rSq = e.healsNearbyRadius * e.healsNearbyRadius;
-          for (const target of state.enemies) {
-            if (target === e || target.hp <= 0) continue;
-            const dSq = (target.worldX - e.worldX) ** 2 + (target.worldY - e.worldY) ** 2;
-            if (dSq <= rSq) target.hp = Math.min(target.maxHp, target.hp + e.healsNearby * dt);
-          }
-        }
-      }
-
-      // R3 — advance and cull damage events
-      for (let i = state.damageEvents.length - 1; i >= 0; i--) {
-        state.damageEvents[i].t += dt;
-        if (state.damageEvents[i].t >= 0.65) state.damageEvents.splice(i, 1);
-      }
-
-      // Advance and cull Tesla lightning bolts (lifetime matches LightningRenderer)
-      for (let i = state.boltEvents.length - 1; i >= 0; i--) {
-        state.boltEvents[i].t += dt;
-        if (state.boltEvents[i].t >= 0.18) state.boltEvents.splice(i, 1);
-      }
-
-      // R3 — advance and cull death particles
-      for (let i = state.deathParticles.length - 1; i >= 0; i--) {
-        const p = state.deathParticles[i];
-        p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt;
-        if (p.t >= 0.5) state.deathParticles.splice(i, 1);
-      }
-
-      const cashBoosters = state.towers.filter(t => t.killCashBoostRange > 0);
-      for (let i = state.enemies.length - 1; i >= 0; i--) {
-        const e = state.enemies[i];
-        if (e.distance >= paths[e.pathIndex].totalLength) {
-          if (!state.sandbox) state.lives = Math.max(0, state.lives - 1);
-          enemyPool.release(e);
-          state.enemies.splice(i, 1);
-        } else if (e.hp <= 0) {
-          const baseReward = e.cashReward ?? 10;
-          const totalBoost = cashBoosters
-            .reduce((total, gen) => {
-              const dSq = (gen.x - e.worldX)**2 + (gen.y - e.worldY)**2;
-              return dSq <= gen.killCashBoostRange**2 ? total + gen.killCashBoostMult : total;
-            }, 0);
-          state.cash  += Math.round(baseReward * (1 + totalBoost));
-          state.score += e.reward;
-          state.kills += 1;
-          AudioManager.play('enemy-death');
-          // R3 — death burst particles
-          for (let j = 0; j < 5; j++) {
-            const angle = (Math.PI * 2 * j) / 5 + Math.random() * 0.5;
-            const spd   = 38 + Math.random() * 44;
-            state.deathParticles.push({
-              x: e.worldX, y: e.worldY,
-              vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
-              t: 0, color: e.color,
-            });
-          }
-          if (e.spawns) {
-            for (let j = 0; j < e.spawns.count; j++) {
-              const child = enemyPool.acquire({ type: e.spawns.type, distance: e.distance, pathIndex: e.pathIndex });
-              const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
-              child.worldX = cpos.x;
-              child.worldY = cpos.y;
-              state.enemies.push(child);
-            }
-          }
-          enemyPool.release(e);
-          state.enemies.splice(i, 1);
-        } else if (e.liveSpawnInterval > 0) {
-          // Carrier — periodically spawn minions while alive
-          e.liveSpawnTimer -= dt;
-          if (e.liveSpawnTimer <= 0) {
-            e.liveSpawnTimer = e.liveSpawnInterval;
-            for (let j = 0; j < e.liveSpawnCount; j++) {
-              const child = enemyPool.acquire({ type: e.liveSpawnType, distance: e.distance, pathIndex: e.pathIndex });
-              const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
-              child.worldX = cpos.x;
-              child.worldY = cpos.y;
-              state.enemies.push(child);
-            }
-          }
-        }
-      }
-
-      // Win — not triggered in sandbox
-      if (!state.sandbox &&
-          !state.waveActive &&
-          state.waveIndex >= waves.length - 1 &&
-          state.spawnerDone &&
-          state.enemies.length === 0) {
-        state.gameOver = true;
-        clearSave();
-        // M2/M4 — award stars using difficulty's star cap, persist to profile
-        const stars   = computeStars(state.lives, 20, difficulty.starCap);
-        const newBest = recordMissionResult(profile, state.mapKey, stars);
-        saveProfile(profile);
-        AudioManager.play('win');
-        // Offer "Next Map" when a following campaign map exists and is now unlocked.
-        const ci      = CAMPAIGN_ORDER.indexOf(state.mapKey);
-        const nextKey = (ci >= 0 && ci < CAMPAIGN_ORDER.length - 1) ? CAMPAIGN_ORDER[ci + 1] : null;
-        const nextMapKey = (nextKey && isMapUnlocked(profile, nextKey, CAMPAIGN_ORDER)) ? nextKey : null;
-        ui.showEndScreen(true, state.score, stars, availableStars(profile), newBest,
-          { nextMapKey, diffKey: state.diffKey });
-      }
-
-      // Lose — not triggered in sandbox
-      if (!state.sandbox && state.lives === 0) {
-        state.gameOver = true;
-        clearSave();
-        AudioManager.play('lose');
-        ui.showEndScreen(false, state.score, 0, availableStars(profile), false, { mapKey: state.mapKey, diffKey: state.diffKey });
-      }
+      applyHealerAuras(state.enemies, dt);
+      ageAndCullEvents(state, dt);
+      processEnemies(state, paths, dt);
+      checkGameOver(state, waves, profile, ui, difficulty);
     },
 
     render(alpha) {
@@ -863,51 +909,7 @@ async function main() {
   loop.start();
 
   // ── Pause menu ────────────────────────────────────────────────────────────
-  const pauseScreen  = document.getElementById('pause-screen');
-  const hudMuteBtn   = document.getElementById('hud-mute');
-  const pauseMuteBtn = document.getElementById('pause-mute-btn');
-  const volumeSlider = document.getElementById('pause-volume');
-
-  function syncMuteIcons() {
-    const icon = AudioManager.muted ? '🔇' : '🔊';
-    if (hudMuteBtn)   hudMuteBtn.textContent   = icon;
-    if (pauseMuteBtn) pauseMuteBtn.textContent = icon;
-  }
-
-  function openPause() {
-    state.paused = true;
-    volumeSlider.value = Math.round(AudioManager.volume * 100);
-    syncMuteIcons();
-    pauseScreen.style.display = 'flex';
-  }
-
-  function closePause() {
-    state.paused = false;
-    pauseScreen.style.display = 'none';
-  }
-
-  document.getElementById('hud-pause').addEventListener('click', openPause);
-  document.getElementById('pause-resume').addEventListener('click', closePause);
-
-  pauseMuteBtn.addEventListener('click', () => {
-    AudioManager.toggleMute();
-    syncMuteIcons();
-  });
-
-  volumeSlider.addEventListener('input', () => {
-    AudioManager.setVolume(volumeSlider.value / 100);
-  });
-
-  document.getElementById('pause-main-menu').addEventListener('click', () => {
-    // Save at the last completed wave; if mid-wave, step back so Continue replays it
-    const saveIndex = state.waveActive ? state.waveIndex - 1 : state.waveIndex;
-    saveGame({ ...state, waveIndex: saveIndex });
-    location.reload();
-  });
-
-  document.getElementById('pause-restart').addEventListener('click', () => {
-    requestRestart(state.mapKey, state.diffKey);
-  });
+  setupPauseMenu(state, loop);
 }
 
 // ── Fullscreen toggle ──────────────────────────────────────────────────────

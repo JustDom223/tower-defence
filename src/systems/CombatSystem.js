@@ -6,6 +6,9 @@ import { TOWER_TYPES } from '../data/towers.js';
 const HIT_DIST_SQ    = 12 * 12;
 const FLASH_DURATION = 0.12;
 
+let buffsDirty = true;
+export function markBuffsDirty() { buffsDirty = true; }
+
 /** Base projectile properties shared by all tower fire types. */
 function projectilePropsFrom(tower) {
   return {
@@ -104,7 +107,7 @@ const SHOT_SOUND = {
  *   `full` = raw damage before resistance (used by DamageNumberRenderer for colour coding).
  */
 export function updateCombat(towers, enemies, projectiles, dt, damageEvents, hazards, boltEvents) {
-  applyBuffAuras(towers);
+  if (buffsDirty) { applyBuffAuras(towers); buffsDirty = false; }
 
 
   for (const tower of towers) {
@@ -253,7 +256,7 @@ export function updateCombat(towers, enemies, projectiles, dt, damageEvents, haz
     }
   }
 
-  moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards);
+  moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards, dt);
 }
 
 function applyBuffAuras(towers) {
@@ -305,12 +308,10 @@ function applyStun(tower, enemies, damageEvents) {
   }
 }
 
-function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards) {
+function moveAndHitProjectiles(projectiles, enemies, damageEvents, hazards, dt) {
   for (let i = projectiles.length - 1; i >= 0; i--) {
     const p = projectiles[i];
     p.prevX = p.x; p.prevY = p.y;
-
-    const dt = 1 / 60;
     let remove = false;
 
     if (p.pierceLeft >= 0 && p.pierceHit !== null) {
