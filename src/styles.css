@@ -219,6 +219,20 @@
         display: flex; flex-direction: row; align-items: stretch; gap: 28px;
         max-width: 860px;
       }
+      /* Fullscreen always sits top-right of the panel regardless of stage */
+      #map-panel { position: relative; }
+      #map-fs {
+        position: absolute; top: -10px; right: -10px;
+        background: none; border: 1px solid #334155; color: #64748b;
+        border-radius: 6px; padding: 5px 9px; font-size: 12px; cursor: pointer;
+        z-index: 1;
+      }
+      #map-fs:hover { border-color: #4b5563; color: #9ca3af; }
+
+      /* When in Stage 2 or 3, collapse the left column */
+      #map-panel.world-view #map-panel-left { display: none; }
+      #map-panel.world-view #map-panel-right { flex: 1; }
+
       #map-panel-left {
         display: flex; flex-direction: column; justify-content: space-between;
         width: 240px; flex-shrink: 0; text-align: left;
@@ -373,12 +387,6 @@
         transition: border-color .1s, color .1s;
       }
       #map-upgrades:hover { border-color: #facc15; color: #facc15; }
-      #map-fs {
-        background: none; border: 1px solid #334155; color: #64748b;
-        border-radius: 6px; padding: 5px 10px; font-size: 12px; cursor: pointer;
-        margin-top: 8px; width: 100%;
-      }
-      #map-fs:hover { border-color: #4b5563; color: #9ca3af; }
       #upgrades-badge {
         display: none; background: #facc15; color: #0f172a;
         border-radius: 99px; font-size: 10px; font-weight: 800;

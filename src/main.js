@@ -318,6 +318,8 @@ function awaitMapSelect(profile) {
       });
     }
 
+    const mapPanel = document.getElementById('map-panel');
+
     function showWorldMaps(worldKey) {
       currentWorldKey = worldKey;
       const world = WORLDS.find(w => w.key === worldKey);
@@ -343,11 +345,13 @@ function awaitMapSelect(profile) {
       document.getElementById('world-list').style.display = 'none';
       document.getElementById('diff-pick-view').style.display = 'none';
       document.getElementById('map-view').style.display = 'flex';
+      mapPanel.classList.add('world-view');
       bindMapBtns();
     }
 
     document.getElementById('world-back').onclick = () => {
       currentWorldKey = null;
+      mapPanel.classList.remove('world-view');
       document.getElementById('map-view').style.display = 'none';
       document.getElementById('diff-pick-view').style.display = 'none';
       document.getElementById('world-list').style.display = '';
@@ -396,6 +400,7 @@ function awaitMapSelect(profile) {
       document.getElementById('achievement-panel').style.display = 'none';
       document.getElementById('map-select').style.display = 'flex';
       currentWorldKey = null;
+      mapPanel.classList.remove('world-view');
       document.getElementById('map-view').style.display = 'none';
       document.getElementById('diff-pick-view').style.display = 'none';
       document.getElementById('world-list').style.display = '';
