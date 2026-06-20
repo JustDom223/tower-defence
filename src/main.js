@@ -204,39 +204,32 @@ function renderUnlockTree(profile) {
 }
 
 function updateMapSelectUI(profile) {
-  // Available stars
   document.getElementById('map-avail-stars').textContent = availableStars(profile);
 
-  // Regenerate map list grouped by world
-  const list = document.getElementById('map-list');
-  if (list) {
-    list.innerHTML = '';
+  // Stage 1 — fill world cards and reset to world-select view
+  const worldList = document.getElementById('world-list');
+  if (worldList) {
+    worldList.innerHTML = '';
     for (const world of WORLDS) {
-      const header = document.createElement('div');
-      header.className = 'map-section-header';
-      header.innerHTML = `<span class="map-section-name">${world.name}</span><span class="map-section-flavour">${world.flavour}</span>`;
-      list.appendChild(header);
+      const worldMaps = world.maps.filter(k => MAPS[k]);
+      const earned    = worldMaps.reduce((s, k) => s + (profile.missions[k] ?? 0), 0);
+      const max       = worldMaps.length * 3;
+      const locked    = worldMaps.length > 0 && !isMapUnlocked(profile, worldMaps[0], CAMPAIGN_ORDER);
 
-      for (const mapKey of world.maps) {
-        const mapDef  = MAPS[mapKey];
-        if (!mapDef) continue;
-        const stars   = profile.missions[mapKey] ?? 0;
-        const locked  = !isMapUnlocked(profile, mapKey, CAMPAIGN_ORDER);
-        const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
-
-        const btn = document.createElement('button');
-        btn.className   = 'map-btn' + (locked ? ' map-btn-locked' : '');
-        btn.dataset.map = mapKey;
-        btn.disabled    = locked;
-        btn.innerHTML   = locked
-          ? `<span>🔒 ${mapDef.name}</span><span class="map-stars locked">Clear prev. map to unlock</span>`
-          : `<span>🗺 ${mapDef.name}</span><span class="map-stars">${starStr}</span>`;
-        list.appendChild(btn);
-      }
+      const card = document.createElement('button');
+      card.className    = 'world-card' + (locked ? ' world-card-locked' : '');
+      card.dataset.world = world.key;
+      card.disabled     = locked;
+      card.innerHTML    = `<span class="world-name">${world.name}</span>`
+                        + `<span class="world-flavour">${world.flavour}</span>`
+                        + `<span class="world-progress">${earned} / ${max} ★</span>`;
+      worldList.appendChild(card);
     }
+    worldList.style.display = '';
   }
+  const mapView = document.getElementById('map-view');
+  if (mapView) mapView.style.display = 'none';
 
-  // M5 — "new unlock" badge on upgrades button
   const badge = document.getElementById('upgrades-badge');
   if (badge) badge.style.display = availableStars(profile) > 0 ? 'inline' : 'none';
 }
@@ -306,13 +299,53 @@ function awaitMapSelect(profile) {
       location.reload();
     };
 
-    // C1/C3 — map buttons are generated dynamically; bind after updateMapSelectUI
+    // Stage 2 — map buttons (recreated each time a world is opened)
     function bindMapBtns() {
       document.querySelectorAll('#map-list .map-btn:not([disabled])').forEach(btn => {
         btn.onclick = () => { clearSave(); pickMap(btn.dataset.map, null, selectedDiff); };
       });
     }
-    bindMapBtns();
+
+    // Stage 2 — fill map list for the chosen world and switch views
+    function showWorldMaps(worldKey) {
+      const world = WORLDS.find(w => w.key === worldKey);
+      if (!world) return;
+      document.getElementById('map-view-title').textContent = world.name;
+      const list = document.getElementById('map-list');
+      list.innerHTML = '';
+      for (const mapKey of world.maps) {
+        const mapDef = MAPS[mapKey];
+        if (!mapDef) continue;
+        const stars   = profile.missions[mapKey] ?? 0;
+        const locked  = !isMapUnlocked(profile, mapKey, CAMPAIGN_ORDER);
+        const starStr = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+        const btn = document.createElement('button');
+        btn.className   = 'map-btn' + (locked ? ' map-btn-locked' : '');
+        btn.dataset.map = mapKey;
+        btn.disabled    = locked;
+        btn.innerHTML   = locked
+          ? `<span>🔒 ${mapDef.name}</span><span class="map-stars locked">Clear prev. map to unlock</span>`
+          : `<span>🗺 ${mapDef.name}</span><span class="map-stars">${starStr}</span>`;
+        list.appendChild(btn);
+      }
+      document.getElementById('world-list').style.display = 'none';
+      document.getElementById('map-view').style.display = 'flex';
+      bindMapBtns();
+    }
+
+    // Stage 1 — bind world card clicks (called after updateMapSelectUI fills #world-list)
+    function bindWorldCards() {
+      document.querySelectorAll('#world-list .world-card:not([disabled])').forEach(card => {
+        card.onclick = () => showWorldMaps(card.dataset.world);
+      });
+    }
+    bindWorldCards();
+
+    document.getElementById('world-back').onclick = () => {
+      document.getElementById('map-view').style.display = 'none';
+      document.getElementById('world-list').style.display = '';
+      bindWorldCards();
+    };
 
     // Unlock tree
     function openTree() {
@@ -332,7 +365,7 @@ function awaitMapSelect(profile) {
       document.getElementById('unlock-tree').style.display = 'none';
       document.getElementById('map-select').style.display = 'flex';
       updateMapSelectUI(profile);
-      bindMapBtns();
+      bindWorldCards();
     };
 
     document.getElementById('map-achievements').onclick = () => {
@@ -343,6 +376,10 @@ function awaitMapSelect(profile) {
     document.getElementById('ach-close').onclick = () => {
       document.getElementById('achievement-panel').style.display = 'none';
       document.getElementById('map-select').style.display = 'flex';
+      // Always return to stage 1 (world select)
+      document.getElementById('map-view').style.display = 'none';
+      document.getElementById('world-list').style.display = '';
+      bindWorldCards();
     };
 
     document.getElementById('tree-respec').onclick = () => {
