@@ -258,13 +258,15 @@ function awaitMapSelect(profile) {
 
   return new Promise(resolve => {
     let resolved     = false;
-    let selectedDiff = 'normal'; // C0 — Normal is the default (Easy removed)
+    let selectedDiff = profile.lastDiff ?? 'normal';
 
     // C0 — difficulty selector buttons (Normal/Hard only)
     document.querySelectorAll('[data-diff]').forEach(btn => {
       btn.classList.toggle('active', btn.dataset.diff === selectedDiff);
       btn.onclick = () => {
         selectedDiff = btn.dataset.diff;
+        profile.lastDiff = selectedDiff;
+        saveProfile(profile);
         document.querySelectorAll('[data-diff]').forEach(b =>
           b.classList.toggle('active', b.dataset.diff === selectedDiff));
       };

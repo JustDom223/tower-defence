@@ -33,6 +33,7 @@ export function defaultProfile() {
   return {
     version: 1,
     spent: 0,
+    lastDiff: 'normal',
     enemyKills: {},
     // All 20 maps; absent keys default to 0 via ?? operator in isMapUnlocked
     missions: { map1: 0, map2: 0, map3: 0, map4: 0, map5: 0,
@@ -103,6 +104,7 @@ export function loadProfile() {
       if (!p.unlocks.paths[k]) p.unlocks.paths[k] = { ...v };
     }
     if (!p.enemyKills) p.enemyKills = {};
+    if (!p.lastDiff) p.lastDiff = 'normal';
     // P1 — backfill perks for profiles created before this feature
     if (!p.perks) p.perks = def.perks;
     // Migrate old boolean war-chest nodes to the ranked war chest track
