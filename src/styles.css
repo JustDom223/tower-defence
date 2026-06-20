@@ -254,21 +254,21 @@
       .diff-btn.active { border-color: #facc15; color: #facc15; background: #1c1917; }
       /* ── Stage 1: world/zone cards ─────────────────────────── */
       #world-list {
-        display: flex; flex-direction: column; gap: 10px;
-        flex: 1; overflow-y: auto;
-        scrollbar-width: thin; scrollbar-color: #374151 transparent;
+        display: flex; flex-direction: row; gap: 10px;
+        flex: 1; align-items: stretch;
       }
       .world-card {
-        display: flex; flex-direction: column; gap: 4px; text-align: left;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 6px; text-align: center; flex: 1;
         background: #111f33; border: 1px solid #1e3a5f; color: #e2e8f0;
-        padding: 14px 16px; border-radius: 10px; cursor: pointer; width: 100%;
+        padding: 14px 10px; border-radius: 10px; cursor: pointer;
         transition: border-color .12s, background .12s;
       }
       .world-card:hover:not([disabled]) { border-color: #3b82f6; background: #152a44; }
       .world-card-locked { opacity: 0.4; cursor: not-allowed; }
-      .world-name { font-size: 16px; font-weight: 700; }
-      .world-flavour { font-size: 12px; color: #64748b; }
-      .world-progress { font-size: 12px; color: #facc15; margin-top: 2px; }
+      .world-name { font-size: 11px; font-weight: 700; order: -1; }
+      .world-emoji { font-size: 34px; line-height: 1; }
+      .world-progress { font-size: 11px; color: #facc15; }
 
       /* ── Stage 2: map list view ─────────────────────────────── */
       #map-view {
@@ -341,21 +341,22 @@
       .diff-pick-label { font-size: 16px; font-weight: 700; }
       .diff-pick-desc  { font-size: 12px; opacity: 0.65; }
 
-      /* C3 — 2-column grid map list */
+      /* Map list — single column of horizontal cards */
       #map-list {
-        display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+        display: flex; flex-direction: column; gap: 5px;
         flex: 1; align-content: start;
         max-height: 440px; overflow-y: auto;
         scrollbar-width: thin; scrollbar-color: #374151 transparent;
       }
-      /* M5/C3 — map buttons with star ratings — grid-friendly */
       .map-btn {
-        display: flex; flex-direction: column; align-items: flex-start; gap: 4px;
+        display: flex; flex-direction: row; align-items: center; gap: 8px;
         width: 100%;
         background: #1e2a3a; border: 2px solid #334155; color: #e5e7eb;
-        padding: 9px 11px; border-radius: 8px; cursor: pointer; font-size: 13px;
+        padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
         transition: border-color .1s, background .1s, color .1s;
       }
+      .map-btn > span:first-child { flex: 1; text-align: left; }
+      .map-stars { white-space: nowrap; }
       .map-btn:hover:not([disabled]) {
         border-color: #22c55e; color: #86efac; background: #18302a;
       }

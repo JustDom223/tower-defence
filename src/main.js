@@ -220,7 +220,8 @@ function updateMapSelectUI(profile) {
       card.className    = 'world-card' + (locked ? ' world-card-locked' : '');
       card.dataset.world = world.key;
       card.disabled     = locked;
-      card.innerHTML    = `<span class="world-name">${world.emoji} ${world.name}</span>`
+      card.innerHTML    = `<span class="world-name">${world.name}</span>`
+                        + `<span class="world-emoji">${world.emoji}</span>`
                         + `<span class="world-progress">${earned} / ${max} ★</span>`;
       worldList.appendChild(card);
     }
