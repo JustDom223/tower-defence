@@ -338,8 +338,8 @@ function awaitMapSelect(profile) {
         btn.dataset.map = mapKey;
         btn.disabled    = locked;
         btn.innerHTML   = locked
-          ? `<span>🔒 ${mapDef.name}</span><span class="map-stars locked">Clear prev. map to unlock</span>`
-          : `<span>🗺 ${mapDef.name}</span><span class="map-stars">${starStr}</span>`;
+          ? `<span style="font-size:18px">🔒</span><span class="map-name">${mapDef.name}</span>`
+          : `<span class="map-name">${mapDef.name}</span><span class="map-stars">${starStr}</span>`;
         list.appendChild(btn);
       }
       document.getElementById('world-list').style.display = 'none';

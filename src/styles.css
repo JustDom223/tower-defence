@@ -341,22 +341,23 @@
       .diff-pick-label { font-size: 16px; font-weight: 700; }
       .diff-pick-desc  { font-size: 12px; opacity: 0.65; }
 
-      /* Map list — single column of horizontal cards */
+      /* Map list — horizontal row of square tiles */
       #map-list {
-        display: flex; flex-direction: column; gap: 5px;
-        flex: 1; align-content: start;
-        max-height: 440px; overflow-y: auto;
+        display: flex; flex-direction: row; gap: 8px;
+        overflow-x: auto; overflow-y: hidden;
         scrollbar-width: thin; scrollbar-color: #374151 transparent;
+        padding-bottom: 4px; align-items: stretch;
       }
       .map-btn {
-        display: flex; flex-direction: row; align-items: center; gap: 8px;
-        width: 100%;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        gap: 4px; text-align: center; flex-shrink: 0;
+        width: 82px; height: 82px;
         background: #1e2a3a; border: 2px solid #334155; color: #e5e7eb;
-        padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px;
+        border-radius: 10px; cursor: pointer;
         transition: border-color .1s, background .1s, color .1s;
       }
-      .map-btn > span:first-child { flex: 1; text-align: left; }
-      .map-stars { white-space: nowrap; }
+      .map-name { font-size: 11px; font-weight: 600; line-height: 1.2; }
+      .map-stars { font-size: 12px; color: #facc15; letter-spacing: .04em; }
       .map-btn:hover:not([disabled]) {
         border-color: #22c55e; color: #86efac; background: #18302a;
       }
