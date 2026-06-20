@@ -11,18 +11,21 @@ export const WORLDS = [
   {
     key: 'forest',
     name: 'Forest',
+    emoji: '🌲',
     flavour: 'Gentle trails through the woods.',
     maps: ['map1','map2','map3','map4','map5','map6','map7','map8','map9','map10'],
   },
   {
     key: 'mountains',
     name: 'Mountains',
+    emoji: '⛰️',
     flavour: 'Twisting passes — enemies split across two routes.',
     maps: ['map11','map12','map13','map14','map15','map16','map17','map18','map19','map20'],
   },
   {
     key: 'ruins',
     name: 'Ruins',
+    emoji: '🏛️',
     flavour: 'Ancient stone corridors — one long spiral, no escape.',
     maps: ['map21', 'map22'],
   },
