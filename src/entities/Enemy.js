@@ -74,3 +74,5 @@ function reset(e, { type, distance = 0, pathIndex = 0 }) {
 }
 
 export const enemyPool = new ObjectPool(make, reset);
+
+export function resetEnemyPool() { enemyPool.clear(); }

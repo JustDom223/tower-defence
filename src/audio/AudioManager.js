@@ -179,6 +179,7 @@ class _AudioManager {
 
   #init() {
     if (this.#ctx) return;
+    if (typeof AudioContext === 'undefined') return; // headless / Node — stay silent
     this.#ctx        = new AudioContext();
     this.#masterGain = this.#ctx.createGain();
     this.#masterGain.gain.value = this.#muted ? 0 : this.#volume;
@@ -202,6 +203,7 @@ class _AudioManager {
   play(name) {
     if (this.#muted) return;
     this.#init();
+    if (!this.#ctx) return; // no AudioContext available (headless / Node)
     if (this.#ctx.state === 'suspended') this.#ctx.resume();
     // Throttle bursts of identical sounds (see THROTTLE above).
     const min = THROTTLE[name];

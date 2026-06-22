@@ -1,7 +1,8 @@
 import { Renderer }           from './render/Renderer.js';
 import { GameLoop }            from './core/GameLoop.js';
-import { buildPaths, positionAtDistance } from './core/Path.js';
-import { isPositionFree } from './core/Grid.js';
+import { positionAtDistance }  from './core/Path.js';
+import { isPositionFree }      from './core/Grid.js';
+import { createSimulation }    from './core/Simulation.js';
 import { PathRenderer }        from './render/PathRenderer.js';
 import { EnemyRenderer }       from './render/EnemyRenderer.js';
 import { TowerRenderer }       from './render/TowerRenderer.js';
@@ -16,11 +17,7 @@ import { enemyPool }            from './entities/Enemy.js';
 import { ENEMY_TYPES }          from './data/enemies.js';
 import { projectilePool }       from './entities/Projectile.js';
 import { createTower }          from './entities/Tower.js';
-import { updateMovement }       from './systems/MovementSystem.js';
-import { WaveSpawner }          from './systems/WaveSpawner.js';
-import { updateCombat, markBuffsDirty } from './systems/CombatSystem.js';
-import { updateDoT }            from './systems/DoTSystem.js';
-import { updateGroundHazards }  from './systems/GroundHazardSystem.js';
+import { markBuffsDirty }       from './systems/CombatSystem.js';
 import { canBuyUpgrade, applyTier } from './systems/UpgradeSystem.js';
 import { GameUI }               from './ui/GameUI.js';
 import { MapBuilder }           from './ui/MapBuilder.js';
@@ -48,15 +45,6 @@ const WAVES_BY_MAP = Object.fromEntries(
 );
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-/** Compute 1‒3 stars for a won mission. starCap = difficulty ceiling. */
-function computeStars(lives, maxLives = 20, starCap = 2) {
-  const pct = lives / maxLives;
-  let stars = 1;
-  if (pct >= 0.5) stars = 2;
-  if (pct >= 0.9) stars = 3;
-  return Math.min(stars, starCap);
-}
 
 // ── R3 — wave preview helper ─────────────────────────────────────────────────
 
@@ -736,139 +724,6 @@ function renderAchievements(profile) {
   }
 }
 
-// ── Per-tick update helpers ───────────────────────────────────────────────────
-
-function tickWaveEnd(state, waves, perks, waveSpawner, dt, telemetry) {
-  if (state.waveActive && !state.spawnerDone) {
-    state.spawnerDone = waveSpawner.update(dt, state.enemies);
-  }
-  if (state.waveActive && state.spawnerDone && state.enemies.length === 0) {
-    state.waveActive = false;
-    AudioManager.play('wave-clear');
-    const interest = Math.floor(state.cash * (0.05 + (perks.interestBonus ?? 0)));
-    if (interest > 0) { state.cash += interest; showInterestToast(interest); }
-    state.cash += 50;
-    const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
-    if (income > 0) state.cash += income;
-    telemetry?.waveEnd(state); // capture per-wave metrics after end-of-wave income
-    saveGame(state);
-    const isFinalWave = !state.sandbox && state.waveIndex >= waves.length - 1;
-    if (!isFinalWave && state.waveIndex >= 0) state.autoStartTimer = 10;
-  }
-}
-
-function applyHealerAuras(enemies, dt) {
-  const healers = enemies.filter(e => e.healsNearby > 0);
-  if (healers.length === 0) return;
-  for (const e of healers) {
-    const rSq = e.healsNearbyRadius * e.healsNearbyRadius;
-    for (const target of enemies) {
-      if (target === e || target.hp <= 0) continue;
-      const dSq = (target.worldX - e.worldX) ** 2 + (target.worldY - e.worldY) ** 2;
-      if (dSq <= rSq) target.hp = Math.min(target.maxHp, target.hp + e.healsNearby * dt);
-    }
-  }
-}
-
-function ageAndCullEvents(state, dt) {
-  for (let i = state.damageEvents.length - 1; i >= 0; i--) {
-    state.damageEvents[i].t += dt;
-    if (state.damageEvents[i].t >= 0.65) state.damageEvents.splice(i, 1);
-  }
-  for (let i = state.boltEvents.length - 1; i >= 0; i--) {
-    state.boltEvents[i].t += dt;
-    if (state.boltEvents[i].t >= 0.18) state.boltEvents.splice(i, 1);
-  }
-  for (let i = state.deathParticles.length - 1; i >= 0; i--) {
-    const p = state.deathParticles[i];
-    p.t += dt; p.x += p.vx * dt; p.y += p.vy * dt;
-    if (p.t >= 0.5) state.deathParticles.splice(i, 1);
-  }
-}
-
-function processEnemies(state, paths, dt, profile, telemetry) {
-  const cashBoosters = state.towers.filter(t => t.killCashBoostRange > 0);
-  for (let i = state.enemies.length - 1; i >= 0; i--) {
-    const e = state.enemies[i];
-    if (e.distance >= paths[e.pathIndex].totalLength) {
-      if (!state.sandbox) state.lives = Math.max(0, state.lives - 1);
-      telemetry?.onLeak(e.type);
-      enemyPool.release(e);
-      state.enemies.splice(i, 1);
-    } else if (e.hp <= 0) {
-      telemetry?.onKill(e.distance / paths[e.pathIndex].totalLength);
-      const baseReward = e.cashReward ?? 10;
-      const totalBoost = cashBoosters.reduce((total, gen) => {
-        const dSq = (gen.x - e.worldX) ** 2 + (gen.y - e.worldY) ** 2;
-        return dSq <= gen.killCashBoostRange ** 2 ? total + gen.killCashBoostMult : total;
-      }, 0);
-      state.cash  += Math.round(baseReward * (1 + totalBoost));
-      state.score += e.reward;
-      state.kills += 1;
-      if (profile?.enemyKills !== undefined)
-        profile.enemyKills[e.type] = (profile.enemyKills[e.type] ?? 0) + 1;
-      AudioManager.play('enemy-death');
-      for (let j = 0; j < 5; j++) {
-        const angle = (Math.PI * 2 * j) / 5 + Math.random() * 0.5;
-        const spd   = 38 + Math.random() * 44;
-        state.deathParticles.push({
-          x: e.worldX, y: e.worldY,
-          vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd,
-          t: 0, color: e.color,
-        });
-      }
-      if (e.spawns) {
-        for (let j = 0; j < e.spawns.count; j++) {
-          const child = enemyPool.acquire({ type: e.spawns.type, distance: e.distance, pathIndex: e.pathIndex });
-          const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
-          child.worldX = cpos.x; child.worldY = cpos.y;
-          state.enemies.push(child);
-        }
-      }
-      enemyPool.release(e);
-      state.enemies.splice(i, 1);
-    } else if (e.liveSpawnInterval > 0) {
-      e.liveSpawnTimer -= dt;
-      if (e.liveSpawnTimer <= 0) {
-        e.liveSpawnTimer = e.liveSpawnInterval;
-        for (let j = 0; j < e.liveSpawnCount; j++) {
-          const child = enemyPool.acquire({ type: e.liveSpawnType, distance: e.distance, pathIndex: e.pathIndex });
-          const cpos  = positionAtDistance(paths[child.pathIndex], child.distance);
-          child.worldX = cpos.x; child.worldY = cpos.y;
-          state.enemies.push(child);
-        }
-      }
-    }
-  }
-}
-
-function checkGameOver(state, waves, profile, ui, difficulty) {
-  if (!state.sandbox &&
-      !state.waveActive &&
-      state.waveIndex >= waves.length - 1 &&
-      state.spawnerDone &&
-      state.enemies.length === 0) {
-    state.gameOver = true;
-    clearSave();
-    const stars   = computeStars(state.lives, 20, difficulty.starCap);
-    const newBest = recordMissionResult(profile, state.mapKey, stars);
-    saveProfile(profile);
-    AudioManager.play('win');
-    const ci         = CAMPAIGN_ORDER.indexOf(state.mapKey);
-    const nextKey    = (ci >= 0 && ci < CAMPAIGN_ORDER.length - 1) ? CAMPAIGN_ORDER[ci + 1] : null;
-    const nextMapKey = (nextKey && isMapUnlocked(profile, nextKey, CAMPAIGN_ORDER)) ? nextKey : null;
-    ui.showEndScreen(true, state.score, stars, availableStars(profile), newBest,
-      { nextMapKey, diffKey: state.diffKey });
-  }
-  if (!state.sandbox && state.lives === 0) {
-    state.gameOver = true;
-    clearSave();
-    AudioManager.play('lose');
-    ui.showEndScreen(false, state.score, 0, availableStars(profile), false,
-      { mapKey: state.mapKey, diffKey: state.diffKey });
-  }
-}
-
 async function main() {
   // M0 — load (or create) the meta-progression profile
   const profile = loadProfile();
@@ -899,56 +754,38 @@ async function main() {
   document.getElementById('map-select').style.display = 'none';
 
   const isSandbox = diffKey === 'sandbox';
-  // C0 — resolve difficulty config; remap legacy 'easy' to 'normal'
+  // C0 — difficulty for badge display; Simulation owns the rest of the config
   const difficulty = isSandbox
     ? DIFFICULTIES.normal
     : (DIFFICULTIES[diffKey] ?? DIFFICULTIES.normal);
 
-  const mapDef = MAPS[mapKey];
-  const paths  = buildPaths(mapDef);
-  const pathsWaypoints = paths.map(p => p.waypoints);
-
   // R1 — per-map wave set (10 waves each)
-  const waves = WAVES_BY_MAP[mapKey] ?? WAVES_MAP1;
+  const waves = WAVES_BY_MAP[mapKey] ?? [];
 
   // P1 — apply global perks at run start
   const perks = { ...profile.perks };
-  const state = {
-    mapKey,
-    diffKey,
-    sandbox:     isSandbox,
-    difficulty: difficulty.key,
-    lives:       isSandbox ? 9999 : 20 + (perks.startLives ?? 0),
-    cash:        isSandbox ? 999999 : difficulty.startingCash + (perks.startCash ?? 0),
-    score:       0,
-    kills:       0,
-    waveIndex:   -1,
-    waveActive:  false,
-    spawnerDone: true,
-    enemies:     [],
-    towers:      [],
-    projectiles: [],
-    damageEvents:   [], // R3 — floating damage numbers
-    deathParticles: [], // R3 — death burst particles
-    boltEvents:     [], // Tesla lightning bolts (transient; aged like damageEvents)
-    groundHazards:  [],
-    totalWaves:      waves.length,
-    gameOver:        false,
-    paused:          false,
-    autoStartTimer:  0,               // seconds remaining before next wave auto-starts
-    loopSpeed:       1,               // mirrors GameLoop speed (diagnostics)
-    runStartedAt:    performance.now(), // run duration for bug reports
-  };
-  // Expose the live state to the bug-report system so reports auto-attach run context.
-  currentState = state;
+
+  // ── Simulation ──────────────────────────────────────────────────────────────
+  // Minimal emitter passed to the sim; main.js adapter maps events → audio/DOM/save.
+  const _ev = (() => {
+    const _l = Object.create(null);
+    return {
+      emit(name, payload) { (_l[name] ?? []).forEach(fn => fn(payload)); },
+      on(name, fn)        { (_l[name] ??= []).push(fn); },
+    };
+  })();
+
+  const sim   = createSimulation({ mapKey, diffKey, waves, profile, perks, sandbox: isSandbox, events: _ev });
+  const state = sim.state;   // alias so the rest of this file works unchanged
+  const paths = sim.paths;
+  const pathsWaypoints = paths.map(p => p.waypoints);
+  state.runStartedAt   = performance.now();
 
   // Play-test data collection (pure; harmless to leave on). Read via window.__pt.telemetry.
   const telemetry = createTelemetry();
 
-  // C2 — pass per-map HP curve and cash-reward multipliers to WaveSpawner
-  const mapHpMult         = mapDef.hpMult ?? 1;
-  const mapCashRewardMult = mapDef.cashRewardMult ?? 1;
-  const waveSpawner = new WaveSpawner(enemyPool, difficulty, waves, mapHpMult, paths.length, mapCashRewardMult);
+  // Expose to bug-report system so reports auto-attach run context.
+  currentState = state;
 
   // M4 — show difficulty badge in HUD (hidden in sandbox; badge replaced by sandbox badge)
   document.getElementById('hud-diff').textContent = isSandbox ? '' : `${difficulty.emoji} ${difficulty.label}`;
@@ -975,20 +812,10 @@ async function main() {
 
   ui.onStartWave = () => {
     if (state.waveActive || state.gameOver) return;
-    if (!state.sandbox && state.waveIndex >= waves.length - 1) return;
-    state.autoStartTimer = 0;
-    // Sandbox: cycle back to the first wave after the last one
-    if (state.sandbox && state.waveIndex >= waves.length - 1) state.waveIndex = -1;
-    state.waveIndex++;
-    state.waveActive  = true;
-    state.spawnerDone = false;
-    waveSpawner.startWave(state.waveIndex);
-    telemetry.waveStart(state, state.waveIndex);
-    AudioManager.play('wave-start');
-    // R1 — boss-wave announcement on the final wave
-    if (state.waveIndex === waves.length - 1) showBossWarning();
-    // R3 — update wave preview for the NEXT wave
-    ui.setWavePreview(fmtWavePreview(waves[state.waveIndex + 1]));
+    if (!isSandbox && state.waveIndex >= waves.length - 1) return;
+    // Sandbox: cycle back to wave 0 after the last one
+    const next = (isSandbox && state.waveIndex >= waves.length - 1) ? 0 : state.waveIndex + 1;
+    sim.startWave(next); // emits 'wave-start' (and 'boss-warning') → adapter handles audio/telemetry/preview
   };
 
   ui.onTargetingChange = (tower, mode) => { tower.targeting = mode; };
@@ -1039,6 +866,48 @@ async function main() {
     ui.setFFActive(loop.speed !== 1, loop.speed);
   };
 
+  // ── Event adapter ─────────────────────────────────────────────────────────
+  // Maps sim events → audio, DOM, and save side-effects.
+  // No-op equivalents are used in the headless benchmark runner.
+  _ev.on('wave-start', ({ waveIndex }) => {
+    telemetry.waveStart(state, waveIndex);
+    AudioManager.play('wave-start');
+    ui.setWavePreview(fmtWavePreview(waves[waveIndex + 1]));
+  });
+  _ev.on('wave-clear', () => {
+    AudioManager.play('wave-clear');
+    saveProfile(profile);
+  });
+  _ev.on('interest',     ({ amount }) => showInterestToast(amount));
+  _ev.on('save-game',    ()           => saveGame(state));
+  _ev.on('boss-warning', ()           => showBossWarning());
+  _ev.on('enemy-killed', ({ x, y, color }) => {
+    AudioManager.play('enemy-death');
+    for (let j = 0; j < 5; j++) {
+      const angle = (Math.PI * 2 * j) / 5 + Math.random() * 0.5;
+      const spd   = 38 + Math.random() * 44;
+      state.deathParticles.push({
+        x, y, vx: Math.cos(angle) * spd, vy: Math.sin(angle) * spd, t: 0, color,
+      });
+    }
+  });
+  _ev.on('clear-save', () => clearSave());
+  _ev.on('win', ({ lives, stars, score }) => {
+    const newBest    = recordMissionResult(profile, state.mapKey, stars);
+    saveProfile(profile);
+    AudioManager.play('win');
+    const ci         = CAMPAIGN_ORDER.indexOf(state.mapKey);
+    const nextKey    = (ci >= 0 && ci < CAMPAIGN_ORDER.length - 1) ? CAMPAIGN_ORDER[ci + 1] : null;
+    const nextMapKey = (nextKey && isMapUnlocked(profile, nextKey, CAMPAIGN_ORDER)) ? nextKey : null;
+    ui.showEndScreen(true, score, stars, availableStars(profile), newBest,
+      { nextMapKey, diffKey: state.diffKey });
+  });
+  _ev.on('game-over', ({ score }) => {
+    AudioManager.play('lose');
+    ui.showEndScreen(false, score, 0, availableStars(profile), false,
+      { mapKey: state.mapKey, diffKey: state.diffKey });
+  });
+
   // --- Canvas input ---
   wireCanvasInput(renderer, ui, state, towerRenderer, paths, pathsWaypoints, perks, profile, isSandbox);
 
@@ -1046,22 +915,7 @@ async function main() {
   const loop = new GameLoop({
     update(dt) {
       if (state.gameOver || state.paused) return;
-      const wasActive = state.waveActive;
-      tickWaveEnd(state, waves, perks, waveSpawner, dt, telemetry);
-      if (wasActive && !state.waveActive) saveProfile(profile);
-      if (state.autoStartTimer > 0 && !state.waveActive) {
-        state.autoStartTimer -= dt;
-        if (state.autoStartTimer <= 0) { state.autoStartTimer = 0; ui.onStartWave(); }
-      }
-      updateMovement(state.enemies, paths, dt);
-      updateCombat(state.towers, state.enemies, state.projectiles, dt, state.damageEvents, state.groundHazards, state.boltEvents);
-      updateDoT(state.enemies, dt, state.damageEvents);
-      updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
-      applyHealerAuras(state.enemies, dt);
-      ageAndCullEvents(state, dt);
-      telemetry.tick(state, paths, dt); // sample before culling so near-leaks register ~1.0
-      processEnemies(state, paths, dt, profile, telemetry);
-      checkGameOver(state, waves, profile, ui, difficulty);
+      sim.step(dt, telemetry);
     },
 
     render(alpha) {

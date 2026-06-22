@@ -70,3 +70,5 @@ function reset(p, { x, y, target, speed, damage, aoeRadius = 0, towerType = '', 
 }
 
 export const projectilePool = new ObjectPool(make, reset);
+
+export function resetProjectilePool() { projectilePool.clear(); }
