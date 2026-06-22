@@ -26,6 +26,7 @@ import { GameUI }               from './ui/GameUI.js';
 import { MapBuilder }           from './ui/MapBuilder.js';
 import { initFeedback }         from './ui/Feedback.js';
 import { initDiagnostics }      from './core/diagnostics.js';
+import { createTelemetry }       from './core/Telemetry.js';
 import AudioManager             from './audio/AudioManager.js';
 import { saveGame, loadGame, clearSave, requestRestart } from './core/SaveSystem.js';
 import { DIFFICULTIES }         from './data/difficulties.js';
@@ -737,7 +738,7 @@ function renderAchievements(profile) {
 
 // ── Per-tick update helpers ───────────────────────────────────────────────────
 
-function tickWaveEnd(state, waves, perks, waveSpawner, dt) {
+function tickWaveEnd(state, waves, perks, waveSpawner, dt, telemetry) {
   if (state.waveActive && !state.spawnerDone) {
     state.spawnerDone = waveSpawner.update(dt, state.enemies);
   }
@@ -749,6 +750,7 @@ function tickWaveEnd(state, waves, perks, waveSpawner, dt) {
     state.cash += 50;
     const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
     if (income > 0) state.cash += income;
+    telemetry?.waveEnd(state); // capture per-wave metrics after end-of-wave income
     saveGame(state);
     const isFinalWave = !state.sandbox && state.waveIndex >= waves.length - 1;
     if (!isFinalWave && state.waveIndex >= 0) state.autoStartTimer = 10;
@@ -784,15 +786,17 @@ function ageAndCullEvents(state, dt) {
   }
 }
 
-function processEnemies(state, paths, dt, profile) {
+function processEnemies(state, paths, dt, profile, telemetry) {
   const cashBoosters = state.towers.filter(t => t.killCashBoostRange > 0);
   for (let i = state.enemies.length - 1; i >= 0; i--) {
     const e = state.enemies[i];
     if (e.distance >= paths[e.pathIndex].totalLength) {
       if (!state.sandbox) state.lives = Math.max(0, state.lives - 1);
+      telemetry?.onLeak(e.type);
       enemyPool.release(e);
       state.enemies.splice(i, 1);
     } else if (e.hp <= 0) {
+      telemetry?.onKill(e.distance / paths[e.pathIndex].totalLength);
       const baseReward = e.cashReward ?? 10;
       const totalBoost = cashBoosters.reduce((total, gen) => {
         const dSq = (gen.x - e.worldX) ** 2 + (gen.y - e.worldY) ** 2;
@@ -938,6 +942,9 @@ async function main() {
   // Expose the live state to the bug-report system so reports auto-attach run context.
   currentState = state;
 
+  // Play-test data collection (pure; harmless to leave on). Read via window.__pt.telemetry.
+  const telemetry = createTelemetry();
+
   // C2 — pass per-map HP curve and cash-reward multipliers to WaveSpawner
   const mapHpMult         = mapDef.hpMult ?? 1;
   const mapCashRewardMult = mapDef.cashRewardMult ?? 1;
@@ -976,6 +983,7 @@ async function main() {
     state.waveActive  = true;
     state.spawnerDone = false;
     waveSpawner.startWave(state.waveIndex);
+    telemetry.waveStart(state, state.waveIndex);
     AudioManager.play('wave-start');
     // R1 — boss-wave announcement on the final wave
     if (state.waveIndex === waves.length - 1) showBossWarning();
@@ -1039,7 +1047,7 @@ async function main() {
     update(dt) {
       if (state.gameOver || state.paused) return;
       const wasActive = state.waveActive;
-      tickWaveEnd(state, waves, perks, waveSpawner, dt);
+      tickWaveEnd(state, waves, perks, waveSpawner, dt, telemetry);
       if (wasActive && !state.waveActive) saveProfile(profile);
       if (state.autoStartTimer > 0 && !state.waveActive) {
         state.autoStartTimer -= dt;
@@ -1051,7 +1059,8 @@ async function main() {
       updateGroundHazards(state.groundHazards, state.enemies, dt, state.damageEvents);
       applyHealerAuras(state.enemies, dt);
       ageAndCullEvents(state, dt);
-      processEnemies(state, paths, dt, profile);
+      telemetry.tick(state, paths, dt); // sample before culling so near-leaks register ~1.0
+      processEnemies(state, paths, dt, profile, telemetry);
       checkGameOver(state, waves, profile, ui, difficulty);
     },
 
@@ -1071,6 +1080,10 @@ async function main() {
 
   // ── Pause menu ────────────────────────────────────────────────────────────
   setupPauseMenu(state, loop);
+
+  // Dev/QA: expose live handles so the console play-test harness can read true
+  // game state and drive the real UI (same convention as __ui / __profile above).
+  window.__pt = { state, ui, loop, renderer, paths, profile, telemetry };
 }
 
 // ── Fullscreen toggle ──────────────────────────────────────────────────────
