@@ -17,4 +17,9 @@ export class ObjectPool {
   release(obj) {
     this.#pool.push(obj);
   }
+
+  /** Discard all cached instances. Next acquire() creates fresh objects. */
+  clear() {
+    this.#pool.length = 0;
+  }
 }
