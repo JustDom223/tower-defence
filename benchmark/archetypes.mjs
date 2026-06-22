@@ -68,7 +68,7 @@ export function naive(sim) {
 // ── Competent ─────────────────────────────────────────────────────────────────
 // Spreads coverage evenly along the full path; keeps a small cash buffer.
 export function competent(sim) {
-  const RESERVE   = 75; // keep $75 back — enough to buy another tower next wave
+  const RESERVE   = 25; // keep $25 back — just enough buffer to not spend last dollar
   const pw        = sim.paths.map(p => p.waypoints);
   const pool      = candidates(sim.paths)
     .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers))
