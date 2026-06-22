@@ -98,7 +98,7 @@ export function createSimulation({
       events.emit('wave-clear', { waveIndex: state.waveIndex });
       const interest = Math.floor(state.cash * (0.05 + (perks.interestBonus ?? 0)));
       if (interest > 0) { state.cash += interest; events.emit('interest', { amount: interest }); }
-      state.cash += 50;
+      state.cash += 30;
       const income = state.towers.reduce((sum, t) => sum + (t.incomePerWave ?? 0), 0);
       if (income > 0) state.cash += income;
       telemetry?.waveEnd(state);
