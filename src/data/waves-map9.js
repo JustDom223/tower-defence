@@ -1,54 +1,49 @@
 /**
- * Wave definitions for Map 9 — Labyrinth
- * Very winding — enormous path length rewards cheap towers at choke points.
- * NEW: Phantom (camo — only the Command Post's Spotter upgrade reveals it; always
- * mixed with visible enemies and kept sparse so a player without detection leaks
- * a little rather than hitting a wall). Carrier swarm engines return. hpMult 2.26.
+ * Map 9 — Labyrinth  (Forest)
+ * Curriculum: NO new type — a hard recombination of the full Forest roster
+ * (runner, sprinter, tank, armoured, splitter, swarmling, flyer, regenerator,
+ * carrier). Difficulty is purely density + HP. Mid-boss on wave 5. hpMult 2.26.
  */
 export const WAVES = [
-  // Wave 1
-  [{ type: 'runner',   count: 24, interval: 0.55 },
-   { type: 'sprinter', count: 16, interval: 0.30 }],
+  // Wave 1 — mixed flood
+  [{ type: 'runner',   count: 20, interval: 0.4 },
+   { type: 'sprinter', count: 14, interval: 0.32 }],
 
   // Wave 2 — armoured + tanks
-  [{ type: 'armoured', count: 16, interval: 1.0 },
-   { type: 'tank',     count:  7, interval: 1.7 }],
+  [{ type: 'armoured', count: 7,  interval: 1.1 },
+   { type: 'tank',     count: 4,  interval: 1.9 }],
 
-  // Wave 3 — carrier swarm engines + sprinters
-  [{ type: 'carrier',  count:  3, interval: 2.6 },
-   { type: 'sprinter', count: 18, interval: 0.30 }],
+  // Wave 3 — splitters + swarm
+  [{ type: 'splitter',  count: 9,  interval: 0.9 },
+   { type: 'swarmling', count: 24, interval: 0.14 }],
 
-  // Wave 4 — Phantom debut (camo — reveal with Command Post) mixed with runners
-  [{ type: 'phantom',  count:  3, interval: 1.2 },
-   { type: 'runner',   count: 14, interval: 0.5 }],
+  // Wave 4 — flyers + regenerators
+  [{ type: 'flyer',       count: 8, interval: 0.8 },
+   { type: 'regenerator', count: 4, interval: 1.8 }],
 
-  // Wave 5 — armoured + splitters + juggernaut
-  [{ type: 'armoured',   count: 18, interval: 0.95 },
-   { type: 'splitter',   count: 12, interval: 0.9 },
-   { type: 'juggernaut', count:  2, interval: 3.0 }],
+  // Wave 5 — MID-BOSS + carrier escort
+  [{ type: 'boss',     count: 1,  interval: 1.0 },
+   { type: 'carrier',  count: 2,  interval: 3.5 }],
 
-  // Wave 6 — sprinter flood + carriers
-  [{ type: 'sprinter', count: 40, interval: 0.27 },
-   { type: 'carrier',  count:  2, interval: 3.0 }],
+  // Wave 6 — tanks + armoured wall
+  [{ type: 'tank',     count: 6,  interval: 1.6 },
+   { type: 'armoured', count: 8,  interval: 1.1 }],
 
-  // Wave 7 — tanks + armoured + brute
-  [{ type: 'tank',     count: 12, interval: 1.6 },
-   { type: 'armoured', count: 14, interval: 0.95 },
-   { type: 'brute',    count:  3, interval: 2.4 }],
+  // Wave 7 — regenerators + flyers
+  [{ type: 'regenerator', count: 5, interval: 1.6 },
+   { type: 'flyer',       count: 8, interval: 0.8 }],
 
-  // Wave 8 — phantom + splitters + armoured
-  [{ type: 'phantom',  count:  4, interval: 1.1 },
-   { type: 'splitter', count: 22, interval: 0.9 },
-   { type: 'armoured', count: 12, interval: 0.95 }],
+  // Wave 8 — splitters + carriers
+  [{ type: 'splitter', count: 10, interval: 0.9 },
+   { type: 'carrier',  count: 2,  interval: 3.5 }],
 
-  // Wave 9 — sprinter surge + tanks + juggernaut
-  [{ type: 'sprinter',   count: 44, interval: 0.26 },
-   { type: 'tank',       count: 12, interval: 1.6 },
-   { type: 'juggernaut', count:  2, interval: 3.0 }],
+  // Wave 9 — armoured + tanks + sprinter surge
+  [{ type: 'armoured', count: 8,  interval: 1.0 },
+   { type: 'tank',     count: 5,  interval: 1.7 },
+   { type: 'sprinter', count: 16, interval: 0.3 }],
 
-  // Wave 10 — BOSS + phantom + armoured + tanks
-  [{ type: 'boss',     count:  1, interval: 1.0 },
-   { type: 'phantom',  count:  3, interval: 1.2 },
-   { type: 'armoured', count: 16, interval: 0.95 },
-   { type: 'tank',     count:  8, interval: 1.7 }],
+  // Wave 10 — TWIN BOSS + regenerator + swarm
+  [{ type: 'boss',        count: 2,  interval: 4.0 },
+   { type: 'regenerator', count: 3,  interval: 2.0 },
+   { type: 'swarmling',   count: 24, interval: 0.15 }],
 ];

@@ -1,8 +1,44 @@
 # Tower Defence — Working Instructions
 
-## Your role
+## Roles
 
-You are the **implementer** for this game. Planning and tickets are written separately (see the plan docs below); your job is to turn those items into working code, keep the codebase clean and consistent with what's already here, and keep the trackers up to date as you go. Implement what the tickets ask — if something is ambiguous or seems wrong, flag it rather than guessing at scope.
+This project is worked in distinct **roles**. Identify which role you're in from the request — the user usually names it ("implement…", "play-test…", "game master…"). Read that role's brief and move forward. **Default to Implementer** if unspecified. One role per session; if a task clearly belongs to another role, say so rather than blurring them.
+
+### Implementer (default)
+
+You turn tickets into working code. Planning and tickets are written separately (see the plan docs below); your job is to make those items work, keep the codebase clean and consistent with what's already here, and keep the trackers up to date as you go. Implement what the tickets ask — if something is ambiguous or seems wrong, flag it rather than guessing at scope. Follow **How to pick up work**, **Git workflow**, **Testing**, and **Verification** below.
+
+### Play-Tester
+
+You measure how a map *actually* plays and surface balance, UX, and bugs from a real player's seat — you do **not** change game code. Deliver findings; the user routes fixes to the Implementer.
+
+**Read first:** `SPEC_playtest-benchmark.md` (the benchmark + the metric catalogue), `IMPROVEMENTS/playtest-harness.js` (the in-browser harness, driven via the `window.__pt` dev hook in `main.js`).
+
+**Tools:** use the **headless benchmark** (once built, per the SPEC) for deterministic, scaled, numeric runs; use the **in-browser harness** for "feel", screenshots, and spot-checks. Numbers come from headless; impressions from the browser.
+
+**Method:**
+- Test from the **right progression state**: a fresh profile (default unlocks only) for first-impressions, or the realistic unlock/perk set for the map's campaign slot. "Hard until upgrades" is a statement about progression — model it.
+- Run the relevant **archetype(s)** (naive / competent / optimal); don't play optimally unless you're probing the ceiling. Difficulty is an *envelope*, not one run.
+- Capture the **metrics in `SPEC_playtest-benchmark.md` §4** — above all per-wave `deepestReachPct` (margin), `livesLost`/wave, and `leaks` by enemy type; plus economy and final stars.
+- Keep the sim **controlled**: disable auto-start, pause between waves, fixed speed. Known pitfall — leaving speed > 1× lets the 10s auto-start chain waves and run the game away from you.
+
+**Deliverable:** a prioritised report — a per-wave pressure table first, then findings grouped (Balance / UX / Bugs), most-actionable first, pointing to files and lines. Run the loop on Sonnet; reserve an Opus pass for *interpreting* results.
+
+### Game Master
+
+You own the **macro / world layer**: the *curriculum* of content reveal across the campaign — which enemy types debut on which map and wave, in what order, and how threat ramps across a world (Forest = maps 1–10, Mountains = 11–20, Ruins = 21+). You shape `waves-map*.js` composition and map-level pacing (counts, intervals, the `hpMult` slope). You do **not** re-tune individual tower/enemy stat numbers (that's Balance/Implementer) — but flag when a missing counter makes an introduction unfair.
+
+**Read first:** `src/data/enemies.js` (the roster, and the *mechanic* each enemy carries), all `src/data/waves-map*.js`, `src/data/maps.js` (worlds & order), `CONTENT_GUIDE.md`, `DESIGN_towers-and-enemies.md`, `SPEC_systems-new-mechanics.md`.
+
+**Principles:**
+- **One new thing at a time.** Each enemy's debut should introduce a single new mechanic/counter, be telegraphed, and arrive only after the player can plausibly answer it.
+- **Space mastery.** Let the player handle one new type for a wave or two before stacking the next.
+- **Escalate within a world; layer across worlds.** Map 1 teaches the basics with no surprises; each later map adds or recombines.
+- **Curated, not scattered.** Mechanic-bearing enemies (splitter = spawns-on-death, shielded = absorb layer, carrier = live-spawns, regenerator, phantom = camo, flyer, etc.) each deserve a clean debut, not an arbitrary appearance.
+
+**Founding mandate:** the Forest world's enemy introductions feel scattered. Define a deliberate **introduction curriculum** (table: enemy → debut map/wave → mechanic taught → counter the player has by then) and make the `waves-map*.js` edits to realise it.
+
+**Deliverable:** the curriculum doc + the wave edits. Hand the result to the **Play-Tester** role to validate the resulting difficulty band before merging.
 
 ## How to pick up work
 
