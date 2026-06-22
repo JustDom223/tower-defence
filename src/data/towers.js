@@ -79,27 +79,32 @@ export const TOWER_TYPES = {
     projSpeed: 0,
     aoeRadius: 0,
     isSlow: true,
-    slowFactor: 0.4,
-    slowDuration: 1.5,
+    slowFactor: 0.5,        // chilled enemies move at 50% speed
+    slowDuration: 1.0,      // chill lasts 1s and re-pulses every 2s → a periodic slow
     color: 0x67e8f9,
     projColor: 0,
     upgrades: {
+      // Path A — coverage: turn the periodic chill into an always-on slow over a
+      // huge area. Never stuns, so enemies always keep crawling forward.
       pathA: {
-        label: 'Glacier',
-        tiers: [
-          { name: 'Deeper Chill',   desc: 'Stronger slow (-0.1)',           cost: 120, stats: { slowFactor: -0.1 } },
-          { name: 'Glacial Pulse',  desc: 'Stronger slow, +0.5 rate',       cost: 200, stats: { slowFactor: -0.1, fireRate: 0.5 } },
-          { name: 'Flash Freeze',   desc: 'Enables stun (0.5s)',            cost: 500, stats: { isStun: true, stunDuration: 0.5 } },
-          { name: 'Absolute Zero',  desc: 'Stun 1.2s; max slow',           cost: 1200, stats: { stunDuration: 0.7, slowFactor: -0.1 } },
-        ],
-      },
-      pathB: {
         label: 'Permafrost',
         tiers: [
-          { name: 'Wide Chill',     desc: '+40 range',                 cost: 120, stats: { range: 40 } },
-          { name: 'Lingering Cold', desc: '+0.8s slow duration',       cost: 180, stats: { slowDuration: 0.8 } },
-          { name: 'Snowstorm',      desc: '+50 range, +1.0s duration', cost: 500, stats: { range: 50, slowDuration: 1.0 } },
-          { name: 'Blizzard',       desc: '+80 range, +2.0s duration', cost: 1200, stats: { range: 80, slowDuration: 2.0, fireRate: 1.0 } },
+          { name: 'Wide Chill',     desc: '+40 range; chill lingers longer',            cost: 120,  stats: { range: 40, slowDuration: 0.4 } },
+          { name: 'Frostbite',      desc: 'Chill never lifts; stronger slow, faster',   cost: 220,  stats: { slowFactor: -0.1, slowDuration: 0.4, fireRate: 0.25 } },
+          { name: 'Glacial Spread', desc: '+50 range; stronger, longer slow',           cost: 500,  stats: { range: 50, slowFactor: -0.05, slowDuration: 0.5 } },
+          { name: 'Eternal Winter', desc: '+60 range; max slow over a vast area',        cost: 1200, stats: { range: 60, slowFactor: -0.05, slowDuration: 0.5, fireRate: 0.25 } },
+        ],
+      },
+      // Path B — control: trade the slow for a periodic freeze that grows into a
+      // damage amplifier, then deals its own burst. Stun stays shorter than the
+      // re-fire gap so enemies are never frozen solid forever.
+      pathB: {
+        label: 'Shatter',
+        tiers: [
+          { name: 'Flash Freeze',  desc: 'Freezes instead of chilling — stuns for 0.8s',         cost: 160,  stats: { isStun: true, stunDuration: 0.8 } },
+          { name: 'Brittle Ice',   desc: 'Frozen enemies take 30% more damage from all towers',  cost: 320,  stats: { stunDuration: 0.2, debuffVulnerability: 1.3, debuffDuration: 3.0 } },
+          { name: 'Deep Freeze',   desc: '+40 range; longer freeze; 50% more damage taken',      cost: 600,  stats: { range: 40, stunDuration: 0.2, debuffVulnerability: 0.2 } },
+          { name: 'Shatter',       desc: 'Freeze blasts for 70 damage; 70% more damage taken',   cost: 1300, stats: { damage: 70, stunDuration: 0.1, debuffVulnerability: 0.2 } },
         ],
       },
     },

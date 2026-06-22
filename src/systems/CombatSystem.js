@@ -301,6 +301,12 @@ function applyStun(tower, enemies, damageEvents) {
     const dx = e.worldX - tower.x, dy = e.worldY - tower.y;
     if (dx * dx + dy * dy <= rSq) {
       e.stunTimer = Math.max(e.stunTimer, tower.stunDuration);
+      // Frost's Shatter line: freezing also marks enemies as vulnerable so every
+      // tower (including this one's own burst below) hits harder while they're iced.
+      if (tower.debuffVulnerability > 0) {
+        e.vulnerabilityMult  = Math.max(e.vulnerabilityMult ?? 1, tower.debuffVulnerability);
+        e.vulnerabilityTimer = Math.max(e.vulnerabilityTimer ?? 0, tower.debuffDuration);
+      }
       if (tower.damage > 0) {
         applyDamage(e, tower.damage, tower.type, e.worldX, e.worldY, damageEvents);
       }
