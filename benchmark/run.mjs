@@ -15,9 +15,9 @@ import { defaultProfile }      from '../src/core/Profile.js';
 import { resetEnemyPool }      from '../src/entities/Enemy.js';
 import { resetProjectilePool } from '../src/entities/Projectile.js';
 import { markBuffsDirty }      from '../src/systems/CombatSystem.js';
-import { naive, competent, optimal } from './archetypes.mjs';
+import { naive, competent, optimal, withBomb, withFrost } from './archetypes.mjs';
 
-const ARCHETYPES = { naive, competent, optimal };
+const ARCHETYPES = { naive, competent, optimal, withBomb, withFrost };
 
 // Static wave registry — Node cannot use import.meta.glob (Vite-only).
 // Add entries here as new maps are benchmarked.
@@ -52,7 +52,7 @@ function resetPools() {
  * @param {string|null} [opts.archetype=null]  — 'naive' | 'competent' | 'optimal' | null
  * @returns {{ map, diff, archetype, finalLives, finalCash, towerCount, score, win, lossWave, elapsed, waves, summary }}
  */
-export async function run({ mapKey = 'map1', diffKey = 'normal', archetype = null } = {}) {
+export async function run({ mapKey = 'map1', diffKey = 'normal', archetype = null, extraCash = 0 } = {}) {
   const waves = WAVES_MAP[mapKey];
   if (!waves) throw new Error(`Unknown map: ${mapKey}. Available: ${Object.keys(WAVES_MAP).join(', ')}`);
 
@@ -60,6 +60,7 @@ export async function run({ mapKey = 'map1', diffKey = 'normal', archetype = nul
   const buyFn = archetype ? ARCHETYPES[archetype] : null;
 
   const profile   = defaultProfile();
+  if (extraCash) profile.perks.startCash = extraCash;
   const telemetry = createTelemetry();
 
   const sim = createSimulation({

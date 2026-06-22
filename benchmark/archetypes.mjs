@@ -85,6 +85,62 @@ export function competent(sim) {
   }
 }
 
+// ── WithBomb ──────────────────────────────────────────────────────────────────
+// Archers first wave (starting cash only), then mixes in bomb towers from wave 2
+// onward once kill income makes them affordable. Models a player who unlocked
+// Bomb to handle tanks/armour. Bomb: $125, AOE damage.
+export function withBomb(sim) {
+  const RESERVE   = 25;
+  const BOMB_COST = TOWER_TYPES.bomb.cost; // 125
+  const pw        = sim.paths.map(p => p.waypoints);
+
+  // Before wave 1: starting cash only — buy archers, no bomb yet
+  if (sim.state.waveIndex < 0) { competent(sim); return; }
+
+  // Wave 2+: place up to 2 bombs at mid-path, then fill with archers
+  const pathLen   = sim.paths[0].totalLength;
+  const bombSlots = candidates(sim.paths)
+    .filter(c => { const pct = c.d / pathLen; return pct >= 0.25 && pct <= 0.65; })
+    .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers));
+
+  let placed = sim.state.towers.filter(t => t.type === 'bomb').length;
+  for (const c of bombSlots) {
+    if (placed >= 2) break;
+    if (sim.state.cash - BOMB_COST < RESERVE) continue;
+    if (place('bomb', c.x, c.y, sim.state, pw)) placed++;
+  }
+
+  competent(sim);
+}
+
+// ── WithFrost ─────────────────────────────────────────────────────────────────
+// Archers first wave (starting cash only), then mixes in frost towers from wave 2
+// onward. Frost slows enemies to 50%, giving archers more shots per pass.
+// Frost: $75, no damage, range 140.
+export function withFrost(sim) {
+  const RESERVE    = 25;
+  const FROST_COST = TOWER_TYPES.frost.cost; // 75
+  const pw         = sim.paths.map(p => p.waypoints);
+
+  // Before wave 1: starting cash only — buy archers, no frost yet
+  if (sim.state.waveIndex < 0) { competent(sim); return; }
+
+  // Wave 2+: place up to 2 frost towers at early-mid path, then fill archers
+  const pathLen    = sim.paths[0].totalLength;
+  const frostSlots = candidates(sim.paths)
+    .filter(c => { const pct = c.d / pathLen; return pct >= 0.15 && pct <= 0.50; })
+    .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers));
+
+  let placed = sim.state.towers.filter(t => t.type === 'frost').length;
+  for (const c of frostSlots) {
+    if (placed >= 2) break;
+    if (sim.state.cash - FROST_COST < RESERVE) continue;
+    if (place('frost', c.x, c.y, sim.state, pw)) placed++;
+  }
+
+  competent(sim);
+}
+
 // ── Optimal ───────────────────────────────────────────────────────────────────
 // Full-path coverage + upgrades the lead tower once it can afford to.
 export function optimal(sim) {
