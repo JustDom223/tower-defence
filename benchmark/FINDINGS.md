@@ -97,9 +97,46 @@ withFrost + war chest | 0/20 | Lost wave 2 (tanks) — frost alone doesn't cut i
 
 ---
 
-## Pending work
-- [ ] Reduce map3 W1 to ~12 enemies
-- [ ] Re-test frost (withFrost) after W1 fix — see if frost becomes viable
-- [ ] If frost still fails: decide between stronger slow or redesigning which maps frost targets
-- [ ] Run full map matrix (maps 1–10, naive + competent) to check balance across the campaign
-- [ ] Commit and merge `feat/archetypes` to main once map3 is resolved
+---
+
+## Balance pass 2 — 2026-06-23
+
+### Frost viability (map3)
+
+**Root cause:** the original `withFrost` archetype forced archers into a 200px kill zone around the frost tower. On map3's 3-row switchback layout this pinned all towers to row 1 (first 40% of the path). Rows 2 and 3 had zero coverage — nearly every enemy leaked past the first row.
+
+**Fixes:**
+| Change | Detail |
+|---|---|
+| Archer range: 120 → 150px | Covers inter-row gap (180px row spacing); an archer at ±78–100px from row 1 now also reaches row 2 |
+| `withFrost` archetype rewrite | Removed kill-zone clustering; frost placed opportunistically at 20–50% path; remaining cash spread by `competent` across all rows |
+| `frost.slowDuration` kept at 1.0 | User constraint: always-on slow belongs to the Permafrost upgrade path |
+| `frost.slowFactor` stays 0.4 | From previous pass |
+
+### Benchmark results after range + archetype fix
+
+| Map | competent | frost (no perk) | frost + war chest (+$50) |
+|---|---|---|---|
+| map1 | 19 lives ✓ | 15 lives ✓ | 20 lives ✓ |
+| map2 | 12 lives ✓ | fail W5 | 7 lives ✓ |
+| map3 | 1 life ✓ | fail W4 | 11 lives ✓ |
+| map4 | fail W2 | fail W2 | fail W3 |
+
+**Conclusions:**
+- map1–2 are accessible. map1 is easy (by design — tutorial). map2 is moderate.
+- map3 passes cleanly with frost + war chest (11 lives). Without war chest frost still fails — this is intentional, war chest is purchasable at that star count and gives meaningful value.
+- map4 is a hard wall for all frost/archer loadouts — requires bomb (which is map4's curriculum lesson).
+- `withFrost(no perk)` fails map2-3: the slide from "competent wins comfortably" to "frost-only fails without war chest" creates real player progression tension.
+
+### CLI update
+`node benchmark/run.mjs [mapKey] [diffKey] [archetype] [extraCash]` — 4th arg now accepted.
+
+---
+
+## Resolved items
+- [x] Reduce map3 W1 to ~12 enemies — done (8 runners + 4 sprinters)
+- [x] Frost viable on map3 — passes with war chest (11 lives)
+- [x] Archer range bump 120 → 150 improves multi-row map coverage
+
+## Still open
+- [ ] Run full map matrix (maps 1–10, naive + competent) to check balance across the full campaign

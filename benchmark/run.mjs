@@ -118,8 +118,8 @@ export async function run({ mapKey = 'map1', diffKey = 'normal', archetype = nul
 
 // ── CLI entry ────────────────────────────────────────────────────────────────
 if (process.argv[1] && process.argv[1].endsWith('run.mjs')) {
-  const [,, mapArg = 'map1', diffArg = 'normal', archetypeArg = null] = process.argv;
-  const result = await run({ mapKey: mapArg, diffKey: diffArg, archetype: archetypeArg });
+  const [,, mapArg = 'map1', diffArg = 'normal', archetypeArg = null, extraCashArg = '0'] = process.argv;
+  const result = await run({ mapKey: mapArg, diffKey: diffArg, archetype: archetypeArg, extraCash: Number(extraCashArg) });
   console.log(`\n=== ${result.map} / ${result.diff} / ${result.archetype} ===`);
   console.log(result.summary);
   console.log(`\nFinal lives : ${result.finalLives}`);

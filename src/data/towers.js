@@ -3,7 +3,7 @@ export const TOWER_TYPES = {
     name: 'Archer',
     cost: 50,
     damage: 18,
-    range: 120,
+    range: 150,
     fireRate: 1.5,
     projSpeed: 600,
     aoeRadius: 0,
@@ -79,7 +79,7 @@ export const TOWER_TYPES = {
     projSpeed: 0,
     aoeRadius: 0,
     isSlow: true,
-    slowFactor: 0.5,        // chilled enemies move at 50% speed
+    slowFactor: 0.4,        // chilled enemies move at 40% speed
     slowDuration: 1.0,      // chill lasts 1s and re-pulses every 2s → a periodic slow
     color: 0x67e8f9,
     projColor: 0,

@@ -114,28 +114,28 @@ export function withBomb(sim) {
 }
 
 // ── WithFrost ─────────────────────────────────────────────────────────────────
-// Archers first wave (starting cash only), then mixes in frost towers from wave 2
-// onward. Frost slows enemies to 50%, giving archers more shots per pass.
-// Frost: $75, no damage, range 140.
+// Buys frost opportunistically once affordable (20–50% path), then spreads
+// archers across the full path via competent. No kill-zone clustering — on
+// multi-row maps that would pin all towers to row 1.
 export function withFrost(sim) {
-  const RESERVE    = 25;
   const FROST_COST = TOWER_TYPES.frost.cost; // 75
   const pw         = sim.paths.map(p => p.waypoints);
+  const pathLen    = sim.paths[0].totalLength;
+  const frostOwned = sim.state.towers.filter(t => t.type === 'frost').length;
 
-  // Before wave 1: starting cash only — buy archers, no frost yet
+  // Before W1: just archers — frost deals no damage and wastes starting cash.
   if (sim.state.waveIndex < 0) { competent(sim); return; }
 
-  // Wave 2+: place up to 2 frost towers at early-mid path, then fill archers
-  const pathLen    = sim.paths[0].totalLength;
-  const frostSlots = candidates(sim.paths)
-    .filter(c => { const pct = c.d / pathLen; return pct >= 0.15 && pct <= 0.50; })
-    .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers));
-
-  let placed = sim.state.towers.filter(t => t.type === 'frost').length;
-  for (const c of frostSlots) {
-    if (placed >= 2) break;
-    if (sim.state.cash - FROST_COST < RESERVE) continue;
-    if (place('frost', c.x, c.y, sim.state, pw)) placed++;
+  if (frostOwned < 2) {
+    const frostSlots = candidates(sim.paths)
+      .filter(c => { const pct = c.d / pathLen; return pct >= 0.20 && pct <= 0.50; })
+      .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers));
+    let newFrost = 0;
+    for (const c of frostSlots) {
+      if (frostOwned + newFrost >= 2) break;
+      if (sim.state.cash < FROST_COST) break;
+      if (place('frost', c.x, c.y, sim.state, pw)) newFrost++;
+    }
   }
 
   competent(sim);
