@@ -1,13 +1,12 @@
 /**
- * benchmark/run.mjs — Phase 2 headless runner
+ * benchmark/run.mjs — headless runner
  *
  * Runs a full map simulation in Node without a browser, renderer, or audio.
- * Usage:  node benchmark/run.mjs [mapKey] [diffKey]
- * Example: node benchmark/run.mjs map1 normal
+ * Usage:  node benchmark/run.mjs [mapKey] [diffKey] [archetype]
+ * Example: node benchmark/run.mjs map1 normal competent
  *
  * Module-singleton bleed warning: enemyPool, projectilePool, and CombatSystem
- * buff state are module-level. Call resetPools() between runs to avoid stale
- * objects leaking across batch iterations (see Phase 5).
+ * buff state are module-level. resetPools() is called before each run.
  */
 
 import { createSimulation }    from '../src/core/Simulation.js';
@@ -16,6 +15,9 @@ import { defaultProfile }      from '../src/core/Profile.js';
 import { resetEnemyPool }      from '../src/entities/Enemy.js';
 import { resetProjectilePool } from '../src/entities/Projectile.js';
 import { markBuffsDirty }      from '../src/systems/CombatSystem.js';
+import { naive, competent, optimal, withBomb, withFrost } from './archetypes.mjs';
+
+const ARCHETYPES = { naive, competent, optimal, withBomb, withFrost };
 
 // Static wave registry — Node cannot use import.meta.glob (Vite-only).
 // Add entries here as new maps are benchmarked.
@@ -43,16 +45,22 @@ function resetPools() {
 }
 
 /**
- * Run one full simulation of a map under a given difficulty with no towers.
- * @returns {{ map, diff, finalLives, score, win, lossWave, elapsed, waves, summary }}
+ * Run one full simulation.
+ * @param {object} opts
+ * @param {string} [opts.mapKey='map1']
+ * @param {string} [opts.diffKey='normal']
+ * @param {string|null} [opts.archetype=null]  — 'naive' | 'competent' | 'optimal' | null
+ * @returns {{ map, diff, archetype, finalLives, finalCash, towerCount, score, win, lossWave, elapsed, waves, summary }}
  */
-export async function run({ mapKey = 'map1', diffKey = 'normal' } = {}) {
+export async function run({ mapKey = 'map1', diffKey = 'normal', archetype = null, extraCash = 0 } = {}) {
   const waves = WAVES_MAP[mapKey];
   if (!waves) throw new Error(`Unknown map: ${mapKey}. Available: ${Object.keys(WAVES_MAP).join(', ')}`);
 
   resetPools();
+  const buyFn = archetype ? ARCHETYPES[archetype] : null;
 
   const profile   = defaultProfile();
+  if (extraCash) profile.perks.startCash = extraCash;
   const telemetry = createTelemetry();
 
   const sim = createSimulation({
@@ -72,6 +80,7 @@ export async function run({ mapKey = 'map1', diffKey = 'normal' } = {}) {
     if (sim.state.gameOver) { lossWave = wi; break; }
 
     sim.state.autoStartTimer = 0; // controller drives pacing — never auto-start
+    buyFn?.(sim);
     telemetry.waveStart(sim.state, wi); // waveStart is wired via event adapter in-browser; call directly here
     sim.startWave(wi);
 
@@ -94,7 +103,10 @@ export async function run({ mapKey = 'map1', diffKey = 'normal' } = {}) {
   return {
     map:        mapKey,
     diff:       diffKey,
+    archetype:  archetype ?? 'none',
     finalLives: s.lives,
+    finalCash:  s.cash,
+    towerCount: s.towers.length,
     score:      s.score,
     win:        !s.gameOver || (s.waveIndex >= waves.length - 1 && s.lives > 0),
     lossWave,
@@ -106,11 +118,13 @@ export async function run({ mapKey = 'map1', diffKey = 'normal' } = {}) {
 
 // ── CLI entry ────────────────────────────────────────────────────────────────
 if (process.argv[1] && process.argv[1].endsWith('run.mjs')) {
-  const [,, mapArg = 'map1', diffArg = 'normal'] = process.argv;
-  const result = await run({ mapKey: mapArg, diffKey: diffArg });
-  console.log(`\n=== ${result.map} / ${result.diff} ===`);
+  const [,, mapArg = 'map1', diffArg = 'normal', archetypeArg = null] = process.argv;
+  const result = await run({ mapKey: mapArg, diffKey: diffArg, archetype: archetypeArg });
+  console.log(`\n=== ${result.map} / ${result.diff} / ${result.archetype} ===`);
   console.log(result.summary);
   console.log(`\nFinal lives : ${result.finalLives}`);
+  console.log(`Final cash  : $${result.finalCash}`);
+  console.log(`Towers      : ${result.towerCount}`);
   console.log(`Win         : ${result.win}`);
   console.log(`Elapsed     : ${result.elapsed}ms`);
   if (result.lossWave !== null) console.log(`Lost on wave: ${result.lossWave + 1}`);

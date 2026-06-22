@@ -182,7 +182,7 @@ export const UNLOCK_TREE = [
     unapply: p => { p.unlocks.paths.archer.B = false; },
   },
   {
-    id: 'bomb', label: 'Bomb tower', group: 'towers', cost: 2, requires: null,
+    id: 'bomb', label: 'Bomb tower', group: 'towers', cost: 3, requires: null,
     check:   p => p.unlocks.towers.bomb,
     apply:   p => { p.unlocks.towers.bomb = true; p.unlocks.paths.bomb.A = true; },
     unapply: p => { p.unlocks.towers.bomb = false; p.unlocks.paths.bomb.A = false; },
@@ -194,7 +194,7 @@ export const UNLOCK_TREE = [
     unapply: p => { p.unlocks.paths.bomb.B = false; },
   },
   {
-    id: 'frost', label: 'Frost tower', group: 'towers', cost: 2, requires: null,
+    id: 'frost', label: 'Frost tower', group: 'towers', cost: 3, requires: null,
     check:   p => p.unlocks.towers.frost,
     apply:   p => { p.unlocks.paths.frost.A = true; p.unlocks.towers.frost = true; },
     unapply: p => { p.unlocks.paths.frost.A = false; p.unlocks.towers.frost = false; },
