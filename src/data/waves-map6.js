@@ -1,49 +1,49 @@
 /**
- * Wave definitions for Map 6 — Detour
- * Short path with a sharp mid-detour; fewer choke points.
- * NEW: Magma (wave 2 — immune to slow/freeze, resists frost) and Insulated
- * (wave 4 — immune to Tesla). Both take full damage from dart/bomb/marksman, so
- * the lesson is "don't lean on a single element." hpMult 1.66.
+ * Map 6 — Detour  (Forest)
+ * Curriculum: introduces FLYER — floats above the path and ignores ground
+ * hazards (mines, fire pools). Any projectile tower still hits it, so the lesson
+ * is "hazard-only defences have a gap." Builds on all prior Forest basics.
+ * hpMult 1.66.
  */
 export const WAVES = [
-  // Wave 1
-  [{ type: 'runner',   count: 18, interval: 0.58 },
-   { type: 'sprinter', count:  8, interval: 0.34 }],
+  // Wave 1 — known basics
+  [{ type: 'runner',   count: 16, interval: 0.5 },
+   { type: 'sprinter', count: 10, interval: 0.4 }],
 
-  // Wave 2 — Magma debut (slow/frost do nothing — bring direct damage) + runners
-  [{ type: 'magma',    count:  5, interval: 1.2 },
-   { type: 'runner',   count: 10, interval: 0.58 }],
+  // Wave 2 — swarm + splitters
+  [{ type: 'swarmling', count: 24, interval: 0.15 },
+   { type: 'splitter',  count: 5,  interval: 1.1 }],
 
-  // Wave 3 — tanks + splitters
-  [{ type: 'tank',     count:  5, interval: 1.7 },
-   { type: 'splitter', count:  6, interval: 1.0 }],
+  // Wave 3 — DEBUT: flyers, alone (note they skip ground hazards)
+  [{ type: 'flyer',    count: 5,  interval: 1.1 }],
 
-  // Wave 4 — Insulated debut (Tesla does nothing) + sprinters
-  [{ type: 'insulated', count: 6, interval: 1.0 },
-   { type: 'sprinter',  count: 12, interval: 0.34 }],
+  // Wave 4 — flyers with runner escort
+  [{ type: 'flyer',    count: 7,  interval: 0.9 },
+   { type: 'runner',   count: 10, interval: 0.55 }],
 
   // Wave 5 — armoured + tanks
-  [{ type: 'armoured', count: 10, interval: 1.0 },
-   { type: 'tank',     count:  4, interval: 1.7 }],
+  [{ type: 'armoured', count: 6,  interval: 1.2 },
+   { type: 'tank',     count: 4,  interval: 1.9 }],
 
-  // Wave 6 — magma + splitters
-  [{ type: 'magma',    count:  6, interval: 1.1 },
-   { type: 'splitter', count: 10, interval: 1.0 }],
+  // Wave 6 — flyer flock + sprinters
+  [{ type: 'flyer',    count: 8,  interval: 0.8 },
+   { type: 'sprinter', count: 10, interval: 0.4 }],
 
-  // Wave 7 — tanks + sprinters
-  [{ type: 'tank',     count:  6, interval: 1.7 },
-   { type: 'sprinter', count: 18, interval: 0.32 }],
+  // Wave 7 — swarm + splitters
+  [{ type: 'swarmling', count: 30, interval: 0.13 },
+   { type: 'splitter',  count: 6,  interval: 1.0 }],
 
-  // Wave 8 — insulated + armoured
-  [{ type: 'insulated', count: 8, interval: 1.0 },
-   { type: 'armoured',  count: 8, interval: 1.0 }],
+  // Wave 8 — flyers + armoured
+  [{ type: 'flyer',    count: 9,  interval: 0.8 },
+   { type: 'armoured', count: 5,  interval: 1.2 }],
 
-  // Wave 9 — sprinter push + magma + tanks
-  [{ type: 'sprinter', count: 26, interval: 0.30 },
-   { type: 'magma',    count:  4, interval: 1.2 },
-   { type: 'tank',     count:  5, interval: 1.7 }],
+  // Wave 9 — flyers + tanks + swarm
+  [{ type: 'flyer',     count: 6,  interval: 0.9 },
+   { type: 'tank',      count: 5,  interval: 1.8 },
+   { type: 'swarmling', count: 22, interval: 0.15 }],
 
-  // Wave 10 — BOSS + armoured escort
-  [{ type: 'boss',     count:  1, interval: 1.0 },
-   { type: 'armoured', count:  8, interval: 1.0 }],
+  // Wave 10 — BOSS + flyer + armoured escort
+  [{ type: 'boss',     count: 1,  interval: 1.0 },
+   { type: 'flyer',    count: 6,  interval: 0.9 },
+   { type: 'armoured', count: 4,  interval: 1.3 }],
 ];

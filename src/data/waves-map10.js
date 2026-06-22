@@ -1,55 +1,51 @@
 /**
- * Wave definitions for Map 10 — The Crucible
- * The finale. Pulls together nearly every enemy mechanic and expects a full
- * arsenal. Mid-boss on wave 5; MEGABOSS finale (spawns armoured on death).
+ * Map 10 — The Crucible  (Forest finale)
+ * Curriculum: no new trash type — the MEGABOSS capstone (spawns armoured on
+ * death). Recombines the full Forest roster at peak density. Mid-boss on wave 5.
  * hpMult 2.50.
  */
 export const WAVES = [
-  // Wave 1
-  [{ type: 'runner',   count: 28, interval: 0.55 },
-   { type: 'sprinter', count: 18, interval: 0.30 }],
+  // Wave 1 — heavy mixed flood
+  [{ type: 'runner',   count: 24, interval: 0.4 },
+   { type: 'sprinter', count: 16, interval: 0.3 }],
 
-  // Wave 2 — armoured + tanks
-  [{ type: 'armoured', count: 18, interval: 0.95 },
-   { type: 'tank',     count:  8, interval: 1.7 }],
+  // Wave 2 — armoured + splitters
+  [{ type: 'armoured', count: 8,  interval: 1.0 },
+   { type: 'splitter', count: 6,  interval: 1.0 }],
 
-  // Wave 3 — juggernaut + sprinters + carrier
-  [{ type: 'juggernaut', count:  3, interval: 2.6 },
-   { type: 'sprinter',   count: 22, interval: 0.29 },
-   { type: 'carrier',    count:  2, interval: 3.0 }],
+  // Wave 3 — carriers + swarm
+  [{ type: 'carrier',   count: 3,  interval: 3.0 },
+   { type: 'swarmling', count: 26, interval: 0.14 }],
 
-  // Wave 4 — brute + armoured + aquatic
-  [{ type: 'brute',    count:  4, interval: 2.2 },
-   { type: 'armoured', count: 16, interval: 0.95 },
-   { type: 'aquatic',  count:  8, interval: 0.95 }],
+  // Wave 4 — regenerators + flyers
+  [{ type: 'regenerator', count: 5, interval: 1.6 },
+   { type: 'flyer',       count: 8, interval: 0.8 }],
 
-  // Wave 5 — MID-BOSS + phantom + armoured
-  [{ type: 'boss',     count:  1, interval: 1.0 },
-   { type: 'phantom',  count:  4, interval: 1.2 },
-   { type: 'armoured', count: 14, interval: 0.95 }],
+  // Wave 5 — MID-BOSS + tanks + armoured
+  [{ type: 'boss',     count: 1,  interval: 1.0 },
+   { type: 'tank',     count: 6,  interval: 1.6 },
+   { type: 'armoured', count: 6,  interval: 1.1 }],
 
-  // Wave 6 — sprinter flood + magma + insulated (element check)
-  [{ type: 'sprinter',  count: 50, interval: 0.25 },
-   { type: 'magma',     count:  6, interval: 1.0 },
-   { type: 'insulated', count:  6, interval: 1.0 }],
+  // Wave 6 — swarm flood + splitters
+  [{ type: 'swarmling', count: 44, interval: 0.1 },
+   { type: 'splitter',  count: 8,  interval: 0.9 }],
 
-  // Wave 7 — tanks + juggernaut + shielded
-  [{ type: 'tank',       count: 14, interval: 1.6 },
-   { type: 'juggernaut', count:  3, interval: 2.6 },
-   { type: 'shielded',   count: 10, interval: 0.95 }],
+  // Wave 7 — regenerators + carriers + flyers
+  [{ type: 'regenerator', count: 5, interval: 1.6 },
+   { type: 'carrier',     count: 3, interval: 3.0 },
+   { type: 'flyer',       count: 6, interval: 0.9 }],
 
-  // Wave 8 — armoured + brute + cleric (heal-protected push)
-  [{ type: 'armoured', count: 24, interval: 0.9 },
-   { type: 'brute',    count:  3, interval: 2.4 },
-   { type: 'cleric',   count:  3, interval: 1.8 }],
+  // Wave 8 — tank + armoured wall
+  [{ type: 'tank',     count: 8,  interval: 1.5 },
+   { type: 'armoured', count: 10, interval: 1.0 }],
 
-  // Wave 9 — sprinter surge + carriers + phantom
-  [{ type: 'sprinter', count: 50, interval: 0.24 },
-   { type: 'carrier',  count:  3, interval: 2.6 },
-   { type: 'phantom',  count:  4, interval: 1.2 }],
+  // Wave 9 — BOSS + carriers + swarm
+  [{ type: 'boss',      count: 1,  interval: 1.0 },
+   { type: 'carrier',   count: 2,  interval: 3.5 },
+   { type: 'swarmling', count: 26, interval: 0.14 }],
 
-  // Wave 10 — MEGABOSS finale (spawns armoured on death) + juggernaut + armoured
-  [{ type: 'megaboss',   count:  1, interval: 1.0 },
-   { type: 'juggernaut', count:  2, interval: 3.0 },
-   { type: 'armoured',   count: 12, interval: 1.0 }],
+  // Wave 10 — MEGABOSS finale (spawns armoured on death) + armoured + regenerator
+  [{ type: 'megaboss',    count: 1, interval: 1.0 },
+   { type: 'armoured',    count: 5, interval: 1.3 },
+   { type: 'regenerator', count: 3, interval: 2.0 }],
 ];

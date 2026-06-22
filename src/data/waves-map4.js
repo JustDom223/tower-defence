@@ -1,49 +1,48 @@
 /**
- * Wave definitions for Map 4 — The Cross
- * Path enters top, exits bottom; mid-section crosses itself.
- * NEW: Flyer (wave 2 — ignores ground hazards, but any tower still hits it) and
- * Stutter (wave 4 — stop-and-go movement, hard to lead-aim). hpMult 1.35.
+ * Map 4 — The Cross  (Forest)
+ * Curriculum: introduces SPLITTER — spawn-on-death. Each one bursts into two
+ * runners when killed, teaching the player to budget for the adds. Builds on
+ * runner/sprinter/tank/armoured. hpMult 1.35.
  */
 export const WAVES = [
-  // Wave 1
+  // Wave 1 — known basics
   [{ type: 'runner',   count: 14, interval: 0.55 },
-   { type: 'sprinter', count:  4, interval: 0.38 }],
+   { type: 'sprinter', count: 8,  interval: 0.45 }],
 
-  // Wave 2 — Flyer debut (floats above ground hazards; projectiles still hit)
-  [{ type: 'flyer',    count:  6, interval: 0.7 },
-   { type: 'runner',   count:  8, interval: 0.55 }],
+  // Wave 2 — armoured + tanks
+  [{ type: 'armoured', count: 4,  interval: 1.4 },
+   { type: 'tank',     count: 2,  interval: 2.4 }],
 
-  // Wave 3 — armoured + runner mix
-  [{ type: 'armoured', count:  5, interval: 1.1 },
-   { type: 'runner',   count:  8, interval: 0.60 }],
+  // Wave 3 — DEBUT: splitters, alone (watch them split on death)
+  [{ type: 'splitter', count: 4,  interval: 1.5 }],
 
-  // Wave 4 — Stutter debut (bursty movement) + sprinters
-  [{ type: 'stutter',  count:  6, interval: 0.8 },
-   { type: 'sprinter', count:  8, interval: 0.38 }],
+  // Wave 4 — splitters with runner escort
+  [{ type: 'splitter', count: 6,  interval: 1.2 },
+   { type: 'runner',   count: 8,  interval: 0.6 }],
 
-  // Wave 5 — splitter swarm + tank
-  [{ type: 'splitter', count:  8, interval: 1.0 },
-   { type: 'tank',     count:  3, interval: 1.8 }],
+  // Wave 5 — tanks + armoured
+  [{ type: 'tank',     count: 4,  interval: 2.0 },
+   { type: 'armoured', count: 4,  interval: 1.4 }],
 
-  // Wave 6 — armoured wall + flyers
-  [{ type: 'armoured', count:  8, interval: 1.0 },
-   { type: 'flyer',    count:  5, interval: 0.7 }],
+  // Wave 6 — splitter swarm + sprinters
+  [{ type: 'splitter', count: 7,  interval: 1.0 },
+   { type: 'sprinter', count: 10, interval: 0.4 }],
 
-  // Wave 7 — sprinters + tanks
-  [{ type: 'sprinter', count: 18, interval: 0.33 },
-   { type: 'tank',     count:  4, interval: 1.7 }],
+  // Wave 7 — armoured wall + runners
+  [{ type: 'armoured', count: 6,  interval: 1.2 },
+   { type: 'runner',   count: 12, interval: 0.5 }],
 
-  // Wave 8 — tanks + armoured + stutter
-  [{ type: 'tank',     count:  5, interval: 1.7 },
-   { type: 'armoured', count:  6, interval: 1.0 },
-   { type: 'stutter',  count:  4, interval: 0.9 }],
+  // Wave 8 — splitters + tanks
+  [{ type: 'splitter', count: 7,  interval: 1.0 },
+   { type: 'tank',     count: 3,  interval: 2.0 }],
 
-  // Wave 9 — splitters + sprinters + flyers
-  [{ type: 'splitter', count: 10, interval: 1.0 },
-   { type: 'sprinter', count: 10, interval: 0.33 },
-   { type: 'flyer',    count:  4, interval: 0.7 }],
+  // Wave 9 — splitters + armoured + sprinters
+  [{ type: 'splitter', count: 8,  interval: 0.9 },
+   { type: 'armoured', count: 5,  interval: 1.2 },
+   { type: 'sprinter', count: 12, interval: 0.35 }],
 
-  // Wave 10 — BOSS + armoured escort
-  [{ type: 'boss',     count:  1, interval: 1.0 },
-   { type: 'armoured', count:  6, interval: 1.0 }],
+  // Wave 10 — BOSS + splitter + armoured escort
+  [{ type: 'boss',     count: 1,  interval: 1.0 },
+   { type: 'splitter', count: 4,  interval: 1.3 },
+   { type: 'armoured', count: 4,  interval: 1.4 }],
 ];
