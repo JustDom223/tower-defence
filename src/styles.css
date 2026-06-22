@@ -219,13 +219,14 @@
         display: flex; flex-direction: row; align-items: stretch; gap: 28px;
         max-width: 860px;
       }
-      /* Fullscreen always sits top-right of the panel regardless of stage */
+      /* Fullscreen tucked into the panel's top-right corner (sits in the top
+         padding band above the content in every stage). */
       #map-panel { position: relative; }
       #map-fs {
-        position: absolute; top: -10px; right: -10px;
-        background: none; border: 1px solid #334155; color: #64748b;
+        position: absolute; top: 8px; right: 8px;
+        background: rgba(15,23,42,.97); border: 1px solid #334155; color: #64748b;
         border-radius: 6px; padding: 5px 9px; font-size: 12px; cursor: pointer;
-        z-index: 1;
+        z-index: 2;
       }
       #map-fs:hover { border-color: #4b5563; color: #9ca3af; }
 
@@ -238,7 +239,18 @@
         width: 240px; flex-shrink: 0; text-align: left;
       }
       #map-panel-right { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-      #map-actions { display: flex; flex-direction: column; }
+      /* Secondary actions — 3-wide grid of square tiles (matches the world/map grids).
+         Continue (primary) and Reset (destructive) span the full row. */
+      #map-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      #map-actions #map-continue,
+      #map-actions #menu-reset { grid-column: 1 / -1; }
+      #map-actions .action-tile { gap: 4px; }
+      body:not(.mobile-scaled) #map-actions .action-tile {
+        flex-direction: column; aspect-ratio: 1;
+        width: auto; min-height: 0; margin-top: 0; padding: 6px;
+      }
+      body:not(.mobile-scaled) #map-actions .action-emoji { font-size: 26px; line-height: 1; }
+      body:not(.mobile-scaled) #map-actions .action-label { font-size: 11px; font-weight: 600; }
       #map-panel h2 { font-size: 20px; margin-bottom: 4px; letter-spacing: .04em; }
       #map-stars-info {
         font-size: 13px; color: #facc15; margin-bottom: 10px; font-weight: 700;
@@ -252,14 +264,16 @@
       }
       .diff-btn:hover  { border-color: #6b7280; color: #e5e7eb; }
       .diff-btn.active { border-color: #facc15; color: #facc15; background: #1c1917; }
-      /* ── Stage 1: world/zone cards ─────────────────────────── */
+      /* ── Stage 1: world/zone cards — 3-wide grid of squares ── */
       #world-list {
-        display: flex; flex-direction: row; gap: 10px;
-        flex: 1; align-items: stretch;
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        flex: 1; align-content: center; justify-content: center;
       }
       .world-card {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
-        gap: 6px; text-align: center; flex: 1;
+        gap: 6px; text-align: center; aspect-ratio: 1;
         background: #111f33; border: 1px solid #1e3a5f; color: #e2e8f0;
         padding: 14px 10px; border-radius: 10px; cursor: pointer;
         transition: border-color .12s, background .12s;
@@ -341,12 +355,17 @@
       .diff-pick-label { font-size: 16px; font-weight: 700; }
       .diff-pick-desc  { font-size: 12px; opacity: 0.65; }
 
-      /* Map list — horizontal row of square tiles */
+      /* Map list — 2 rows of 5 square tiles, filled left-to-right then wrapping */
       #map-list {
-        display: flex; flex-direction: row; gap: 8px;
-        overflow-x: auto; overflow-y: hidden;
+        display: grid;
+        grid-template-columns: repeat(5, 82px);
+        grid-auto-rows: 82px;
+        grid-auto-flow: row;
+        gap: 8px;
+        justify-content: center;
+        overflow-x: hidden; overflow-y: auto;
         scrollbar-width: thin; scrollbar-color: #374151 transparent;
-        padding-bottom: 4px; align-items: stretch;
+        padding-bottom: 4px;
       }
       .map-btn {
         display: flex; flex-direction: column; align-items: center; justify-content: center;
