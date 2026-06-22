@@ -6,9 +6,9 @@
  * hpMult 1.22.
  */
 export const WAVES = [
-  // Wave 1 — known basics
-  [{ type: 'runner',   count: 12, interval: 0.6 },
-   { type: 'sprinter', count: 6,  interval: 0.5 }],
+  // Wave 1 — known basics, gentle opener
+  [{ type: 'runner',   count: 8,  interval: 0.7 },
+   { type: 'sprinter', count: 4,  interval: 0.6 }],
 
   // Wave 2 — tanks return among runners
   [{ type: 'tank',     count: 3,  interval: 2.4 },
