@@ -292,6 +292,25 @@ export class GameUI {
       }, true);
       addBtn('Main Menu', () => { clearSave(); location.reload(); });
     }
+
+    if (opts.runData) {
+      addBtn('📋 Copy run data', (e) => {
+        navigator.clipboard.writeText(opts.runData)
+          .then(() => { e.target.textContent = '✓ Copied!'; })
+          .catch(() => {
+            // Clipboard API unavailable (e.g. HTTP); fall back to execCommand
+            const ta = document.createElement('textarea');
+            ta.value = opts.runData;
+            ta.style.position = 'fixed';
+            ta.style.opacity  = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            try { document.execCommand('copy'); e.target.textContent = '✓ Copied!'; }
+            catch (_) { e.target.textContent = '✗ Copy failed'; }
+            document.body.removeChild(ta);
+          });
+      });
+    }
   }
 
   setSandbox(enabled) {

@@ -24,6 +24,7 @@ import { MapBuilder }           from './ui/MapBuilder.js';
 import { initFeedback }         from './ui/Feedback.js';
 import { initDiagnostics }      from './core/diagnostics.js';
 import { createTelemetry }       from './core/Telemetry.js';
+import { initPlayerLog, logPlace, logUpgrade, serializeRun } from './core/PlayerLog.js';
 import AudioManager             from './audio/AudioManager.js';
 import { saveGame, loadGame, clearSave, requestRestart } from './core/SaveSystem.js';
 import { DIFFICULTIES }         from './data/difficulties.js';
@@ -596,7 +597,10 @@ function wireCanvasInput(renderer, ui, state, towerRenderer, paths, pathsWaypoin
     if (!isSandbox && (perks.damagePct ?? 0) > 0) tower.damage = Math.round(tower.damage * (1 + perks.damagePct));
     state.towers.push(tower);
     markBuffsDirty();
-    if (!isSandbox) state.cash -= effectiveCost;
+    if (!isSandbox) {
+      state.cash -= effectiveCost;
+      logPlace(type, x, y, effectiveCost, state.cash, state.waveIndex);
+    }
     towerRenderer.markDirty();
     if (e.shiftKey) {
       towerRenderer.setHoverTile({ x, y, valid: false, type });
@@ -754,6 +758,7 @@ async function main() {
   document.getElementById('map-select').style.display = 'none';
 
   const isSandbox = diffKey === 'sandbox';
+  if (!isSandbox) initPlayerLog(mapKey, diffKey);
   // C0 — difficulty for badge display; Simulation owns the rest of the config
   const difficulty = isSandbox
     ? DIFFICULTIES.normal
@@ -841,6 +846,8 @@ async function main() {
     if (!state.sandbox) {
       state.cash -= result.tier.cost;
       tower.upgradeSpent += result.tier.cost;
+      const tierNum = (path === 'A' ? tower.upgradesA : tower.upgradesB) + 1;
+      logUpgrade(tower.type, path, tierNum, result.tier.name, result.tier.cost, state.cash, state.waveIndex);
     }
     applyTier(tower, result.tier);
     markBuffsDirty();
@@ -899,13 +906,23 @@ async function main() {
     const ci         = CAMPAIGN_ORDER.indexOf(state.mapKey);
     const nextKey    = (ci >= 0 && ci < CAMPAIGN_ORDER.length - 1) ? CAMPAIGN_ORDER[ci + 1] : null;
     const nextMapKey = (nextKey && isMapUnlocked(profile, nextKey, CAMPAIGN_ORDER)) ? nextKey : null;
+    const runData    = isSandbox ? null : serializeRun(
+      'win', state.lives, score,
+      state.towers.map(t => ({ t: t.type, x: t.x, y: t.y, upA: t.upgradesA, upB: t.upgradesB })),
+      telemetry.log,
+    );
     ui.showEndScreen(true, score, stars, availableStars(profile), newBest,
-      { nextMapKey, diffKey: state.diffKey });
+      { nextMapKey, diffKey: state.diffKey, runData });
   });
   _ev.on('game-over', ({ score }) => {
     AudioManager.play('lose');
+    const runData = isSandbox ? null : serializeRun(
+      'loss', state.lives, score,
+      state.towers.map(t => ({ t: t.type, x: t.x, y: t.y, upA: t.upgradesA, upB: t.upgradesB })),
+      telemetry.log,
+    );
     ui.showEndScreen(false, score, 0, availableStars(profile), false,
-      { mapKey: state.mapKey, diffKey: state.diffKey });
+      { mapKey: state.mapKey, diffKey: state.diffKey, runData });
   });
 
   // --- Canvas input ---
