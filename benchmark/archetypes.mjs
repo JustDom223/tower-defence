@@ -114,30 +114,58 @@ export function withBomb(sim) {
 }
 
 // ── WithFrost ─────────────────────────────────────────────────────────────────
-// Buys frost opportunistically once affordable (20–50% path), then spreads
-// archers across the full path via competent. No kill-zone clustering — on
-// multi-row maps that would pin all towers to row 1.
+// Places frost towers at 20 / 50 / 80% of path length — one per section so
+// every part of the route has a slow zone. Then packs archers inside each
+// frost's range circle (kill zone): enemies are slowed the moment they enter
+// the frost radius and shredded by the surrounding archers while crawling.
+// Remaining cash fills general coverage via competent.
 export function withFrost(sim) {
-  const FROST_COST = TOWER_TYPES.frost.cost; // 75
-  const pw         = sim.paths.map(p => p.waypoints);
-  const pathLen    = sim.paths[0].totalLength;
-  const frostOwned = sim.state.towers.filter(t => t.type === 'frost').length;
+  const FROST_COST  = TOWER_TYPES.frost.cost;   // 75
+  const FROST_RANGE = TOWER_TYPES.frost.range;   // 140
+  const RESERVE     = 25;
+  const pw          = sim.paths.map(p => p.waypoints);
+  const pathLen     = sim.paths[0].totalLength;
 
-  // Before W1: just archers — frost deals no damage and wastes starting cash.
+  // Before W1: archers only — frost deals no damage.
   if (sim.state.waveIndex < 0) { competent(sim); return; }
 
-  if (frostOwned < 2) {
-    const frostSlots = candidates(sim.paths)
-      .filter(c => { const pct = c.d / pathLen; return pct >= 0.20 && pct <= 0.50; })
-      .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers));
-    let newFrost = 0;
-    for (const c of frostSlots) {
-      if (frostOwned + newFrost >= 2) break;
-      if (sim.state.cash < FROST_COST) break;
-      if (place('frost', c.x, c.y, sim.state, pw)) newFrost++;
+  // 1. Place up to 3 frost towers, one per path section (20% / 50% / 80%).
+  //    Wait until we can afford frost + at least 1 kill-zone archer + reserve,
+  //    so frost never sits alone with no archers around it.
+  const FROST_TARGETS = [0.20, 0.50, 0.80];
+  const FROST_BUNDLE  = FROST_COST + ARCHER_COST + RESERVE; // $150
+  let frostCount = sim.state.towers.filter(t => t.type === 'frost').length;
+  for (let i = frostCount; i < FROST_TARGETS.length; i++) {
+    if (sim.state.cash < FROST_BUNDLE) break; // wait until we can also fill 1 kill-zone slot
+    const targetD = FROST_TARGETS[i] * pathLen;
+    const slot = candidates(sim.paths)
+      .filter(c => Math.abs(c.d - targetD) <= pathLen * 0.15)
+      .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers))
+      .sort((a, b) => Math.abs(a.d - targetD) - Math.abs(b.d - targetD))[0];
+    if (slot && place('frost', slot.x, slot.y, sim.state, pw)) frostCount++;
+  }
+
+  // 2. Pack archers inside each frost's range circle — closest to each frost first
+  //    so the densest kill zone forms around the tower centre.
+  const frostTowers = sim.state.towers.filter(t => t.type === 'frost');
+  if (frostTowers.length > 0) {
+    const kzPool = candidates(sim.paths)
+      .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers))
+      .filter(c => frostTowers.some(ft =>
+        (ft.x - c.x) ** 2 + (ft.y - c.y) ** 2 <= FROST_RANGE ** 2
+      ))
+      .sort((a, b) => {
+        const da = Math.min(...frostTowers.map(ft => (ft.x-a.x)**2 + (ft.y-a.y)**2));
+        const db = Math.min(...frostTowers.map(ft => (ft.x-b.x)**2 + (ft.y-b.y)**2));
+        return da - db; // tightest to frost first
+      });
+    for (const c of kzPool) {
+      if (sim.state.cash - ARCHER_COST < RESERVE) break;
+      place('archer', c.x, c.y, sim.state, pw);
     }
   }
 
+  // 3. Remaining cash → general path coverage (also builds income while saving for frost).
   competent(sim);
 }
 
