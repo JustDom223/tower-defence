@@ -3,7 +3,7 @@ export const TOWER_TYPES = {
     name: 'Archer',
     cost: 50,
     damage: 18,
-    range: 150,
+    range: 135,
     fireRate: 1.5,
     projSpeed: 600,
     aoeRadius: 0,

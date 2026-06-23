@@ -15,7 +15,7 @@ export const WAVES = [
    { type: 'runner',   count: 8,  interval: 0.6 }],
 
   // Wave 3 — DEBUT: armoured, alone (notice arrows do half)
-  [{ type: 'armoured', count: 3,  interval: 1.8 }],
+  [{ type: 'armoured', count: 4,  interval: 1.8 }],
 
   // Wave 4 — armoured with runner escort
   [{ type: 'armoured', count: 4,  interval: 1.5 },

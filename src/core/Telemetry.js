@@ -97,7 +97,8 @@ export function createTelemetry() {
       return waves.map(w =>
         `W${w.wave}: lost ${w.livesLost}  reach ${(w.deepestReachPct * 100) | 0}%  ` +
         `peak ${w.peakConcurrent}  clear ${w.clearTimeSec}s  tail ${w.combatTailSec}s  ` +
-        `leaks ${w.leaks.count}${w.leaks.count ? ' ' + JSON.stringify(w.leaks.byType) : ''}`
+        `kills ${w.kills}  cash $${w.cashStart}→$${w.cashEnd}` +
+        (w.leaks.count ? `  leaks ${w.leaks.count} ${JSON.stringify(w.leaks.byType)}` : '')
       );
     },
   };
