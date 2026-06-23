@@ -18,6 +18,12 @@ import { positionAtDistance } from '../src/core/Path.js';
 
 const ARCHER_COST = TOWER_TYPES.archer.cost; // 50
 
+/** Returns true if this tower type is available to place (respects unlock profile). */
+function isUnlocked(sim, towerType) {
+  if (!sim.profile) return true; // no profile = all available (backward compat / sandbox)
+  return sim.profile.unlocks?.towers?.[towerType] ?? false;
+}
+
 /** Sample candidate tower positions perpendicular to the path. */
 function candidates(paths) {
   const result = [];
@@ -67,10 +73,31 @@ export function naive(sim) {
 
 // ── Competent ─────────────────────────────────────────────────────────────────
 // Spreads coverage evenly along the full path; keeps a small cash buffer.
+// Uses unlocked towers (bomb, marksman) when available — models a player who
+// actually spends their unlock stars and puts the towers to work.
 export function competent(sim) {
-  const RESERVE   = 25; // keep $25 back — just enough buffer to not spend last dollar
+  const RESERVE   = 0; // benchmark buys only between waves — no mid-wave emergency buffer needed
   const pw        = sim.paths.map(p => p.waypoints);
-  const pool      = candidates(sim.paths)
+  const pathLen   = sim.paths[0].totalLength;
+
+  // Place bomb towers if unlocked and affordable.
+  // Pre-W1: cap at 1 bomb so cash remains for ≥1 supporting archer.
+  // W2+: allow 2 bombs once kill income has built the wallet.
+  if (isUnlocked(sim, 'bomb')) {
+    const BOMB_COST = TOWER_TYPES.bomb.cost;
+    const maxBombs  = sim.state.waveIndex < 0 ? 1 : 2;
+    let bombCount   = sim.state.towers.filter(t => t.type === 'bomb').length;
+    const bombSlots = candidates(sim.paths)
+      .filter(c => { const pct = c.d / pathLen; return pct >= 0.25 && pct <= 0.65; })
+      .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers));
+    for (const c of bombSlots) {
+      if (bombCount >= maxBombs) break;
+      if (sim.state.cash < BOMB_COST) break;
+      if (place('bomb', c.x, c.y, sim.state, pw)) bombCount++;
+    }
+  }
+
+  const pool = candidates(sim.paths)
     .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers))
     .sort((a, b) => {
       // Prefer positions not yet near an existing tower (spread coverage)
@@ -90,26 +117,13 @@ export function competent(sim) {
 // onward once kill income makes them affordable. Models a player who unlocked
 // Bomb to handle tanks/armour. Bomb: $125, AOE damage.
 export function withBomb(sim) {
+  if (!isUnlocked(sim, 'bomb')) { competent(sim); return; } // fall back if not unlocked
   const RESERVE   = 25;
   const BOMB_COST = TOWER_TYPES.bomb.cost; // 125
   const pw        = sim.paths.map(p => p.waypoints);
 
-  // Before wave 1: starting cash only — buy archers, no bomb yet
-  if (sim.state.waveIndex < 0) { competent(sim); return; }
-
-  // Wave 2+: place up to 2 bombs at mid-path, then fill with archers
-  const pathLen   = sim.paths[0].totalLength;
-  const bombSlots = candidates(sim.paths)
-    .filter(c => { const pct = c.d / pathLen; return pct >= 0.25 && pct <= 0.65; })
-    .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers));
-
-  let placed = sim.state.towers.filter(t => t.type === 'bomb').length;
-  for (const c of bombSlots) {
-    if (placed >= 2) break;
-    if (sim.state.cash - BOMB_COST < RESERVE) continue;
-    if (place('bomb', c.x, c.y, sim.state, pw)) placed++;
-  }
-
+  // Delegate everything to competent — it now handles bomb placement at any wave
+  // (including pre-W1 since bomb costs $75, affordable alongside ≥1 archer).
   competent(sim);
 }
 
@@ -120,6 +134,9 @@ export function withBomb(sim) {
 // the frost radius and shredded by the surrounding archers while crawling.
 // Remaining cash fills general coverage via competent.
 export function withFrost(sim) {
+  // Frost buys bomb in the campaign before frost; fall back to withBomb strategy
+  // when frost isn't unlocked so the run still uses the available tower type.
+  if (!isUnlocked(sim, 'frost')) { withBomb(sim); return; }
   const FROST_COST  = TOWER_TYPES.frost.cost;   // 75
   const FROST_RANGE = TOWER_TYPES.frost.range;   // 140
   const RESERVE     = 25;
@@ -169,14 +186,98 @@ export function withFrost(sim) {
   competent(sim);
 }
 
+// ── Progression ───────────────────────────────────────────────────────────────
+// Star-aware archetype: uses whatever the player has unlocked.
+// Strategy: front-load archers in the 10–50% zone (kill zone), upgrade T1 first,
+// then add bomb/marksman when unlocked. Never wastes slots in the dead back half.
+export function progression(sim) {
+  const RESERVE        = 0;
+  const pw             = sim.paths.map(p => p.waypoints);
+  const pathLen        = sim.paths[0].totalLength;
+  const bombUnlocked     = isUnlocked(sim, 'bomb');
+  const marksmanUnlocked = isUnlocked(sim, 'marksman');
+
+  // Before W1: if bomb is unlocked, buy it immediately ($75 fits with the $125 start)
+  // then let any remaining cash go to archers below. If bomb is not yet unlocked,
+  // fall through to archer-only front-clustering as before.
+  if (sim.state.waveIndex < 0 && !bombUnlocked) {
+    naive(sim);
+    return;
+  }
+
+  // Buy bombs as soon as affordable — no tower-count gate, since at $75 a bomb
+  // fits in the opening budget and matters immediately against armoured.
+  if (bombUnlocked) {
+    const BOMB_COST = TOWER_TYPES.bomb.cost;
+    let bombCount   = sim.state.towers.filter(t => t.type === 'bomb').length;
+    const bombSlots = candidates(sim.paths)
+      .filter(c => { const pct = c.d / pathLen; return pct >= 0.20 && pct <= 0.60; })
+      .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers));
+    for (const c of bombSlots) {
+      if (bombCount >= 2) break;
+      if (sim.state.cash < BOMB_COST) break;
+      if (place('bomb', c.x, c.y, sim.state, pw)) bombCount++;
+    }
+  }
+
+  // Upgrade first two archers to T1 once we have solid coverage (6+ towers)
+  if (sim.state.towers.length >= 6) {
+    const archers = sim.state.towers.filter(t => t.type === 'archer');
+    for (const a of archers.slice(0, 2)) {
+      if (a.upgradesA > 0) continue;
+      const def  = TOWER_TYPES[a.type];
+      const tier = def.upgrades?.pathA?.tiers?.[0];
+      if (tier && sim.state.cash - tier.cost >= RESERVE) {
+        sim.state.cash -= tier.cost;
+        a.upgradeSpent = (a.upgradeSpent ?? 0) + tier.cost;
+        Object.assign(a, tier.stats ?? {});
+        a.upgradesA = 1;
+        markBuffsDirty();
+      }
+    }
+  }
+
+  // Buy 1 marksman at 50–80% if unlocked — covers the far section without crowding front
+  if (marksmanUnlocked) {
+    const MARKSMAN_COST = TOWER_TYPES.marksman.cost; // 125
+    const mCount = sim.state.towers.filter(t => t.type === 'marksman').length;
+    if (mCount < 1) {
+      const mSlots = candidates(sim.paths)
+        .filter(c => { const pct = c.d / pathLen; return pct >= 0.50 && pct <= 0.80; })
+        .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers));
+      for (const c of mSlots) {
+        if (sim.state.cash - MARKSMAN_COST < RESERVE) break;
+        if (place('marksman', c.x, c.y, sim.state, pw)) break;
+      }
+    }
+  }
+
+  // Fill remaining cash with archers in the front zone; competent handles any overflow
+  const frontPool = candidates(sim.paths)
+    .filter(c => { const pct = c.d / pathLen; return pct >= 0.10 && pct <= 0.50; })
+    .filter(c => isPositionFree(c.x, c.y, pw, sim.state.towers))
+    .sort((a, b) => {
+      const dA = sim.state.towers.reduce((m, t) => Math.min(m, (t.x-a.x)**2+(t.y-a.y)**2), Infinity);
+      const dB = sim.state.towers.reduce((m, t) => Math.min(m, (t.x-b.x)**2+(t.y-b.y)**2), Infinity);
+      return dB - dA;
+    });
+  for (const c of frontPool) {
+    if (sim.state.cash - ARCHER_COST < RESERVE) break;
+    place('archer', c.x, c.y, sim.state, pw);
+  }
+
+  competent(sim); // overflow into 50–100% zone once front is saturated
+}
+
 // ── Optimal ───────────────────────────────────────────────────────────────────
 // Full-path coverage + upgrades the lead tower once it can afford to.
 export function optimal(sim) {
   const pw = sim.paths.map(p => p.waypoints);
 
-  // Only upgrade once we have enough coverage (at least 6 towers placed)
-  const leader = sim.state.towers[0];
-  if (leader && leader.upgradesA < 2 && sim.state.cash >= 160 && sim.state.towers.length >= 6) {
+  // Only upgrade once we have enough coverage (at least 6 towers placed).
+  // Find the first archer — not just towers[0] which may now be a bomb.
+  const leader = sim.state.towers.find(t => t.type === 'archer');
+  if (leader && leader.upgradesA < 2 && sim.state.towers.length >= 6) {
     // apply tier manually (mirrors ui.onUpgrade logic)
     const def  = TOWER_TYPES[leader.type];
     const tier = def.upgrades?.pathA?.tiers?.[leader.upgradesA];

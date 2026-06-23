@@ -15,9 +15,9 @@ import { defaultProfile }      from '../src/core/Profile.js';
 import { resetEnemyPool }      from '../src/entities/Enemy.js';
 import { resetProjectilePool } from '../src/entities/Projectile.js';
 import { markBuffsDirty }      from '../src/systems/CombatSystem.js';
-import { naive, competent, optimal, withBomb, withFrost } from './archetypes.mjs';
+import { naive, competent, optimal, withBomb, withFrost, progression } from './archetypes.mjs';
 
-const ARCHETYPES = { naive, competent, optimal, withBomb, withFrost };
+const ARCHETYPES = { naive, competent, optimal, withBomb, withFrost, progression };
 
 // Static wave registry — Node cannot use import.meta.glob (Vite-only).
 // Add entries here as new maps are benchmarked.
@@ -52,15 +52,15 @@ function resetPools() {
  * @param {string|null} [opts.archetype=null]  — 'naive' | 'competent' | 'optimal' | null
  * @returns {{ map, diff, archetype, finalLives, finalCash, towerCount, score, win, lossWave, elapsed, waves, summary }}
  */
-export async function run({ mapKey = 'map1', diffKey = 'normal', archetype = null, extraCash = 0 } = {}) {
+export async function run({ mapKey = 'map1', diffKey = 'normal', archetype = null, extraCash = 0, profile: inputProfile = null } = {}) {
   const waves = WAVES_MAP[mapKey];
   if (!waves) throw new Error(`Unknown map: ${mapKey}. Available: ${Object.keys(WAVES_MAP).join(', ')}`);
 
   resetPools();
   const buyFn = archetype ? ARCHETYPES[archetype] : null;
 
-  const profile   = defaultProfile();
-  if (extraCash) profile.perks.startCash = extraCash;
+  const profile   = inputProfile ?? defaultProfile();
+  if (!inputProfile && extraCash) profile.perks.startCash = extraCash;
   const telemetry = createTelemetry();
 
   const sim = createSimulation({
@@ -72,6 +72,7 @@ export async function run({ mapKey = 'map1', diffKey = 'normal', archetype = nul
     sandbox: false,
     events:  { emit() {} },  // headless: all side-effects are no-ops
   });
+  sim.profile = profile; // expose to archetypes for unlock checks
 
   const t0 = Date.now();
   let lossWave = null;

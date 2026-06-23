@@ -46,6 +46,7 @@ export function createTelemetry() {
         killsStart: state.kills, kills: 0,
         deepestReachPct: 0, peakConcurrent: 0, firstBloodPct: null,
         leaks: { count: 0, byType: {} },
+        killsByBucket: new Array(10).fill(0), // 10% path segments: [0-10%, 10-20%, ..., 90-100%]
         gameTime: 0, spawnDoneTime: null,
         clearTimeSec: 0, spawnDurationSec: 0, combatTailSec: 0,
       };
@@ -70,7 +71,9 @@ export function createTelemetry() {
     },
 
     onKill(reachPct) {
-      if (cur && cur.firstBloodPct === null) cur.firstBloodPct = +reachPct.toFixed(3);
+      if (!cur) return;
+      if (cur.firstBloodPct === null) cur.firstBloodPct = +reachPct.toFixed(3);
+      cur.killsByBucket[Math.min(9, Math.floor(reachPct * 10))]++;
     },
 
     waveEnd(state) {
@@ -84,7 +87,8 @@ export function createTelemetry() {
       cur.combatTailSec = +(cur.clearTimeSec - cur.spawnDurationSec).toFixed(2);
       cur.deepestReachPct = +cur.deepestReachPct.toFixed(3);
       // strip bookkeeping fields from the emitted record
-      const { killsStart, gameTime, spawnDoneTime, ...row } = cur;
+      const { killsStart, gameTime, spawnDoneTime, killsByBucket, ...row } = cur;
+      row.killMap = killsByBucket.map(n => String(n).padStart(3)).join('|'); // compact heat-map string
       waves.push(row);
       cur = null;
     },
@@ -98,7 +102,8 @@ export function createTelemetry() {
         `W${w.wave}: lost ${w.livesLost}  reach ${(w.deepestReachPct * 100) | 0}%  ` +
         `peak ${w.peakConcurrent}  clear ${w.clearTimeSec}s  tail ${w.combatTailSec}s  ` +
         `kills ${w.kills}  cash $${w.cashStart}→$${w.cashEnd}` +
-        (w.leaks.count ? `  leaks ${w.leaks.count} ${JSON.stringify(w.leaks.byType)}` : '')
+        (w.leaks.count ? `  leaks ${w.leaks.count} ${JSON.stringify(w.leaks.byType)}` : '') +
+        `\n        killMap [0%…100%]: [${w.killMap}]`
       );
     },
   };
